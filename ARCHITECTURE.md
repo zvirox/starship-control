@@ -30,6 +30,7 @@
 | **Frontend Framework** | **React 19 + TypeScript + Vite** | High-performance reactive UI, strict end-to-end typing matching the Rust IPC layer, fast Vite HMR loop. |
 | **Styling & Design** | **Tailwind CSS v4** | Pure CSS `@theme` tokens matching DESIGN.md v1.0 (shared across EEP and SSP). |
 | **UI Components** | **Radix UI Primitives + Lucide Icons** | Unstyled, fully accessible keyboard-navigable primitives customized to frosted-glass tokens. |
+| **UI Behaviors & Agent Bridge** | **`@ui-sdk/react` + `@ui-sdk/core` (Vercel UI SDK)** | Headless behavior primitives (popups, roving focus, selection, createAgent) from `https://ui-sdk.dev/` for robust accessible UI and agent inspection. |
 | **Animation & Motion** | **framer-motion** | Physics-based spring animations for HUD expansion, card transitions, and progress indicators. |
 | **Async Runtime (Core)** | **Rust 2024 + Tokio** | High-throughput asynchronous runtime managing multiple concurrent MCP transports, streaming SSE connections, and child processes. |
 | **Local LLM Engine** | **`llama-cpp-2` / GGUF engine** | Native, high-performance C++ bindings for GGUF quantization execution with Vulkan, ROCm, and AVX2 hardware acceleration. |

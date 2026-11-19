@@ -133,6 +133,7 @@ Safety is enforced in the Rust core, not left to LLM prompt adherence:
 | **Frontend Framework** | **React 19 + TypeScript + Vite** | Fast HMR dev loop, strict end-to-end typing mirroring Rust IPC payloads. |
 | **Styling & Design** | **Tailwind CSS v4** | Pure CSS `@theme` tokens matching DESIGN.md v1.0 (shared across EEP and SSP). |
 | **UI Components** | **Radix UI Primitives + Lucide Icons** | Accessible keyboard-operable primitives customized to frosted-glass tokens. |
+| **UI Behaviors & Agent Bridge** | **`@ui-sdk/react` + `@ui-sdk/core`** | 50+ headless interaction primitives (popups, roving focus, selection, createAgent) from `https://ui-sdk.dev/`. |
 | **Animations** | **framer-motion** | Physics-based spring animations for HUD expansion and approval card slide-ins. |
 | **Core Runtime** | **Rust 2024 + Tokio** | High-throughput asynchronous runtime managing concurrent MCP streams, child processes, and SSE. |
 | **Local LLM Engine** | **`llama-cpp-2`** | High-performance C++ bindings for GGUF execution with Vulkan, ROCm, and AVX2 acceleration. |
