@@ -222,7 +222,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* mock tool emits 10 progress events; host maps them to the right step.
 - [x] **13.2 Progress aggregator** — `executor/progress.rs`: computes step/mission progress, ETA, stall flag; throttled to ≤ 4 Hz per mission.
   * *Verify:* unit tests for weighting, ETA with/without history, throttling.
-- [ ] **13.3 `tool_stats` learner** — after each successful step update `{tool, n, ewma_ms, p50, p90}` (see Appendix B). Ignore failed/cancelled runs.
+- [x] **13.3 `tool_stats` learner** — after each successful step update `{tool, n, ewma_ms, p50, p90}` (see Appendix B). Ignore failed/cancelled runs.
   * *Verify:* ETA error on a replayed history < 25 % after 10 runs (record result).
 - [ ] **13.4 Events & commands** — `evt://mission/progress`, `evt://step/state`, `cmd://mission_get_timeline` (events since cursor, for resync after reconnect).
   * *Verify:* frontend reconnect replays missed events with no gaps (cursor test).

@@ -1,0 +1,23 @@
+=== 13.3 Tool Stats Learner Evidence ===
+Timestamp: 2026-11-22T18:24:44+05:30
+Requirement: After each successful step update `{tool, n, ewma_ms, p50, p90}` (Appendix B). Ignore failed/cancelled runs.
+Verification: ETA error on a replayed history < 25 % after 10 runs (record result).
+
+$ cargo test -p starship-db --lib tool_stats -- --nocapture
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src/lib.rs (target/debug/build/starship-db/037c9f99b4fb8e5b/out/starship_db-037c9f99b4fb8e5b)
+
+running 1 test
+Tool stats after 10 runs: n=10, ewma=2015.4ms, p50=2010.0ms, p90=2100.0ms, error=0.50%
+test tool_stats::tests::test_tool_stats_learner_ignores_failures_and_learns_accurate_eta ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 0.01s
+
+Verification Details:
+- Table Migration: Created `0004_tool_stats.sql` with schema `(app_id, tool, n, ewma_ms, p50_ms, p90_ms, samples_json, PRIMARY KEY (app_id, tool))`.
+- Learner Invariant: Failed runs (`is_success = false`) are ignored and do not alter `tool_stats`.
+- Accuracy Result:
+  * Baseline duration: 2000.0 ms
+  * Replayed series: [2100.0, 1950.0, 2050.0, 1980.0, 2020.0, 1920.0, 2080.0, 2010.0, 1990.0, 2000.0]
+  * Learned after 10 runs: n = 10, EWMA = 2015.4 ms, p50 = 2010.0 ms, p90 = 2100.0 ms
+  * Measured ETA error: 0.50% (Passing criterion: < 25.0%).
