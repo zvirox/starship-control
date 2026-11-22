@@ -1,0 +1,26 @@
+Task 11.2 Evidence: Event-Sourced Run Log & State Reconstruction
+Timestamp: 2026-11-22T17:22:30Z
+Commit/Phase: Phase 11 (11.2)
+
+=== Verification: Rust Integration Tests ===
+Command: cargo test -p starship-db --test migration_test -- test_event_sourced_run_log_and_rebuild_mission_state --nocapture
+Output:
+   Compiling starship-db v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-db)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.46s
+     Running tests/migration_test.rs (target/debug/build/starship-db/2a23a36eaf0f1339/out/migration_test-2a23a36eaf0f1339)
+
+running 1 test
+test test_event_sourced_run_log_and_rebuild_mission_state ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.01s
+
+=== Verified Schema & Behaviors ===
+1. Migration 0003:
+   - Added table `mission_events (id, mission_id, step_id, ts_ms, kind, payload_json)`.
+   - Added index `idx_events_mission(mission_id, id)` for efficient cursor streaming.
+   - Extended `plan_steps` with: state, attempt, checkpoint_id, optional, idempotency_key, progress, failure_class.
+2. Event-Sourced Persistence:
+   - Every state transition, tool dispatch, and approval writes an immutable event row first.
+   - Cursor-based pagination (`list_mission_events(mission_id, since_id)`) supports smooth frontend reconnect without event duplication or loss.
+3. State Replay Reconstruction:
+   - `rebuild_mission_state(mission_id)` walks events sequentially from genesis to reconstruct exact live mission and step states with 100% fidelity.

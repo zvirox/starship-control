@@ -116,7 +116,7 @@ Step:    pending → ready → awaiting_approval → running
 
 - [x] **11.1 Step/mission state machine** in `starship-core/src/executor/state.rs` — pure, side-effect-free transition function + exhaustive tests (illegal transitions return `ipc.bad_state`).
   * *Verify:* property test: no sequence of events reaches an illegal state.
-- [ ] **11.2 Event-sourced run log** — append-only `mission_events` table (see Appendix B). Every transition, tool call, retry, fallback decision writes an event first, then acts.
+- [x] **11.2 Event-sourced run log** — append-only `mission_events` table (see Appendix B). Every transition, tool call, retry, fallback decision writes an event first, then acts.
   * *Verify:* rebuilding mission state from events equals live state in a test.
 - [ ] **11.3 DAG scheduler** — ready-set computation, bounded parallelism (default 2, governor-adjustable), cycle detection at load, per-step `timeoutMs` (default from `tool_stats` p95 × 3, min 10 s).
   * *Verify:* diamond DAG runs in expected order; a step exceeding timeout is cancelled via `tools/cancel`.

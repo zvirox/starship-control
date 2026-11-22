@@ -292,3 +292,163 @@ fn test_tamper_evident_audit_log_hash_chain_and_triggers() {
         "Expected error to pinpoint record ID 2, got: {err:?}"
     );
 }
+
+#[test]
+fn test_event_sourced_run_log_and_rebuild_mission_state() {
+    // GAP-CLOSURE-PLAN.md §11.2: Event-sourced run log & state reconstruction
+    use starship_core::executor::{MissionEvent, MissionState, PauseReason, StepEvent, StepState};
+    use starship_db::events::NewMissionEvent;
+
+    let db = Database::open_in_memory().expect("in-memory db open");
+
+    let mission_id = db
+        .create_mission(
+            "987e6543-e21b-12d3-a456-426614174000",
+            "Event Sourcing Test Mission",
+            "Testing append-only run log and replay",
+            "qwen2.5-coder-7b-q4",
+            "local_gguf",
+        )
+        .expect("create mission");
+
+    let step_1 = 101_i64;
+    let step_2 = 102_i64;
+
+    // 1. Initial State before events: Planning, no step records
+    let (initial_mission, initial_steps) = db
+        .rebuild_mission_state(mission_id)
+        .expect("rebuild initial");
+    assert_eq!(initial_mission, MissionState::Planning);
+    assert!(initial_steps.is_empty());
+
+    // 2. Mission transitions Planning -> Ready -> Running
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: None,
+        ts_ms: 1000,
+        kind: "mission_transition".into(),
+        payload_json: serde_json::to_string(&MissionEvent::PlanGenerated).unwrap(),
+    })
+    .expect("record event 1");
+
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: None,
+        ts_ms: 1005,
+        kind: "mission_transition".into(),
+        payload_json: serde_json::to_string(&MissionEvent::Start).unwrap(),
+    })
+    .expect("record event 2");
+
+    // 3. Step 101 transitions: Schedule -> DispatchDirect -> Succeed
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: Some(step_1),
+        ts_ms: 1010,
+        kind: "step_transition".into(),
+        payload_json: serde_json::to_string(&StepEvent::Schedule).unwrap(),
+    })
+    .expect("record event 3");
+
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: Some(step_1),
+        ts_ms: 1015,
+        kind: "step_transition".into(),
+        payload_json: serde_json::to_string(&StepEvent::DispatchDirect).unwrap(),
+    })
+    .expect("record event 4");
+
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: Some(step_1),
+        ts_ms: 1020,
+        kind: "step_transition".into(),
+        payload_json: serde_json::to_string(&StepEvent::Succeed).unwrap(),
+    })
+    .expect("record event 5");
+
+    // 4. Step 102 transitions: Schedule -> RequireApproval -> Mission pauses on Approval
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: Some(step_2),
+        ts_ms: 1025,
+        kind: "step_transition".into(),
+        payload_json: serde_json::to_string(&StepEvent::Schedule).unwrap(),
+    })
+    .expect("record event 6");
+
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: Some(step_2),
+        ts_ms: 1030,
+        kind: "step_transition".into(),
+        payload_json: serde_json::to_string(&StepEvent::RequireApproval).unwrap(),
+    })
+    .expect("record event 7");
+
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: None,
+        ts_ms: 1035,
+        kind: "mission_transition".into(),
+        payload_json: serde_json::to_string(&MissionEvent::Pause(PauseReason::Approval)).unwrap(),
+    })
+    .expect("record event 8");
+
+    // 5. Rebuild mid-execution state from events
+    let (mid_mission, mid_steps) = db.rebuild_mission_state(mission_id).expect("rebuild mid");
+    assert_eq!(mid_mission, MissionState::Paused(PauseReason::Approval));
+    assert_eq!(mid_steps.get(&step_1), Some(&StepState::Succeeded));
+    assert_eq!(mid_steps.get(&step_2), Some(&StepState::AwaitingApproval));
+
+    // 6. Test cursor pagination for event streaming resync (cmd://mission_get_timeline)
+    let events_after_4 = db
+        .list_mission_events(mission_id, Some(4))
+        .expect("cursor list");
+    assert_eq!(events_after_4.len(), 4); // events 5, 6, 7, 8
+    assert_eq!(events_after_4[0].id, 5);
+
+    // 7. Human approves Step 102: ApproveAndDispatch -> Mission Resume -> Succeed -> Complete
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: Some(step_2),
+        ts_ms: 1040,
+        kind: "step_transition".into(),
+        payload_json: serde_json::to_string(&StepEvent::ApproveAndDispatch).unwrap(),
+    })
+    .expect("record event 9");
+
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: None,
+        ts_ms: 1045,
+        kind: "mission_transition".into(),
+        payload_json: serde_json::to_string(&MissionEvent::Resume).unwrap(),
+    })
+    .expect("record event 10");
+
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: Some(step_2),
+        ts_ms: 1050,
+        kind: "step_transition".into(),
+        payload_json: serde_json::to_string(&StepEvent::Succeed).unwrap(),
+    })
+    .expect("record event 11");
+
+    db.record_mission_event(&NewMissionEvent {
+        mission_id,
+        step_id: None,
+        ts_ms: 1055,
+        kind: "mission_transition".into(),
+        payload_json: serde_json::to_string(&MissionEvent::CompleteAllSucceeded).unwrap(),
+    })
+    .expect("record event 12");
+
+    // 8. Final replay rebuilds completed mission and steps with 100% fidelity
+    let (final_mission, final_steps) = db.rebuild_mission_state(mission_id).expect("rebuild final");
+    assert_eq!(final_mission, MissionState::Succeeded);
+    assert_eq!(final_steps.get(&step_1), Some(&StepState::Succeeded));
+    assert_eq!(final_steps.get(&step_2), Some(&StepState::Succeeded));
+}

@@ -8,17 +8,20 @@ use tracing::{info, warn};
 
 pub mod apps;
 pub mod audit;
+pub mod events;
 pub mod models;
 pub mod plans;
 pub mod schema;
 
 pub use apps::AppRecord;
 pub use audit::{AuditRecord, NewAuditEntry};
+pub use events::{MissionEventRecord, NewMissionEvent};
 pub use plans::{PlanRecord, PlanStepRecord};
 
 const INITIAL_MIGRATION: &str = include_str!("migrations/0001_initial.sql");
 const MIGRATION_0002: &str = include_str!("migrations/0002_tamper_evident_audit_log.sql");
-const CURRENT_SCHEMA_VERSION: u32 = 2;
+const MIGRATION_0003: &str = include_str!("migrations/0003_event_sourced_run_log.sql");
+const CURRENT_SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Clone)]
 pub struct Database {
@@ -204,6 +207,28 @@ impl Database {
                         "db.migration_failed",
                         false,
                         format!("Failed to set user_version to 2: {e}"),
+                        None,
+                    )
+                })?;
+        }
+
+        if current_version < 3 {
+            info!(target: "starship_db", "Applying migration 0003_event_sourced_run_log.sql");
+            conn.execute_batch(MIGRATION_0003).map_err(|e| {
+                CoreError::db(
+                    "db.migration_failed",
+                    false,
+                    format!("Failed to execute migration 0003: {e}"),
+                    None,
+                )
+            })?;
+
+            conn.execute_batch("PRAGMA user_version = 3;")
+                .map_err(|e| {
+                    CoreError::db(
+                        "db.migration_failed",
+                        false,
+                        format!("Failed to set user_version to 3: {e}"),
                         None,
                     )
                 })?;
