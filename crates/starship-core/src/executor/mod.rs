@@ -1,3 +1,4 @@
+pub mod admission;
 pub mod failure;
 pub mod fallback;
 pub mod governor;
@@ -10,6 +11,7 @@ pub mod retry;
 pub mod scheduler;
 pub mod state;
 
+pub use admission::{ActiveReservation, AdmissionController, AdmissionDecision};
 pub use failure::{FailureClass, classify_error};
 pub use fallback::{
     FallbackDecision, FallbackLadderEngine, FallbackRung, MissionFallbackContext,

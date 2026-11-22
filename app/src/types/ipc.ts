@@ -496,6 +496,7 @@ export interface StepStatePayload {
   stepIndex: number;
   state:
     | "pending"
+    | "queued"
     | "running"
     | "paused_approval"
     | "success"

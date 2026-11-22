@@ -111,6 +111,7 @@ pub fn transition_mission(
 pub enum StepState {
     Pending,
     Ready,
+    Queued,
     AwaitingApproval,
     Running,
     Succeeded,
@@ -137,6 +138,8 @@ impl StepState {
 #[serde(rename_all = "snake_case")]
 pub enum StepEvent {
     Schedule,
+    QueueForResources,
+    AdmitResources,
     RequireApproval,
     ApproveAndDispatch,
     DispatchDirect,
@@ -160,9 +163,13 @@ pub fn transition_step(current: StepState, event: StepEvent) -> Result<StepState
     match (current, event) {
         // To Ready
         (StepState::Pending, StepEvent::Schedule)
+        | (StepState::Queued, StepEvent::AdmitResources)
         | (StepState::FailedRetryable, StepEvent::BackoffResolved)
         | (StepState::FailedFinal, StepEvent::FallbackRecover)
         | (StepState::Interrupted, StepEvent::ResumeInterrupted) => Ok(StepState::Ready),
+
+        // To Queued (Admission control waiting for resources - GAP-CLOSURE-PLAN.md §15.2)
+        (StepState::Ready, StepEvent::QueueForResources) => Ok(StepState::Queued),
 
         // To AwaitingApproval
         (StepState::Ready, StepEvent::RequireApproval) => Ok(StepState::AwaitingApproval),
@@ -183,7 +190,9 @@ pub fn transition_step(current: StepState, event: StepEvent) -> Result<StepState
         }
 
         // To Skipped
-        (StepState::Pending | StepState::FailedFinal, StepEvent::Skip) => Ok(StepState::Skipped),
+        (StepState::Pending | StepState::Queued | StepState::FailedFinal, StepEvent::Skip) => {
+            Ok(StepState::Skipped)
+        }
 
         // To RolledBack
         (StepState::FailedFinal, StepEvent::Rollback) => Ok(StepState::RolledBack),
@@ -195,6 +204,7 @@ pub fn transition_step(current: StepState, event: StepEvent) -> Result<StepState
         (
             StepState::Pending
             | StepState::Ready
+            | StepState::Queued
             | StepState::AwaitingApproval
             | StepState::Running
             | StepState::FailedRetryable
@@ -317,6 +327,26 @@ mod tests {
     }
 
     #[test]
+    fn test_step_queued_for_resources_lifecycle() {
+        // Pending -> Ready
+        let mut step = StepState::Pending;
+        step = transition_step(step, StepEvent::Schedule).expect("ready");
+        assert_eq!(step, StepState::Ready);
+
+        // Insufficient headroom -> Queued (waiting for resources)
+        step = transition_step(step, StepEvent::QueueForResources).expect("queued");
+        assert_eq!(step, StepState::Queued);
+
+        // Resources freed -> Admitted back to Ready
+        step = transition_step(step, StepEvent::AdmitResources).expect("ready");
+        assert_eq!(step, StepState::Ready);
+
+        // Direct dispatch to Running
+        step = transition_step(step, StepEvent::DispatchDirect).expect("running");
+        assert_eq!(step, StepState::Running);
+    }
+
+    #[test]
     fn test_property_no_sequence_reaches_illegal_state() {
         // Property test: exhaustively check all (State, Event) combinations.
         // For each combination, the transition either:
@@ -326,6 +356,7 @@ mod tests {
         let all_states = [
             StepState::Pending,
             StepState::Ready,
+            StepState::Queued,
             StepState::AwaitingApproval,
             StepState::Running,
             StepState::Succeeded,
@@ -339,6 +370,8 @@ mod tests {
 
         let all_events = [
             StepEvent::Schedule,
+            StepEvent::QueueForResources,
+            StepEvent::AdmitResources,
             StepEvent::RequireApproval,
             StepEvent::ApproveAndDispatch,
             StepEvent::DispatchDirect,

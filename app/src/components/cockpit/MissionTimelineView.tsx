@@ -34,6 +34,7 @@ export interface TimelineStepItem {
   riskTier: 1 | 2 | 3;
   state:
     | "pending"
+    | "queued"
     | "running"
     | "paused_approval"
     | "success"
@@ -339,6 +340,7 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
             const isSkipped = step.state === "skipped";
             const isFailed = step.state === "failed";
             const isApproval = step.state === "paused_approval";
+            const isQueued = step.state === "queued";
 
             return (
               <GlassPanel
@@ -347,6 +349,8 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                 className={`p-3.5 rounded-xl border transition-all ${
                   isRunning
                     ? "border-sky-500/40 bg-sky-950/20 shadow-[0_0_16px_rgba(56,189,248,0.12)]"
+                    : isQueued
+                    ? "border-amber-500/40 bg-amber-950/20 shadow-[0_0_16px_rgba(245,158,11,0.12)]"
                     : isApproval
                     ? "border-amber-500/40 bg-amber-950/20"
                     : isCompleted
@@ -366,6 +370,8 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                           ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                           : isRunning
                           ? "bg-sky-500/20 text-sky-300 border border-sky-400/50 animate-pulse"
+                          : isQueued
+                          ? "bg-amber-500/20 text-amber-300 border border-amber-400/50"
                           : isSkipped
                           ? "bg-slate-800/60 text-slate-500 border border-slate-700/50"
                           : "bg-slate-800 text-slate-400 border border-slate-700"
@@ -437,6 +443,11 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           <span>Completed</span>
                         </span>
+                      ) : isQueued ? (
+                        <span className="flex items-center gap-1.5 text-xs text-amber-400 font-medium">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>Waiting for resources</span>
+                        </span>
                       ) : isRunning ? (
                         <span className="flex items-center gap-1.5 text-xs text-sky-400 font-medium">
                           <RefreshCw className="h-3.5 w-3.5 animate-spin" />
@@ -458,6 +469,14 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                     </div>
                   </div>
                 </div>
+
+                {/* Queued / Waiting for Resources Banner */}
+                {isQueued && (
+                  <div className="mt-3 pt-2.5 border-t border-white/[0.05] flex items-center gap-2 text-xs text-amber-300 font-mono">
+                    <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                    <span>{step.message || "Waiting for resources..."}</span>
+                  </div>
+                )}
 
                 {/* Running Stage Progress Bar */}
                 {isRunning && (

@@ -316,7 +316,7 @@ Step:    pending → ready → awaiting_approval → running
 
 - [x] **15.1 Resource profiles** — extend tool metadata: `resourceProfile {cpu: low|med|high, memMb, gpu: bool, diskIo: low|high, longRunning: bool}`; unknown → `high`. Sub-app SDK (`starship-plugin` v1.1) supports declaring it; host can override in `policy/resources.toml`.
   * *Verify:* unknown tools default to `high` (test).
-- [ ] **15.2 Admission controller** — a step starts only if `headroom(now) ≥ profile` (using current health + reservations of running steps); otherwise queued with reason "waiting for resources" (visible in timeline).
+- [x] **15.2 Admission controller** — a step starts only if `headroom(now) ≥ profile` (using current health + reservations of running steps); otherwise queued with reason "waiting for resources" (visible in timeline).
   * *Verify:* with simulated 85 % CPU, a `high` step queues, a `low` step runs.
 - [ ] **15.3 Local-inference guard** — before loading a GGUF, compare VRAM/RAM headroom (live, not just static probe); if insufficient → F3-model path (smaller quant/offload/cloud) *before* attempting the load.
   * *Verify:* simulated low memory triggers fallback with a clear user message and no OOM kill.

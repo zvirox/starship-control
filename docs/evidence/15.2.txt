@@ -1,0 +1,7 @@
+
+running 2 tests
+test executor::admission::tests::test_admission_at_85_pct_cpu_queues_high_and_runs_low ... ok
+test executor::admission::tests::test_admission_reservations_drain_headroom ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 78 filtered out; finished in 0.00s
+

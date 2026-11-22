@@ -17,6 +17,7 @@ pub use executor::{
     QuarantineManifest, QuarantinedItem, RecoveryAction, ResourceLease, RetryDecision, RetryPolicy,
     RollbackSummary, StepEvent, StepExecutionState, StepProgressTracker, StepState,
     ToolDurationStats, classify_error, transition_mission, transition_step,
+    AdmissionController, AdmissionDecision,
 };
 pub use pipeline::{
     CetEvent, CetHeader, CetTelemetry, CutInterval, DiagnosticsPipeline, ScreencastAssemblyRequest,
@@ -30,7 +31,7 @@ pub use planner::{
     TASKSHEET_GBNF_GRAMMAR, TASKSHEET_VERSION_1, TaskSheet, TaskSheetStep, TaskSheetValidator,
     Tier1DryRunCaller, ToolSchema,
 };
-pub use policy::{DiffSummarizer, TierPolicy};
+pub use policy::{DiffSummarizer, ResourcePolicy, TierPolicy};
 pub use safety::{
     ApprovalRequest, ExecutionPermission, RiskTier, SafetyArbiter, SecretScrubber, SecretVault,
 };
