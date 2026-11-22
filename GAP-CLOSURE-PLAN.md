@@ -318,7 +318,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* unknown tools default to `high` (test).
 - [x] **15.2 Admission controller** — a step starts only if `headroom(now) ≥ profile` (using current health + reservations of running steps); otherwise queued with reason "waiting for resources" (visible in timeline).
   * *Verify:* with simulated 85 % CPU, a `high` step queues, a `low` step runs.
-- [ ] **15.3 Local-inference guard** — before loading a GGUF, compare VRAM/RAM headroom (live, not just static probe); if insufficient → F3-model path (smaller quant/offload/cloud) *before* attempting the load.
+- [x] **15.3 Local-inference guard** — before loading a GGUF, compare VRAM/RAM headroom (live, not just static probe); if insufficient → F3-model path (smaller quant/offload/cloud) *before* attempting the load.
   * *Verify:* simulated low memory triggers fallback with a clear user message and no OOM kill.
 - [ ] **15.4 Process containment (optional, feature flag)** — run spawned headless apps via `systemd-run --user --scope -p MemoryMax=… -p CPUWeight=…` when available, so a runaway app can't take the desktop down; fall back to plain spawn with a warning when not.
   * *Verify:* a mock app that allocates unbounded memory is killed by its scope, mission goes to `failed_final` → F1/F5 as appropriate, desktop stays responsive.

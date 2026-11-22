@@ -55,6 +55,27 @@ impl LocalGgufRunner {
         Ok(())
     }
 
+    /// Evaluates live memory headroom and returns a guard decision before attempting
+    /// to load weights or allocate VRAM/RAM (GAP-CLOSURE-PLAN.md §15.3).
+    #[must_use]
+    pub fn validate_live_headroom(
+        &self,
+        health: Option<&starship_health::HealthSample>,
+    ) -> crate::local::guard::LocalGuardDecision {
+        let size_mb = self
+            .file_path
+            .as_ref()
+            .and_then(|p| std::fs::metadata(p).ok())
+            .map_or(4096, |m| m.len() / (1024 * 1024));
+
+        crate::local::guard::LocalInferenceGuard::evaluate_headroom(
+            size_mb,
+            self.gpu_layers,
+            health,
+            self.hardware.vulkan_supported,
+        )
+    }
+
     /// Synthesizes a valid `tasksheet/1` JSON plan under GBNF grammar constraints.
     #[must_use]
     pub fn synthesize_tasksheet_json(prompt: &str) -> String {

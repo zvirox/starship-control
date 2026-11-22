@@ -1,0 +1,8 @@
+
+running 3 tests
+test local::guard::tests::test_sufficient_memory_allows_load ... ok
+test local::guard::tests::test_vram_constrained_triggers_layer_offload_reduction ... ok
+test local::guard::tests::test_simulated_low_memory_triggers_fallback_with_clear_user_message_and_no_oom ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.00s
+
