@@ -76,21 +76,21 @@
 
 > **Goal:** Close G3–G6. Safety is enforced by the host, not trusted from apps or the webview.
 
-- [ ] **10.1 Host-side tier policy** — new `starship-core/src/policy/tiers.rs` + `policy/tiers.toml` (shipped default). Effective tier = `max(app_declared, host_floor)`. Unknown tool → **Tier 2**. Tools matching `delete|purge|remove|overwrite|replace|format|truncate` → floor **Tier 3** unless allowlisted. Apps can raise, never lower.
+- [x] **10.1 Host-side tier policy** — new `starship-core/src/policy/tiers.rs` + `policy/tiers.toml` (shipped default). Effective tier = `max(app_declared, host_floor)`. Unknown tool → **Tier 2**. Tools matching `delete|purge|remove|overwrite|replace|format|truncate` → floor **Tier 3** unless allowlisted. Apps can raise, never lower.
   * *Verify:* table-driven test: app declares tier 1 for `files.delete` → effective tier 3.
-- [ ] **10.2 Deterministic diff summaries** — `diffSummary` is produced by the sub-app (new tool metadata `describeChange`) or by host code from arguments; **never** by the LLM. Missing → card shows raw arguments.
+- [x] **10.2 Deterministic diff summaries** — `diffSummary` is produced by the sub-app (new tool metadata `describeChange`) or by host code from arguments; **never** by the LLM. Missing → card shows raw arguments.
   * *Verify:* test with an LLM-supplied `diffSummary` field being ignored.
-- [ ] **10.3 Argument-bound approvals** — core creates `approval_request {id, nonce, argsHash(sha256 of canonical JSON), tier, expiresAt(5 min)}`; UI replies `plan_approve_step{stepId, nonce}`; at dispatch core re-hashes the *current* arguments; mismatch → `safety.invalid_signature_token`. Nonces single-use, HMAC'd with a per-process in-memory key.
+- [x] **10.3 Argument-bound approvals** — core creates `approval_request {id, nonce, argsHash(sha256 of canonical JSON), tier, expiresAt(5 min)}`; UI replies `plan_approve_step{stepId, nonce}`; at dispatch core re-hashes the *current* arguments; mismatch → `safety.invalid_signature_token`. Nonces single-use, HMAC'd with a per-process in-memory key.
   * *Verify:* tests: replay, expired, args mutated after approval, wrong step.
-- [ ] **10.4 Webview hardening** — strict CSP; sanitize streamed markdown (no raw HTML, no `javascript:` URLs); Tauri capabilities least-privilege per window; frontend approval handler requires `event.isTrusted`.
+- [x] **10.4 Webview hardening** — strict CSP; sanitize streamed markdown (no raw HTML, no `javascript:` URLs); Tauri capabilities least-privilege per window; frontend approval handler requires `event.isTrusted`.
   * *Verify:* XSS payload in a mock tool result renders inert; capability manifest lists only needed commands.
-- [ ] **10.5 Plugin manifest pinning** — `binaryPath` must be absolute, not world-writable, not inside `/tmp` or `$HOME/Downloads`. First sight of a manifest → Cockpit prompt (TOFU) storing `{appId, binaryPath, sha256}`; any later change → re-prompt and **refuse to spawn** until approved.
+- [x] **10.5 Plugin manifest pinning** — `binaryPath` must be absolute, not world-writable, not inside `/tmp` or `$HOME/Downloads`. First sight of a manifest → Cockpit prompt (TOFU) storing `{appId, binaryPath, sha256}`; any later change → re-prompt and **refuse to spawn** until approved.
   * *Verify:* tampered manifest test refuses spawn with `mcp.manifest_untrusted` (new code).
-- [ ] **10.6 Peer identity check** — after `SO_PEERCRED` (uid + pid), open `pidfd` and compare `/proc/<pid>/exe` to the manifest's pinned `binaryPath`; mismatch → `mcp.so_peercred_failed`. Bridge dir `0700`, socket `0600`.
+- [x] **10.6 Peer identity check** — after `SO_PEERCRED` (uid + pid), open `pidfd` and compare `/proc/<pid>/exe` to the manifest's pinned `binaryPath`; mismatch → `mcp.so_peercred_failed`. Bridge dir `0700`, socket `0600`.
   * *Verify:* test where a different binary listens on the app's socket path is rejected.
-- [ ] **10.7 Secrets at rest** — API keys stored via Secret Service (`libsecret`/`keyring` crate) when available; if unavailable, require explicit user opt-in to store in SQLite, encrypted with a key derived (Argon2id) from a user passphrase. Scrub keys from logs/LLM context (test with canary key).
+- [x] **10.7 Secrets at rest** — API keys stored via Secret Service (`libsecret`/`keyring` crate) when available; if unavailable, require explicit user opt-in to store in SQLite, encrypted with a key derived (Argon2id) from a user passphrase. Scrub keys from logs/LLM context (test with canary key).
   * *Verify:* canary key never appears in logs, DB plaintext (default mode), or prompts.
-- [ ] **10.8 Tamper-evident audit log** — add `prev_hash`, `entry_hash = sha256(prev_hash || canonical_row)`; CLI `starship-control audit verify` walks the chain. DB user cannot UPDATE/DELETE audit rows (SQLite triggers `RAISE(ABORT)`).
+- [x] **10.8 Tamper-evident audit log** — add `prev_hash`, `entry_hash = sha256(prev_hash || canonical_row)`; CLI `starship-control audit verify` walks the chain. DB user cannot UPDATE/DELETE audit rows (SQLite triggers `RAISE(ABORT)`).
   * *Verify:* editing one row makes `audit verify` fail and name the row.
 
 **DoD (Phase 10):** A malicious app/manifest/webview cannot execute a mutating step without a human-approved, argument-bound token; audit log tampering is detectable.

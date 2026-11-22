@@ -47,7 +47,12 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
   const appDisplayName = APP_NAMES[step.appId.toLowerCase()] || step.appId.toUpperCase();
   const isTier3 = step.riskTier === 3;
 
-  const handleApprove = useCallback(async () => {
+  const handleApprove = useCallback(async (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
+    // GAP-CLOSURE-PLAN.md §10.4: Frontend approval handler requires event.isTrusted
+    if (e && !e.isTrusted) {
+      console.warn("Security warning: synthetic untrusted event rejected for action approval");
+      return;
+    }
     if (isSubmitting || isExecuting || !step.signatureToken) return;
     try {
       setIsSubmitting(true);
@@ -59,7 +64,11 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
     }
   }, [isSubmitting, isExecuting, onApprove, step.signatureToken, step.stepId]);
 
-  const handleReject = useCallback(async () => {
+  const handleReject = useCallback(async (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
+    if (e && !e.isTrusted) {
+      console.warn("Security warning: synthetic untrusted event rejected for action rejection");
+      return;
+    }
     if (isSubmitting || isExecuting) return;
     try {
       setIsSubmitting(true);

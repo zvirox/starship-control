@@ -1,0 +1,15 @@
+=== TASK 10.4 EVIDENCE: WEBVIEW HARDENING ===
+1. Strict CSP configured in app/src-tauri/tauri.conf.json:
+"csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: asset: https:; connect-src 'self' ipc: http://localhost:* ws://localhost:*"
+
+2. Markdown and tool results sanitized in SanitizedMarkdown.tsx:
+- Neutralizes <script> tags
+- Strips javascript: and data:text/html URLs
+- Content rendered as safe text nodes in React, completely preventing DOM injection
+
+3. Frontend approval handler requires event.isTrusted:
+- Verified in ActionApprovalCard.tsx: rejects synthetic un-trusted event dispatches
+- Verified in HudView.tsx: rejects synthetic un-trusted event dispatches
+
+4. Tauri capabilities least-privilege:
+- capabilities/default.json restricts permissions to core:default and opener:default

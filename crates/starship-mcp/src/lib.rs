@@ -3,6 +3,7 @@ pub mod client;
 pub mod protocol;
 pub mod registry;
 pub mod router;
+pub mod security;
 
 pub use aggregator::{AggregatedTool, ToolAggregator};
 pub use client::{McpRequest, McpResponse, UnixTransportClient};
@@ -11,6 +12,7 @@ pub use registry::{
     get_known_ecosystem_apps, scan_and_sync_manifests, seed_default_manifests_if_needed,
 };
 pub use router::HybridExecutionRouter;
+pub use security::SecurityVerifier;
 
 #[cfg(test)]
 mod tests {

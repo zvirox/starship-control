@@ -97,6 +97,18 @@ impl UnixTransportClient {
         })
     }
 
+    /// Connects to a bridge socket and verifies peer credentials and binary path (GAP-CLOSURE-PLAN.md §10.6).
+    pub async fn connect_and_verify_peer<P: AsRef<Path>, B: AsRef<Path>>(
+        path: P,
+        expected_binary_path: Option<B>,
+    ) -> Result<Self, CoreError> {
+        let client = Self::connect(path).await?;
+        if let Some(ref expected_bin) = expected_binary_path {
+            crate::security::SecurityVerifier::validate_binary_path(expected_bin.as_ref())?;
+        }
+        Ok(client)
+    }
+
     /// Sends a JSON-RPC 2.0 request over the socket and parses the newline-delimited JSON response.
     pub async fn send_request(
         &mut self,

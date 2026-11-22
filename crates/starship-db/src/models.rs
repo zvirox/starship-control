@@ -306,6 +306,7 @@ impl Database {
     }
 
     /// Sets or updates a cloud provider configuration.
+    /// Automatically encrypts plaintext API keys with `SecretVault` (GAP-CLOSURE-PLAN.md §10.7).
     pub fn set_provider_config(
         &self,
         provider_id: &str,
@@ -314,6 +315,14 @@ impl Database {
         api_key_encrypted: Option<&str>,
         is_enabled: bool,
     ) -> Result<(), CoreError> {
+        let armored_key = api_key_encrypted.map(|key| {
+            if key.starts_with("enc_v1:") {
+                key.to_string()
+            } else {
+                starship_core::SecretVault::encrypt_secret(key, "starship-db-provider-key-salt")
+            }
+        });
+
         self.with_conn(|conn| {
             conn.execute(
                 "INSERT INTO provider_configs (provider_id, display_name, base_url, api_key_encrypted, is_enabled)
@@ -324,9 +333,14 @@ impl Database {
                     api_key_encrypted = COALESCE(excluded.api_key_encrypted, provider_configs.api_key_encrypted),
                     is_enabled = excluded.is_enabled,
                     updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')",
-                params![provider_id, display_name, base_url, api_key_encrypted, i32::from(is_enabled)],
+                params![provider_id, display_name, base_url, armored_key.as_deref(), i32::from(is_enabled)],
             )?;
             Ok(())
         })
+    }
+
+    /// Decrypts an armored API key from the database.
+    pub fn decrypt_api_key(armored: &str) -> Result<String, CoreError> {
+        starship_core::SecretVault::decrypt_secret(armored, "starship-db-provider-key-salt")
     }
 }

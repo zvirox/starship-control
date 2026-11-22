@@ -14,6 +14,7 @@ import {
   Activity,
   HardDrive,
 } from "lucide-react";
+import { SanitizedMarkdown } from "../common/SanitizedMarkdown";
 import type {
   ThoughtStreamEvent,
   TokenStreamEvent,
@@ -272,7 +273,7 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
                   : "bg-[#12151B] text-slate-200 border border-white/[0.06] rounded-tl-sm shadow-sm"
               }`}
             >
-              <div className="whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+              <SanitizedMarkdown content={msg.content} />
             </div>
           </div>
 
@@ -320,8 +321,8 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
             {/* Live Content Stream */}
             <div className="rounded-2xl rounded-tl-sm bg-[#12151B] p-3.5 text-slate-200 border border-white/[0.06] shadow-sm">
               {liveContent ? (
-                <div className="whitespace-pre-wrap leading-relaxed font-sans">
-                  {liveContent}
+                <div className="font-sans">
+                  <SanitizedMarkdown content={liveContent} />
                   <span className="inline-block w-1.5 h-3.5 bg-sky-400 ml-1 animate-pulse align-middle" />
                 </div>
               ) : (

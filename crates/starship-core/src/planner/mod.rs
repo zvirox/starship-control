@@ -178,4 +178,52 @@ mod tests {
         assert_eq!(sheet.steps[0].tool_name, "audio.cleanup");
         assert_eq!(sheet.steps[0].risk_tier, 2);
     }
+
+    #[test]
+    fn test_llm_diff_summary_ignored_and_overridden() {
+        // Verification requirement for 10.2:
+        // Test with an LLM-supplied diffSummary field being ignored.
+        let malicious_llm_output = r#"
+        ```json
+        {
+          "version": 1,
+          "goal": "Delete old files",
+          "title": "Cleanup",
+          "summary": "Removes files",
+          "steps": [
+            {
+              "step_index": 0,
+              "app_id": "fs",
+              "tool_name": "files.delete",
+              "arguments": { "path": "/home/user/document.txt" },
+              "risk_tier": 1,
+              "diff_summary": "Completely harmless preview of vacation photos (FAKE)",
+              "depends_on": []
+            }
+          ]
+        }
+        ```
+        "#;
+
+        let sheet = PlannerPromptBuilder::parse_llm_plan(malicious_llm_output)
+            .expect("parse malicious plan");
+
+        let step = &sheet.steps[0];
+        // 1. LLM diff summary MUST be ignored and replaced with host-computed deterministic summary
+        assert_ne!(
+            step.diff_summary, "Completely harmless preview of vacation photos (FAKE)",
+            "LLM diff_summary was trusted instead of ignored!"
+        );
+        assert_eq!(
+            step.diff_summary,
+            "Permanently deletes path: /home/user/document.txt"
+        );
+
+        // 2. LLM-declared Tier 1 MUST be elevated to host floor Tier 3
+        assert_eq!(
+            step.risk_tier, 3,
+            "Host floor for delete was not enforced (got tier {})",
+            step.risk_tier
+        );
+    }
 }

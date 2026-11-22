@@ -1,6 +1,5 @@
 use crate::CoreError;
 use crate::planner::tasksheet::TaskSheet;
-use serde_json::Value;
 
 /// Builds the system prompt and planning template instructing an LLM
 /// to decompose a user mission into a canonical `tasksheet/1` DAG.
@@ -86,26 +85,6 @@ impl PlannerPromptBuilder {
             trimmed
         };
 
-        // Validate JSON value first
-        let val: Value = serde_json::from_str(json_str).map_err(|e| {
-            CoreError::safety(
-                "planner.invalid_json",
-                false,
-                format!("Failed to parse planner output as JSON: {e}"),
-                Some(serde_json::json!({ "raw": raw_output })),
-            )
-        })?;
-
-        let sheet: TaskSheet = serde_json::from_value(val).map_err(|e| {
-            CoreError::safety(
-                "planner.schema_mismatch",
-                false,
-                format!("JSON does not conform to tasksheet/1 schema: {e}"),
-                None,
-            )
-        })?;
-
-        sheet.validate()?;
-        Ok(sheet)
+        TaskSheet::from_llm_json(json_str)
     }
 }

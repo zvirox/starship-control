@@ -159,4 +159,31 @@ impl TaskSheet {
         sheet.validate()?;
         Ok(sheet)
     }
+
+    /// Deserializes a `TaskSheet` from untrusted LLM-generated JSON.
+    /// Invariants enforced:
+    /// 1. Any LLM-supplied `diff_summary` is strictly ignored and replaced with
+    ///    host-deterministic summaries from `DiffSummarizer` (GAP-CLOSURE-PLAN.md §10.2).
+    /// 2. Any LLM-declared `risk_tier` is elevated to host floor via `TierPolicy` (GAP-CLOSURE-PLAN.md §10.1).
+    pub fn from_llm_json(json_str: &str) -> Result<Self, CoreError> {
+        let mut sheet = Self::from_json(json_str)?;
+        let policy = crate::policy::TierPolicy::default();
+
+        for step in &mut sheet.steps {
+            // Strictly overwrite with host-computed deterministic diff summary
+            step.diff_summary = crate::policy::DiffSummarizer::summarize(
+                &step.app_id,
+                &step.tool_name,
+                &step.arguments,
+            );
+
+            // Enforce host floor on risk tier
+            let app_declared = crate::safety::RiskTier::from_u8(step.risk_tier);
+            step.risk_tier = policy
+                .calculate_effective_tier(app_declared, &step.tool_name)
+                .as_u8();
+        }
+
+        Ok(sheet)
+    }
 }

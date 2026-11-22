@@ -8,6 +8,26 @@ use tracing::info;
 
 fn handle_cli_flags() -> Option<i32> {
     let args: Vec<String> = std::env::args().collect();
+    if args.len() >= 3 && args[1] == "audit" && args[2] == "verify" {
+        println!("Verifying tamper-evident audit log chain...");
+        match Database::open_default() {
+            Ok(db) => match db.verify_audit_chain() {
+                Ok(count) => {
+                    println!("[OK] Audit log chain verified cleanly. {count} record(s) intact.");
+                    return Some(0);
+                }
+                Err(e) => {
+                    eprintln!("[FAIL] Audit log verification failed: {}", e.user_message);
+                    return Some(1);
+                }
+            },
+            Err(e) => {
+                eprintln!("[FAIL] Database error: {e}");
+                return Some(1);
+            }
+        }
+    }
+
     for arg in &args[1..] {
         match arg.as_str() {
             "--version" | "-V" => {
@@ -31,17 +51,40 @@ fn handle_cli_flags() -> Option<i32> {
                     }
                 }
             }
+            "--verify-audit" => {
+                println!("Verifying tamper-evident audit log chain...");
+                match Database::open_default() {
+                    Ok(db) => match db.verify_audit_chain() {
+                        Ok(count) => {
+                            println!(
+                                "[OK] Audit log chain verified cleanly. {count} record(s) intact."
+                            );
+                            return Some(0);
+                        }
+                        Err(e) => {
+                            eprintln!("[FAIL] Audit log verification failed: {}", e.user_message);
+                            return Some(1);
+                        }
+                    },
+                    Err(e) => {
+                        eprintln!("[FAIL] Database error: {e}");
+                        return Some(1);
+                    }
+                }
+            }
             "--help" | "-h" => {
                 println!("Starship Control — Native Linux AI Agent Orchestrator");
                 println!();
                 println!("Usage: starship-control [OPTIONS]");
+                println!("       starship-control audit verify");
                 println!();
                 println!("Options:");
                 println!(
-                    "  --self-test    Open database, run migrations, verify health, and exit 0"
+                    "  --self-test     Open database, run migrations, verify health, and exit 0"
                 );
-                println!("  --version, -V  Print application version and exit");
-                println!("  --help, -h     Print this help message and exit");
+                println!("  --verify-audit  Verify hash integrity of the tamper-evident audit log");
+                println!("  --version, -V   Print application version and exit");
+                println!("  --help, -h      Print this help message and exit");
                 return Some(0);
             }
             _ => {}

@@ -1,0 +1,39 @@
+# Starship Control — Host-Side Tier Policy
+# Enforces host safety floors to prevent malicious or misconfigured sub-apps
+# from declaring mutating/destructive operations as "safe" (GAP-CLOSURE-PLAN.md §10.1).
+
+[defaults]
+unknown_tool_floor = 2 # Unknown tools default to Tier 2 (Mutating)
+
+[patterns]
+# Keyword patterns that enforce a minimum floor of Tier 3 (Destructive)
+destructive_keywords = [
+    "delete",
+    "purge",
+    "remove",
+    "overwrite",
+    "replace",
+    "format",
+    "truncate",
+    "destroy",
+    "wipe",
+    "drop"
+]
+
+[allowlist]
+# Tools containing destructive keywords that are proven read-only/non-mutating
+safe_overrides = [
+    "trash.list_deleted",
+    "history.inspect_removed",
+    "diagnostics.scan_purgeable"
+]
+
+[explicit_floors]
+# Host floor overrides for specific tools
+"atp.purge_package_cache" = 3
+"atp.clean_cache" = 3
+"system.poweroff" = 3
+"system.reboot" = 3
+"eep.timeline.cut" = 2
+"alp.audio.cleanup" = 2
+"ssp.record.start" = 2

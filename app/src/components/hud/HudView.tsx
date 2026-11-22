@@ -108,7 +108,12 @@ export const HudView: React.FC = () => {
   }, [setHudExpandedState]);
 
   // Handle Approve Action directly from HUD
-  const handleApprove = async () => {
+  const handleApprove = async (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
+    // GAP-CLOSURE-PLAN.md §10.4: Frontend approval handler requires event.isTrusted
+    if (e && !e.isTrusted) {
+      console.warn("Security warning: synthetic untrusted event rejected for HUD action approval");
+      return;
+    }
     if (!approvalGate || isSubmitting) return;
     try {
       setIsSubmitting(true);
@@ -130,7 +135,11 @@ export const HudView: React.FC = () => {
   };
 
   // Handle Reject Action directly from HUD
-  const handleReject = async () => {
+  const handleReject = async (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
+    if (e && !e.isTrusted) {
+      console.warn("Security warning: synthetic untrusted event rejected for HUD action rejection");
+      return;
+    }
     if (!approvalGate || isSubmitting) return;
     try {
       setIsSubmitting(true);

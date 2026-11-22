@@ -1,10 +1,13 @@
 pub mod arbiter;
+pub mod secrets;
 
-pub use arbiter::{ExecutionPermission, RiskTier, SafetyArbiter};
+pub use arbiter::{ApprovalRequest, ExecutionPermission, RiskTier, SafetyArbiter};
+pub use secrets::{SecretScrubber, SecretVault};
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn test_tier_1_safe_tool_autonomous_execution() {
@@ -121,5 +124,101 @@ mod tests {
             Some(&token),
         );
         assert!(res.is_ok());
+    }
+
+    // =========================================================================
+    // GAP-CLOSURE-PLAN.md §10.3: Argument-Bound Approvals Test Suite
+    // Tests: replay, expired, args mutated after approval, wrong step.
+    // =========================================================================
+
+    #[test]
+    fn test_argument_bound_approval_valid() {
+        let arbiter = SafetyArbiter::default();
+        let args = json!({ "path": "/home/user/project/take1.raw", "force": true });
+        let now = 1_700_000_000u64;
+
+        let req = arbiter.create_approval_request(100, 1, &args, RiskTier::Mutating, now);
+        assert_eq!(req.plan_id, 100);
+        assert_eq!(req.step_id, 1);
+        assert_eq!(req.expires_at, now + 300);
+
+        // Verification at dispatch time (within TTL, identical args)
+        let dispatch_result =
+            arbiter.verify_and_consume_approval(100, 1, &args, &req.nonce, now + 10);
+        assert!(dispatch_result.is_ok(), "Valid approval must succeed");
+    }
+
+    #[test]
+    fn test_argument_bound_approval_replay_rejected() {
+        let arbiter = SafetyArbiter::default();
+        let args = json!({ "action": "trim", "duration": 500 });
+        let now = 1_700_000_000u64;
+
+        let req = arbiter.create_approval_request(100, 2, &args, RiskTier::Mutating, now);
+
+        // First execution succeeds
+        let first = arbiter.verify_and_consume_approval(100, 2, &args, &req.nonce, now + 5);
+        assert!(first.is_ok());
+
+        // Replay attempt byte-identical must be rejected
+        let replay = arbiter.verify_and_consume_approval(100, 2, &args, &req.nonce, now + 10);
+        assert!(replay.is_err(), "Replay attack must fail");
+        let err = replay.unwrap_err();
+        assert_eq!(err.code, "safety.invalid_signature_token");
+        assert!(err.user_message.contains("replay prevented"));
+    }
+
+    #[test]
+    fn test_argument_bound_approval_expired_rejected() {
+        let arbiter = SafetyArbiter::default();
+        let args = json!({ "purge": "all" });
+        let now = 1_700_000_000u64;
+
+        let req = arbiter.create_approval_request(100, 3, &args, RiskTier::Destructive, now);
+
+        // TTL is 300s (5 minutes). Dispatch at now + 301s must be rejected.
+        let expired = arbiter.verify_and_consume_approval(100, 3, &args, &req.nonce, now + 301);
+        assert!(expired.is_err(), "Expired approval must fail");
+        let err = expired.unwrap_err();
+        assert_eq!(err.code, "safety.invalid_signature_token");
+        assert!(err.user_message.contains("expired"));
+    }
+
+    #[test]
+    fn test_argument_bound_approval_args_mutated_rejected() {
+        let arbiter = SafetyArbiter::default();
+        let approved_args = json!({ "path": "/tmp/harmless.txt" });
+        let now = 1_700_000_000u64;
+
+        let req =
+            arbiter.create_approval_request(100, 4, &approved_args, RiskTier::Destructive, now);
+
+        // Malicious or buggy mutation of arguments after user signed approval
+        let mutated_args = json!({ "path": "/etc/shadow" });
+        let dispatch =
+            arbiter.verify_and_consume_approval(100, 4, &mutated_args, &req.nonce, now + 10);
+
+        assert!(dispatch.is_err(), "Mutated arguments must fail");
+        let err = dispatch.unwrap_err();
+        assert_eq!(err.code, "safety.invalid_signature_token");
+        assert!(err.user_message.contains("mutated after approval"));
+    }
+
+    #[test]
+    fn test_argument_bound_approval_wrong_step_rejected() {
+        let arbiter = SafetyArbiter::default();
+        let args = json!({ "volume": 0.8 });
+        let now = 1_700_000_000u64;
+
+        // Approved for plan 100, step 5
+        let req = arbiter.create_approval_request(100, 5, &args, RiskTier::Mutating, now);
+
+        // Attacker attempts to apply token to step 6
+        let dispatch = arbiter.verify_and_consume_approval(100, 6, &args, &req.nonce, now + 10);
+
+        assert!(dispatch.is_err(), "Token applied to wrong step must fail");
+        let err = dispatch.unwrap_err();
+        assert_eq!(err.code, "safety.invalid_signature_token");
+        assert!(err.user_message.contains("does not match"));
     }
 }

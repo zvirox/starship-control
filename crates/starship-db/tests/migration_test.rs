@@ -142,3 +142,153 @@ fn test_file_backed_database_permissions() {
     let models = db.list_models().expect("list models from file db");
     assert!(!models.is_empty(), "Expected models from file db");
 }
+
+#[test]
+fn test_secrets_at_rest_encrypted_in_sqlite() {
+    // GAP-CLOSURE-PLAN.md §10.7: Canary key never appears in DB plaintext
+    let db = Database::open_in_memory().expect("in-memory db open");
+    let canary_key = "sk-proj-canary-never-plain-in-sqlite-998877665544332211";
+
+    db.set_provider_config(
+        "openai",
+        "OpenAI Cloud",
+        "https://api.openai.com/v1",
+        Some(canary_key),
+        true,
+    )
+    .expect("set provider config");
+
+    // Directly query raw SQLite row to ensure ciphertext is stored, NOT plaintext
+    let stored_raw: String = db
+        .with_conn(|conn| {
+            conn.query_row(
+                "SELECT api_key_encrypted FROM provider_configs WHERE provider_id = 'openai'",
+                [],
+                |row| row.get(0),
+            )
+        })
+        .expect("query raw api_key_encrypted");
+
+    assert!(stored_raw.starts_with("enc_v1:"));
+    assert!(
+        !stored_raw.contains(canary_key),
+        "CRITICAL: Canary API key found in raw SQLite plaintext!"
+    );
+
+    // Decrypting recovers original canary key
+    let decrypted = Database::decrypt_api_key(&stored_raw).expect("decrypt api key");
+    assert_eq!(decrypted, canary_key);
+}
+
+#[test]
+fn test_tamper_evident_audit_log_hash_chain_and_triggers() {
+    // GAP-CLOSURE-PLAN.md §10.8: Tamper-evident hash chained audit log and SQLite triggers
+    use starship_db::audit::NewAuditEntry;
+
+    let db = Database::open_in_memory().expect("in-memory db open");
+
+    let mission_id = db
+        .create_mission(
+            "123e4567-e89b-12d3-a456-426614174099",
+            "Audit Chain Mission",
+            "Mission for verifying audit logs",
+            "qwen2.5-coder-7b-q4",
+            "local_gguf",
+        )
+        .expect("create mission");
+
+    // 1. Insert multiple audit records
+    let id1 = db
+        .record_audit_log(&NewAuditEntry {
+            mission_id: Some(mission_id),
+            app_id: "eep".into(),
+            action_type: "timeline.cut".into(),
+            risk_tier: 2,
+            payload_json: r#"{"startMs":0,"endMs":5000}"#.into(),
+            status: "approved".into(),
+            signature_token: Some("sig-token-1".into()),
+        })
+        .expect("record entry 1");
+
+    let id2 = db
+        .record_audit_log(&NewAuditEntry {
+            mission_id: Some(mission_id),
+            app_id: "alp".into(),
+            action_type: "audio.denoise".into(),
+            risk_tier: 1,
+            payload_json: r#"{"threshold":-18}"#.into(),
+            status: "executed".into(),
+            signature_token: None,
+        })
+        .expect("record entry 2");
+
+    let id3 = db
+        .record_audit_log(&NewAuditEntry {
+            mission_id: None,
+            app_id: "ssp".into(),
+            action_type: "screen.record".into(),
+            risk_tier: 2,
+            payload_json: r#"{"display":0}"#.into(),
+            status: "completed".into(),
+            signature_token: Some("sig-token-3".into()),
+        })
+        .expect("record entry 3");
+
+    assert_eq!(id1, 1);
+    assert_eq!(id2, 2);
+    assert_eq!(id3, 3);
+
+    // 2. Verify untampered chain
+    let count = db.verify_audit_chain().expect("verify audit chain");
+    assert_eq!(count, 3, "Expected 3 verified audit records in chain");
+
+    // 3. Test that SQLite triggers prevent direct UPDATE
+    let update_res = db.with_conn(|conn| {
+        conn.execute("UPDATE audit_log SET status = 'tampered' WHERE id = 2", [])
+    });
+    assert!(
+        update_res.is_err(),
+        "Expected SQLite trigger to prohibit UPDATE on audit_log"
+    );
+    let update_err = update_res.unwrap_err().to_string();
+    assert!(
+        update_err.contains("UPDATE prohibited"),
+        "Expected 'UPDATE prohibited' trigger error message, got: {update_err}"
+    );
+
+    // 4. Test that SQLite triggers prevent direct DELETE
+    let delete_res = db.with_conn(|conn| conn.execute("DELETE FROM audit_log WHERE id = 3", []));
+    assert!(
+        delete_res.is_err(),
+        "Expected SQLite trigger to prohibit DELETE on audit_log"
+    );
+    let delete_err = delete_res.unwrap_err().to_string();
+    assert!(
+        delete_err.contains("DELETE prohibited"),
+        "Expected 'DELETE prohibited' trigger error message, got: {delete_err}"
+    );
+
+    // 5. Simulate unauthorized bypass/tampering (e.g. dropping trigger and mutating row 2)
+    db.with_conn(|conn| {
+        conn.execute("DROP TRIGGER prevent_audit_log_update", [])?;
+        conn.execute(
+            "UPDATE audit_log SET payload_json = '{\"tampered\":true}' WHERE id = 2",
+            [],
+        )?;
+        Ok(())
+    })
+    .expect("simulate tampering");
+
+    // 6. Verify audit chain detects tampering and names the exact row (row 2)
+    let tamper_res = db.verify_audit_chain();
+    assert!(
+        tamper_res.is_err(),
+        "Expected verify_audit_chain to detect tampering"
+    );
+    let err = tamper_res.unwrap_err();
+    assert_eq!(err.code, "db.audit_tampered");
+    assert!(
+        err.user_message.contains("record ID 2"),
+        "Expected error to pinpoint record ID 2, got: {err:?}"
+    );
+}

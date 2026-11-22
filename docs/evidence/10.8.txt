@@ -1,0 +1,39 @@
+Task 10.8 Evidence: Tamper-Evident Hash-Chained Audit Log and Immutable Triggers
+Timestamp: 2026-11-22T17:12:00Z
+Commit/Phase: Phase 10 (10.8)
+
+=== Verification 1: Rust Unit and Integration Tests ===
+Command: cargo test -p starship-db --test migration_test -- test_tamper_evident_audit_log_hash_chain_and_triggers --nocapture
+Output:
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.26s
+     Running tests/migration_test.rs (target/debug/build/starship-db/2a23a36eaf0f1339/out/migration_test-2a23a36eaf0f1339)
+
+running 1 test
+test test_tamper_evident_audit_log_hash_chain_and_triggers ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+=== Verification 2: CLI Audit Verification ===
+Command: ./target/debug/starship-control audit verify
+Output:
+Verifying tamper-evident audit log chain...
+[OK] Audit log chain verified cleanly. 0 record(s) intact.
+
+=== Verification 3: CLI Help Documentation ===
+Command: ./target/debug/starship-control --help
+Output:
+Starship Control — Native Linux AI Agent Orchestrator
+
+Usage: starship-control [OPTIONS]
+       starship-control audit verify
+
+Options:
+  --self-test     Open database, run migrations, verify health, and exit 0
+  --verify-audit  Verify hash integrity of the tamper-evident audit log
+  --version, -V   Print application version and exit
+  --help, -h      Print this help message and exit
+
+=== Verified Behaviors ===
+1. Cryptographic Hash Continuity: Each record computes entry_hash = sha256(prev_hash || canonical_row) chaining from the genesis hash or previous row.
+2. In-Database Triggers: SQLite triggers prevent_audit_log_update and prevent_audit_log_delete abort with RAISE(ABORT) on any UPDATE or DELETE statement.
+3. Tamper Detection: If a row is modified, db.verify_audit_chain detects the discrepancy, fails with code 'db.audit_tampered', and pinpoints the exact record ID.

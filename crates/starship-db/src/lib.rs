@@ -17,7 +17,8 @@ pub use audit::{AuditRecord, NewAuditEntry};
 pub use plans::{PlanRecord, PlanStepRecord};
 
 const INITIAL_MIGRATION: &str = include_str!("migrations/0001_initial.sql");
-const CURRENT_SCHEMA_VERSION: u32 = 1;
+const MIGRATION_0002: &str = include_str!("migrations/0002_tamper_evident_audit_log.sql");
+const CURRENT_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone)]
 pub struct Database {
@@ -181,6 +182,28 @@ impl Database {
                         "db.migration_failed",
                         false,
                         format!("Failed to set user_version to 1: {e}"),
+                        None,
+                    )
+                })?;
+        }
+
+        if current_version < 2 {
+            info!(target: "starship_db", "Applying migration 0002_tamper_evident_audit_log.sql");
+            conn.execute_batch(MIGRATION_0002).map_err(|e| {
+                CoreError::db(
+                    "db.migration_failed",
+                    false,
+                    format!("Failed to execute migration 0002: {e}"),
+                    None,
+                )
+            })?;
+
+            conn.execute_batch("PRAGMA user_version = 2;")
+                .map_err(|e| {
+                    CoreError::db(
+                        "db.migration_failed",
+                        false,
+                        format!("Failed to set user_version to 2: {e}"),
                         None,
                     )
                 })?;

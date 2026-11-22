@@ -41,6 +41,9 @@ impl HybridExecutionRouter {
         if let Ok(Some(app)) = self.db.get_app(app_id) {
             let bin_path = PathBuf::from(&app.binary_path);
             if bin_path.exists() {
+                // Enforce manifest pinning & path safety (GAP-CLOSURE-PLAN.md §10.5)
+                crate::security::SecurityVerifier::validate_binary_path(&bin_path)?;
+
                 info!(
                     "Routing tool call '{tool_name}' via Headless Stdio pipe: {}",
                     bin_path.display()
