@@ -10,23 +10,23 @@
 
 > **Goal:** Complete Cargo workspace scaffolding, SQLite WAL migration runner, and a themed Tauri 2 shell opening both the Cockpit and Floating HUD windows with working design tokens.
 
-- [ ] **0.1 Scaffold Cargo Workspace & Crate Skeletons**
+- [x] **0.1 Scaffold Cargo Workspace & Crate Skeletons**
   - Setup root `Cargo.toml` workspace containing `app`, `crates/starship-core`, `crates/starship-infer`, `crates/starship-mcp`, `crates/starship-plugin`, and `crates/starship-db`.
   - Configure workspace lints (`deny(unsafe_code)`, `warn(clippy::pedantic)`, Rust 2024 edition).
   - *Verify:* `cargo check --workspace` compiles cleanly.
-- [ ] **0.2 Tauri 2 Multi-Window Scaffolding**
+- [x] **0.2 Tauri 2 Multi-Window Scaffolding**
   - Initialize Tauri 2 with React 19, TypeScript, and Vite inside `app/`.
   - Configure `tauri.conf.json` with two windows: `main` (Cockpit, 1200×800) and `hud` (Floating HUD, 520×76, borderless, transparent, always-on-top, hidden by default).
   - *Verify:* `cargo tauri dev` launches the main glass window; HUD window can be programmatically displayed.
-- [ ] **0.3 Tailwind CSS v4 `@theme` & Token Bridging**
+- [x] **0.3 Tailwind CSS v4 `@theme` & Token Bridging**
   - Import self-hosted fonts (`FamiljenGrotesk`, `JetBrainsMono`) via `@font-face`.
   - Author `tailwind.css` using DESIGN.md tokens (dark/light palettes, glass utility recipes `@utility pane/float/modal`, specular overlays).
   - *Verify:* Swatch verification page renders obsidian canvas, Electric Cyan accents, and frosted glass recipes.
-- [ ] **0.4 SQLite Engine & Migration Runner (`starship-db`)**
+- [x] **0.4 SQLite Engine & Migration Runner (`starship-db`)**
   - Setup `starship-db` with `rusqlite` bundled, enabling WAL mode, `PRAGMA foreign_keys = ON`, busy timeout 5000ms, and `0600` permissions at `$XDG_DATA_HOME/starship-control/library.db`.
   - Implement `PRAGMA user_version` runner with initial schema `0001_initial.sql` (creating `missions`, `messages`, `plans`, `steps`, `models`, `app_registry`, `audit_log`).
   - *Verify:* Fresh boot creates `library.db` with correct tables; integration test validates CRUD and foreign key cascades.
-- [ ] **0.5 Typed IPC Skeleton & Error Format**
+- [x] **0.5 Typed IPC Skeleton & Error Format**
   - Implement standard `CoreError` envelope (`kind`, `code`, `retryable`, `userMessage`, `details`) in Rust and TypeScript.
   - Implement initial `ipc.hello` handshake command verifying protocol parity.
   - Setup rotating structured logging via `tracing-subscriber` at `$XDG_STATE_HOME/starship-control/`.

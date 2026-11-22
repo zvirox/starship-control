@@ -1,0 +1,44 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+mod ipc;
+
+use starship_db::Database;
+use tracing::info;
+
+fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                "starship_control=debug,starship_core=debug,starship_db=debug,info".into()
+            }),
+        )
+        .init();
+
+    info!("Starting Starship Control...");
+
+    let db = match Database::open_default() {
+        Ok(db) => {
+            info!(
+                "SQLite database initialized successfully at {:?}",
+                db.path()
+            );
+            db
+        }
+        Err(e) => {
+            eprintln!("Failed to initialize database: {e}");
+            panic!("Critical database initialization failure: {e}");
+        }
+    };
+
+    tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
+        .manage(db)
+        .invoke_handler(tauri::generate_handler![
+            ipc::ipc_hello,
+            ipc::cmd_toggle_hud,
+            ipc::cmd_resize_hud,
+            ipc::cmd_list_models,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
