@@ -1,0 +1,25 @@
+Task 11.4 Evidence: Lease & Lock Supervisor with Heartbeats & Deadlock-Free Ordering
+Timestamp: 2026-11-22T17:26:15Z
+Commit/Phase: Phase 11 (11.4)
+
+=== Verification: Rust Unit Tests ===
+Command: cargo test -p starship-core lease -- --nocapture
+Output:
+   Compiling starship-core v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.84s
+     Running unittests src/lib.rs (target/debug/build/starship-core/1ae31b5ed3502068/out/starship_core-1ae31b5ed3502068)
+
+running 2 tests
+test executor::lease::tests::test_serialization_of_competing_missions_on_same_resource ... ok
+test executor::lease::tests::test_crashed_holder_lease_expiration_and_reclamation ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 30 filtered out; finished in 0.00s
+
+=== Verified Capabilities ===
+1. Resource Serialization & Deadlock-Free Ordering:
+   - Resource keys (`app:project:track`) are sorted and deduplicated prior to acquisition to guarantee acyclic lock ordering.
+   - Competing missions targeting the same resource (e.g. `eep:screencast_project:track_1`) are strictly serialized; attempting to lock an occupied resource returns `mcp.resource_locked`.
+2. Heartbeat Renewals:
+   - Steps reporting progress can extend active lease TTL via `renew_lease(lease_id, now_ms)`.
+3. Crash & Stale Holder Reclaiming:
+   - If a step crashes or fails to heartbeat before `expires_at_ms`, renewal attempts fail with `mcp.lease_expired` and competing missions can safely reclaim the resource.

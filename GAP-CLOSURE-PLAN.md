@@ -120,7 +120,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* rebuilding mission state from events equals live state in a test.
 - [x] **11.3 DAG scheduler** — ready-set computation, bounded parallelism (default 2, governor-adjustable), cycle detection at load, per-step `timeoutMs` (default from `tool_stats` p95 × 3, min 10 s).
   * *Verify:* diamond DAG runs in expected order; a step exceeding timeout is cancelled via `tools/cancel`.
-- [ ] **11.4 Lease & lock supervisor** (the missing module from README) — `executor/lease.rs`: per-resource locks keyed `app:project:track`; leases carry `leaseTimeoutMs`; heartbeat renewal while a step reports progress; on expiry → `tools/cancel` + `mcp.lease_expired`; deadlock-free ordering (sorted lock acquisition).
+- [x] **11.4 Lease & lock supervisor** (the missing module from README) — `executor/lease.rs`: per-resource locks keyed `app:project:track`; leases carry `leaseTimeoutMs`; heartbeat renewal while a step reports progress; on expiry → `tools/cancel` + `mcp.lease_expired`; deadlock-free ordering (sorted lock acquisition).
   * *Verify:* two missions targeting the same EEP project serialize; a crashed holder's lease expires and is released.
 - [ ] **11.5 Idempotency & retry policy** — each tool carries `idempotent: bool` (host default `false`). Retry only if idempotent **or** the call has an idempotency key the app honors. Exponential backoff with jitter: 1 s, 3 s, 9 s; max 3. **Tier 3 steps: 0 automatic retries.**
   * *Verify:* test matrix of (idempotent × tier × error class) → expected retry count.
