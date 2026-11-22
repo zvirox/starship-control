@@ -135,7 +135,7 @@ fn main() {
             shortcut::register_wayland_global_shortcut(app.handle().clone());
 
             let app_handle = app.handle().clone();
-            tokio::spawn(async move {
+            tauri::async_runtime::spawn(async move {
                 let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
                 loop {
                     interval.tick().await;
