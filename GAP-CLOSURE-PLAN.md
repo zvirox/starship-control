@@ -230,7 +230,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* visual check with a mock mission containing a retry, a fallback and a skipped step; screenshots saved to evidence.
 - [x] **13.6 HUD progress & tray state** — HUD shows a compact progress ring + current step; tray icon states: Idle / Thinking / Executing / Waiting Approval / **Stalled** / **Overloaded** / Failed.
   * *Verify:* each state reachable through the mock harness; screenshots.
-- [ ] **13.7 Notifications** — desktop notification (portal `Notification` via `ashpd`) on: approval needed, mission finished, mission failed, stalled > 2 min. Rate-limit and dedupe.
+- [x] **13.7 Notifications** — desktop notification (portal `Notification` via `ashpd`) on: approval needed, mission finished, mission failed, stalled > 2 min. Rate-limit and dedupe.
   * *Verify:* with Cockpit hidden, completing a mock mission raises exactly one notification.
 - [ ] **13.8 History & replay** — Cockpit "Missions" list with status, duration, outcome, fallback count; open any past mission's timeline from `mission_events` (read-only replay).
   * *Verify:* replay of a finished mission reproduces final state exactly.

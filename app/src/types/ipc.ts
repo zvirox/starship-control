@@ -519,5 +519,23 @@ export interface TraySetStatePayload {
   state: TrayState;
 }
 
+/**
+ * Desktop notification triggers & payloads (GAP-CLOSURE-PLAN.md §13.7).
+ */
+export type NotificationTrigger =
+  | "approval_needed"
+  | "mission_finished"
+  | "mission_failed"
+  | "mission_stalled";
+
+export interface DispatchNotificationPayload {
+  trigger: NotificationTrigger;
+  missionId: number;
+  stepId?: number | null;
+  stallSeconds?: number | null;
+  title: string;
+  body: string;
+}
+
 
 

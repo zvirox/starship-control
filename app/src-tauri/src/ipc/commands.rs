@@ -450,6 +450,50 @@ pub async fn cmd_tray_set_state(
     Ok(payload.state.label().to_string())
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DispatchNotificationPayload {
+    pub trigger: crate::notification::NotificationTrigger,
+    pub mission_id: i64,
+    pub step_id: Option<i64>,
+    pub stall_seconds: Option<u64>,
+    pub title: String,
+    pub body: String,
+}
+
+#[tauri::command]
+pub async fn cmd_dispatch_notification(
+    notifier: tauri::State<'_, std::sync::Arc<crate::notification::NotificationManager>>,
+    payload: DispatchNotificationPayload,
+) -> Result<bool, CoreError> {
+    let priority = match payload.trigger {
+        crate::notification::NotificationTrigger::MissionFailed => {
+            ashpd::desktop::notification::Priority::Urgent
+        }
+        crate::notification::NotificationTrigger::ApprovalNeeded
+        | crate::notification::NotificationTrigger::MissionStalled => {
+            ashpd::desktop::notification::Priority::High
+        }
+        crate::notification::NotificationTrigger::MissionFinished => {
+            ashpd::desktop::notification::Priority::Normal
+        }
+    };
+
+    let sent = notifier
+        .dispatch(
+            payload.trigger,
+            payload.mission_id,
+            payload.step_id,
+            payload.stall_seconds,
+            &payload.title,
+            &payload.body,
+            priority,
+        )
+        .await;
+
+    Ok(sent)
+}
+
 #[tauri::command]
 pub async fn cmd_mission_list_messages(
     state: tauri::State<'_, Database>,

@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod ipc;
+pub mod notification;
 mod shortcut;
 
 use starship_db::Database;
@@ -121,6 +122,8 @@ fn main() {
         }
     };
 
+    let notifier = std::sync::Arc::new(notification::NotificationManager::new());
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
@@ -128,6 +131,7 @@ fn main() {
             Ok(())
         })
         .manage(db)
+        .manage(notifier)
         .invoke_handler(tauri::generate_handler![
             ipc::ipc_hello,
             ipc::cmd_toggle_hud,
@@ -138,6 +142,7 @@ fn main() {
             ipc::cmd_mission_delete,
             ipc::cmd_mission_get_timeline,
             ipc::cmd_tray_set_state,
+            ipc::cmd_dispatch_notification,
             ipc::cmd_mission_send_prompt,
             ipc::cmd_mission_list_messages,
             ipc::cmd_provider_config_set,

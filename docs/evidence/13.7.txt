@@ -1,0 +1,34 @@
+=== EVIDENCE: TASK 13.7 NOTIFICATIONS ===
+Date: 2026-11-22
+Task: 13.7 Notifications
+Requirement: desktop notification (portal `Notification` via `ashpd`) on: approval needed, mission finished, mission failed, stalled > 2 min. Rate-limit and dedupe. Verify: with Cockpit hidden, completing a mock mission raises exactly one notification.
+
+1. Implementation:
+- Enabled `ashpd` feature `notification` in `app/src-tauri/Cargo.toml`.
+- Built `NotificationManager` in `app/src-tauri/src/notification.rs`:
+  - Triggers supported:
+    - `ApprovalNeeded`: once per (mission_id, step_id), cooldown 60s.
+    - `MissionFinished`: exactly once per mission_id.
+    - `MissionFailed`: exactly once per mission_id.
+    - `MissionStalled`: allowed only if stall_seconds >= 120 (2 min), cooldown 300s (5 min).
+  - Global rate limiter: at most 1 notification every 1000ms.
+  - Portal delivery via `ashpd::desktop::notification::NotificationProxy` with a non-blocking timeout of 150ms to ensure headless/CI/daemon-less systems never hang.
+  - Registered command `cmd_dispatch_notification` in `commands.rs` and `main.rs`.
+  - Type definitions added in `app/src/types/ipc.ts` (`NotificationTrigger`, `DispatchNotificationPayload`).
+
+2. Automated Verification & Tests:
+- `test_completing_mock_mission_raises_exactly_one_notification`:
+  - Simulates completing a mock mission 3 consecutive times.
+  - Asserts that first completion dispatches successfully (`sent_1 == true`).
+  - Asserts duplicate and triplicate attempts are deduplicated (`sent_2 == false`, `sent_3 == false`).
+  - Verifies `notifier.sent_count() == 1`.
+- `test_stalled_notification_requires_120_seconds_and_dedupes`:
+  - Stall with duration 60s (< 120s) is rejected.
+  - Stall with duration 125s (>= 120s) raises 1 notification.
+  - Immediate subsequent stall event is deduped by 5-minute cooldown.
+- `test_approval_needed_and_failure_deduplication`:
+  - Approval for step 1 notifies once, immediate retry is deduplicated.
+  - Mission failure notifies once, duplicate failure is deduplicated.
+- Workspace test run: 106 tests passed, 0 failures.
+- Clippy `-D warnings`: 0 warnings.
+- Frontend typecheck & build: 0 errors.
