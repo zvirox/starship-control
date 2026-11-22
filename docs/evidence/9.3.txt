@@ -1,0 +1,7 @@
+=== STARSHIP CONTROL --VERSION ===
+starship-control 0.1.0
+
+=== STARSHIP CONTROL --SELF-TEST ===
+Running Starship Control self-test...
+[OK] Database opened & migrations verified at Some("/home/zvirox/.local/share/starship-control/library.db")
+[OK] Self-test passed cleanly.

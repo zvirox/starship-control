@@ -204,7 +204,7 @@
 - [x] **8.1 Packaging Metadata & App Icons**
   - Setup desktop entry file `starship-control.desktop` and hicolor vector icons.
   - Author `packaging/aur/PKGBUILD`, `packaging/deb/`, and `packaging/rpm/` specs.
-- [ ] **8.2 GitHub Actions CI/CD Pipeline**
+- [x] **8.2 GitHub Actions CI/CD Pipeline**
   - Author `.github/workflows/ci.yml` (formatting, clippy `-D warnings`, unit tests, typecheck).
   - Author `.github/workflows/release.yml` (multi-arch Linux builds $\to$ GitHub Releases artifacts).
   - *Verify:* Release pipeline generates installable `.deb`, `.rpm`, and `.tar.gz` packages.

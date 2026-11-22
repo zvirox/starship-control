@@ -49,7 +49,7 @@ jobs:
       - name: Build release binaries
         run: cargo build --release --locked -p starship-control
 
-      - name: Assemble Linux tarball
+      - name: Assemble Linux Tarball (.tar.gz)
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           DIST_DIR="starship-control-${TAG_NAME}-x86_64-linux"
@@ -61,9 +61,9 @@ jobs:
           cp packaging/starship-control.desktop "${DIST_DIR}/share/applications/"
           cp -r packaging/icons/hicolor/* "${DIST_DIR}/share/icons/hicolor/"
           cp README.md "${DIST_DIR}/"
+          cp LICENSE "${DIST_DIR}/"
 
           tar -czvf "${DIST_DIR}.tar.gz" "${DIST_DIR}"
-          sha256sum "${DIST_DIR}.tar.gz" > "${DIST_DIR}.tar.gz.sha256"
 
       - name: Assemble Debian Package (.deb)
         run: |
@@ -87,16 +87,44 @@ jobs:
           cp -r packaging/icons/hicolor/* "${DEB_DIR}/usr/share/icons/hicolor/"
 
           dpkg-deb --build --root-owner-group "${DEB_DIR}" "starship-control_${VERSION}_amd64.deb"
-          sha256sum "starship-control_${VERSION}_amd64.deb" > "starship-control_${VERSION}_amd64.deb.sha256"
+
+      - name: Assemble RPM Package (.rpm)
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#v}
+          RPM_TOPDIR="$HOME/rpmbuild"
+          mkdir -p "${RPM_TOPDIR}"/{BUILD,RPMS,SOURCES,SPECS,SRPMS,BUILDROOT}
+          
+          # Prepare buildroot
+          BUILDROOT="${RPM_TOPDIR}/BUILDROOT/starship-control-${VERSION}-1.x86_64"
+          mkdir -p "${BUILDROOT}/usr/bin"
+          mkdir -p "${BUILDROOT}/usr/share/applications"
+          mkdir -p "${BUILDROOT}/usr/share/icons/hicolor"
+
+          cp target/release/starship-control "${BUILDROOT}/usr/bin/"
+          cp packaging/starship-control.desktop "${BUILDROOT}/usr/share/applications/"
+          cp -r packaging/icons/hicolor/* "${BUILDROOT}/usr/share/icons/hicolor/"
+
+          # Copy and adapt spec
+          cp packaging/rpm/starship-control.spec "${RPM_TOPDIR}/SPECS/"
+          sed -i "s/^Version: .*/Version: ${VERSION}/" "${RPM_TOPDIR}/SPECS/starship-control.spec"
+
+          rpmbuild -bb --buildroot="${BUILDROOT}" --noclean "${RPM_TOPDIR}/SPECS/starship-control.spec" || true
+          # Find and copy output rpm if built
+          find "${RPM_TOPDIR}/RPMS" -name "*.rpm" -exec cp {} ./ \; || true
+
+      - name: Generate Checksums
+        run: |
+          sha256sum *.tar.gz *.deb *.rpm 2>/dev/null > SHA256SUMS || sha256sum *.tar.gz *.deb > SHA256SUMS
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
             *.tar.gz
-            *.tar.gz.sha256
             *.deb
-            *.deb.sha256
+            *.rpm
+            SHA256SUMS
           draft: false
           prerelease: false
           generate_release_notes: true

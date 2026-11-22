@@ -6,7 +6,54 @@ mod shortcut;
 use starship_db::Database;
 use tracing::info;
 
+fn handle_cli_flags() -> Option<i32> {
+    let args: Vec<String> = std::env::args().collect();
+    for arg in &args[1..] {
+        match arg.as_str() {
+            "--version" | "-V" => {
+                println!("starship-control {}", env!("CARGO_PKG_VERSION"));
+                return Some(0);
+            }
+            "--self-test" => {
+                println!("Running Starship Control self-test...");
+                match Database::open_default() {
+                    Ok(db) => {
+                        println!(
+                            "[OK] Database opened & migrations verified at {:?}",
+                            db.path()
+                        );
+                        println!("[OK] Self-test passed cleanly.");
+                        return Some(0);
+                    }
+                    Err(e) => {
+                        eprintln!("[FAIL] Database self-test failed: {e}");
+                        return Some(1);
+                    }
+                }
+            }
+            "--help" | "-h" => {
+                println!("Starship Control — Native Linux AI Agent Orchestrator");
+                println!();
+                println!("Usage: starship-control [OPTIONS]");
+                println!();
+                println!("Options:");
+                println!(
+                    "  --self-test    Open database, run migrations, verify health, and exit 0"
+                );
+                println!("  --version, -V  Print application version and exit");
+                println!("  --help, -h     Print this help message and exit");
+                return Some(0);
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 fn main() {
+    if let Some(exit_code) = handle_cli_flags() {
+        std::process::exit(exit_code);
+    }
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {

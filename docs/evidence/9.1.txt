@@ -1,0 +1,17 @@
+=== TASK 9.1 EVIDENCE ===
+Workflow files: 
+- packaging/workflows/ci.yml (CI matrix: lint, clippy, tests, build, smoke-test, coverage baseline, security-audit)
+- packaging/workflows/release.yml (Multi-arch release packaging: tar.gz, deb, rpm, SHA256SUMS)
+
+Triggers: push and pull_request on branch main; tag push v*
+Jobs:
+- format-and-lint: cargo fmt --check, cargo clippy --workspace --all-targets -- -D warnings, npm lint, npx tsc --noEmit
+- test-workspace: cargo test --workspace --verbose
+- frontend-build: npm run build
+- smoke-test: starship-control --version, starship-control --self-test
+- coverage: cargo llvm-cov artifact upload
+- security-audit: rustsec/audit-check
+Caching: Swatinem/rust-cache@v2, actions/setup-node@v4 cache: npm
+
+Note on GitHub Permissions:
+Workflows are maintained in `packaging/workflows/`. GitHub OAuth app tokens without the explicit `workflow` scope cannot directly mutate `.github/workflows/`. The workflows can be synced into `.github/workflows/` by maintainers with elevated PAT or repository admin permissions.

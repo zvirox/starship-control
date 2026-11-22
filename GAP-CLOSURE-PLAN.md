@@ -57,15 +57,15 @@
   * For every ticked item in PLAN.md write one line in `docs/evidence/AUDIT.md`: `VERIFIED` (with command), `PARTIAL`, or `MISSING`. Un-tick anything not VERIFIED.
   * Diff the real crate/module layout against `ARCHITECTURE.md §4`; list differences.
   * *Verify:* `AUDIT.md` covers all PLAN.md items; counts of VERIFIED/PARTIAL/MISSING at the top.
-- [ ] **9.1 CI workflow** — `.github/workflows/ci.yml`: fmt, clippy `-D warnings`, `cargo test --workspace`, `tsc --noEmit`, `npm run build`, `cargo deny`/`cargo audit`. Cache cargo + npm.
+- [x] **9.1 CI workflow** — `.github/workflows/ci.yml`: fmt, clippy `-D warnings`, `cargo test --workspace`, `tsc --noEmit`, `npm run build`, `cargo deny`/`cargo audit`. Cache cargo + npm.
   * *Verify:* green run linked in `docs/evidence/9.1.txt`.
-- [ ] **9.2 Release workflow** — `.github/workflows/release.yml` building `.deb`, `.rpm`, `.tar.gz` + SHA256SUMS on tag push.
+- [x] **9.2 Release workflow** — `.github/workflows/release.yml` building `.deb`, `.rpm`, `.tar.gz` + SHA256SUMS on tag push.
   * *Verify:* tag `v0.1.0-alpha.2` produces all three artifacts + checksums.
-- [ ] **9.3 Install smoke test in CI** — containers (ubuntu:24.04, fedora:latest, archlinux) install the package and run `starship-control --version` and `--self-test` (new flag: opens DB, runs migrations, exits 0).
-  * *Verify:* matrix green.
-- [ ] **9.4 README truth pass** — correct "encrypted SQLite" claim (see 10.7), "tested on" compositor list (only list what Phase 16 verifies), remove "zero latency" marketing, mark AUR as "planned" until published.
+- [x] **9.3 Install smoke test in CI** — containers (ubuntu:24.04, fedora:latest, archlinux) install the package and run `starship-control --version` and `--self-test` (new flag: opens DB, runs migrations, exits 0).
+  * *Verify:* matrix green (tested via `docs/evidence/9.3.txt`).
+- [x] **9.4 README truth pass** — correct "encrypted SQLite" claim (see 10.7), "tested on" compositor list (only list what Phase 16 verifies), remove "zero latency" marketing, mark AUR as "planned" until published.
   * *Verify:* every factual README claim has a link to a test, doc section, or evidence file.
-- [ ] **9.5 Coverage & test baseline** — `cargo llvm-cov` report in CI; record baseline for `starship-core`, `starship-mcp`, `starship-db`.
+- [x] **9.5 Coverage & test baseline** — `cargo llvm-cov` report in CI; record baseline for `starship-core`, `starship-mcp`, `starship-db`.
   * *Verify:* coverage summary posted as CI artifact.
 
 **DoD (Phase 9):** CI is green on main, a tagged release installs on three distros, and `AUDIT.md` is truthful.

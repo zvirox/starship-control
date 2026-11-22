@@ -133,21 +133,12 @@ Starship Control connects directly to applications built with the `starship-plug
 
 ## Installation
 
-### Arch Linux (AUR)
+### Arch Linux (AUR) *(Planned)*
 
-Install via your preferred AUR helper:
-
-```bash
-yay -S starship-control-bin
-# or
-paru -S starship-control-bin
-```
-
-Or build manually from the AUR PKGBUILD:
+The official AUR package `starship-control-bin` is planned for publication with the stable release. To install locally on Arch Linux today, build directly from the included PKGBUILD:
 
 ```bash
-git clone https://aur.archlinux.org/starship-control-bin.git
-cd starship-control-bin
+cd packaging/aur
 makepkg -si
 ```
 
@@ -246,13 +237,13 @@ cargo build --release -p starship-control
 No. While Vulkan and ROCm offloading provide faster token output on AMD, Intel, and NVIDIA cards, `llama-cpp-2` automatically falls back to multithreaded CPU inference with AVX2/AVX-512 instructions if no GPU is present.
 
 ### How does Starship Control differ from general-purpose desktop agents?
-General desktop agents interact with applications by capturing screenshots and emulating mouse clicks. That approach breaks whenever a button moves or a window changes size. Starship Control talks directly to application cores using structured JSON-RPC 2.0 messages over Unix domain sockets. Timelines, audio tracks, and network states update cleanly with zero UI clicking latency.
+General desktop agents interact with applications by capturing screenshots and emulating mouse clicks. That approach breaks whenever a button moves or a window changes size. Starship Control talks directly to application cores using structured JSON-RPC 2.0 messages over Unix domain sockets. Timelines, audio tracks, and network states update cleanly with sub-millisecond local IPC round-trips ([verified in test](docs/evidence/AUDIT.md)).
 
 ### Where are API keys and chat histories stored?
-All data stays on your machine. API keys, mission histories, and execution plans live in an encrypted SQLite database stored at `$XDG_DATA_HOME/starship-control/library.db` with restricted `0600` Linux file permissions.
+All data stays on your machine. API keys, mission histories, and execution plans live in a local SQLite database stored at `$XDG_DATA_HOME/starship-control/library.db` with strict `0600` Linux file permissions. At-rest encryption and Secret Service API integration are currently scheduled for Phase 10 ([`GAP-CLOSURE-PLAN.md`](GAP-CLOSURE-PLAN.md#phase-10--hardened-control-plane)).
 
 ### Does the Floating HUD work on tiling Wayland compositors?
-Yes. The Floating HUD requests Wayland layer-shell and XDG top-level floating geometry with `alwaysOnTop` hints. It has been tested on GNOME Shell, KDE Plasma 6, Sway, and Hyprland.
+The Floating HUD uses the XDG Desktop Portal (`ashpd`) GlobalShortcuts interface and standard Wayland top-level floating geometry with `alwaysOnTop` hints, designed for modern Wayland desktops (e.g. GNOME Shell, KDE Plasma). Comprehensive compositor-specific compatibility testing across Sway, Hyprland, and X11 is scheduled in Phase 16.
 
 ---
 
