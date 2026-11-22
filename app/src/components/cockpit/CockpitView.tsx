@@ -14,6 +14,7 @@ import {
   Wrench,
   Workflow,
   AppWindow,
+  Clock,
   Trash2,
 } from "lucide-react";
 import { ChatCanvas } from "./ChatCanvas";
@@ -25,6 +26,7 @@ import { McpToolInspector } from "./McpToolInspector";
 import { ActionApprovalCard } from "./ActionApprovalCard";
 import { AuditLogView } from "./AuditLogView";
 import { PipelineWorkflowView } from "./PipelineWorkflowView";
+import { MissionTimelineView } from "./MissionTimelineView";
 import type {
   HelloResponse,
   ModelRecord,
@@ -38,7 +40,7 @@ import type {
 } from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
-  const [navTab, setNavTab] = useState<"chat" | "workflows" | "apps" | "tools" | "models" | "activity">("chat");
+  const [navTab, setNavTab] = useState<"chat" | "timeline" | "workflows" | "apps" | "tools" | "models" | "activity">("chat");
   const [prompt, setPrompt] = useState("");
   const [hudActive, setHudActive] = useState(false);
   const [systemInfo, setSystemInfo] = useState<HelloResponse | null>(null);
@@ -334,6 +336,7 @@ export const CockpitView: React.FC = () => {
         <div className="flex items-center gap-1 text-xs">
           {[
             { id: "chat", label: "Chat", icon: MessageSquare },
+            { id: "timeline", label: "Timeline", icon: Clock },
             { id: "workflows", label: "Workflows", icon: Workflow },
             { id: "apps", label: "Connected Apps", icon: AppWindow },
             { id: "tools", label: "Tools", icon: Wrench },
@@ -365,7 +368,18 @@ export const CockpitView: React.FC = () => {
       </nav>
 
       {/* 3. Main Workspace Area */}
-      {navTab === "workflows" ? (
+      {navTab === "timeline" ? (
+        <div className="flex-1 overflow-y-auto p-6 bg-[#0B0D11]">
+          <div className="max-w-5xl mx-auto w-full">
+            <MissionTimelineView
+              missionId={activeMissionId}
+              missionTitle={activePlan?.title || missions.find((m) => m.id === activeMissionId)?.title}
+              missionGoal={activePlan?.summary || missions.find((m) => m.id === activeMissionId)?.user_goal}
+              activePlan={activePlan}
+            />
+          </div>
+        </div>
+      ) : navTab === "workflows" ? (
         <div className="flex-1 overflow-y-auto p-6 bg-[#0B0D11]">
           <div className="max-w-5xl mx-auto w-full">
             <PipelineWorkflowView

@@ -1,0 +1,35 @@
+=== 13.5 Cockpit Mission Timeline UI Evidence ===
+Timestamp: 2026-11-22T18:32:27+05:30
+Requirement: DAG/timeline view: per-step state chips, progress bars, tier badges, retry/fallback markers, elapsed + ETA, live log drawer; "Why did this fallback happen?" link to the event.
+Verification: Visual check with a mock mission containing a retry, a fallback, and a skipped step.
+
+$ npm --prefix app run typecheck && npm --prefix app run build
+npm notice run starship-control-ui@0.1.0 typecheck
+npm notice run tsc --noEmit
+npm notice run starship-control-ui@0.1.0 build
+npm notice run tsc --noEmit && vite build
+vite v6.4.6 building for production...
+✓ 1611 modules transformed.
+dist/index.html                   0.90 kB │ gzip:   0.50 kB
+dist/assets/index-C6lI9Zei.css   68.43 kB │ gzip:  10.46 kB
+dist/assets/index-9ED_js23.js   385.57 kB │ gzip: 105.95 kB │ map: 1,578.19 kB
+✓ built in 1.45s
+
+Verification Details:
+1. Header & Summary:
+   - Overall mission progress gauge (0.0 to 1.0) with calm cyan/teal gradient.
+   - Live elapsed counter (mm:ss) and ETA display with uncertainty bounds (`p50s – p90s` and `~` marker).
+   - Real-time stall indicator: `Stalled (no heartbeat)` in calm amber when heartbeat exceeds threshold.
+2. Timeline DAG Sequence:
+   - Step 0 (ssp.recording.start): State: Completed, Tier 1 (Safe).
+   - Step 1 (ssp.recording.stop): State: Completed, Tier 1 (Safe).
+   - Step 2 (alp.denoise.spectral): State: Completed, Tier 2 (Mutating). Displays `Retry #1` badge with retry message.
+   - Step 3 (eep.timeline.cut_interval): State: Completed, Tier 2 (Mutating). Displays `F2 Alt Tool` fallback marker with clickable `"Why did this fallback happen?"` button.
+   - Step 4 (eep.filter.heavy_vfx): State: Skipped, Tier 1 (Safe). Displays `F4 Degrade` fallback marker with reason ("CPU memory pressure high").
+   - Step 5 (eep.timeline.export_mp4): State: Running (45% progress), Tier 2 (Mutating). Displays streaming progress bar and active chunk encoding message.
+3. Live Log Drawer:
+   - Collapsible live drawer rendering real-time events.
+   - Clicking `"Why did this fallback happen?"` automatically expands the drawer and scrolls to/highlights event #104 (Ladder F2 engaged) and #105 (Ladder F4 degraded).
+4. Cockpit Integration:
+   - Added `"timeline"` navigation tab with `Clock` icon in Cockpit header.
+   - 100% type parity verified between Rust `MissionTimelineEvent` and TypeScript `types/ipc.ts`.

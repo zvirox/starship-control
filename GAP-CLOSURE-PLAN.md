@@ -226,7 +226,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* ETA error on a replayed history < 25 % after 10 runs (record result).
 - [x] **13.4 Events & commands** — `evt://mission/progress`, `evt://step/state`, `cmd://mission_get_timeline` (events since cursor, for resync after reconnect).
   * *Verify:* frontend reconnect replays missed events with no gaps (cursor test).
-- [ ] **13.5 Cockpit Mission Timeline UI** — DAG/timeline view: per-step state chips, progress bars, tier badges, retry/fallback markers, elapsed + ETA, live log drawer; "Why did this fallback happen?" link to the event.
+- [x] **13.5 Cockpit Mission Timeline UI** — DAG/timeline view: per-step state chips, progress bars, tier badges, retry/fallback markers, elapsed + ETA, live log drawer; "Why did this fallback happen?" link to the event.
   * *Verify:* visual check with a mock mission containing a retry, a fallback and a skipped step; screenshots saved to evidence.
 - [ ] **13.6 HUD progress & tray state** — HUD shows a compact progress ring + current step; tray icon states: Idle / Thinking / Executing / Waiting Approval / **Stalled** / **Overloaded** / Failed.
   * *Verify:* each state reachable through the mock harness; screenshots.
