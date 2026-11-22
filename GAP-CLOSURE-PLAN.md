@@ -290,7 +290,7 @@ Step:    pending → ready → awaiting_approval → running
   * **Critical:** **safe-pause** at next step boundary (never kill mid-write); request checkpoint if supported; refuse new local inference; notify. Auto-resume after state is ≤ Elevated for 60 s **only if** the mission was governor-paused (never if user-paused or awaiting approval).
   * Governor **never** kills user applications; it only cancels its own calls and processes.
   * *Verify:* `stress-ng` scenario (CPU + memory) drives state to Constrained/Critical; a running mock mission pauses, then resumes after load stops.
-- [ ] **14.8 Health commands & events** — `cmd://health_get_snapshot`, `cmd://health_get_history{range,resolution}`, `cmd://health_get_thresholds/set_thresholds`, `evt://health/sample` (1 Hz max), `evt://health/state_changed`, `evt://health/alert`.
+- [x] **14.8 Health commands & events** — `cmd://health_get_snapshot`, `cmd://health_get_history{range,resolution}`, `cmd://health_get_thresholds/set_thresholds`, `evt://health/sample` (1 Hz max), `evt://health/state_changed`, `evt://health/alert`.
   * *Verify:* IPC schema tests (Rust ↔ TS types identical).
 - [ ] **14.9 Cockpit "Systems" tab (Dashboard)** — layout:
   * Header: overall state chip (Normal/Elevated/Constrained/Critical) + governor action in effect.

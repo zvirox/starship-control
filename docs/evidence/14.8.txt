@@ -1,0 +1,39 @@
+=== Task 14.8 Verification Evidence ===
+Timestamp: Sun Nov 22 19:43:35 UTC 2026
+Task: 14.8 Health commands & events — cmd://health_get_snapshot, cmd://health_get_history{range,resolution}, cmd://health_get_thresholds/set_thresholds, evt://health/sample (1 Hz max), evt://health/state_changed, evt://health/alert.
+
+1. Test Execution Output:
+$ cargo test -p starship-control --bin starship-control test_health_ipc
+   Compiling starship-control v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/app/src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.45s
+     Running unittests src/main.rs (target/debug/build/starship-control/aff596f1c5f3d171/out/starship_control-aff596f1c5f3d171)
+
+running 1 test
+test ipc::commands::tests::test_health_ipc_payloads_serialization_and_schema_parity ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.00s
+
+2. Implementation Details:
+- Rust Health Service (`app/src-tauri/src/health_service.rs`):
+  * Coordinates `HealthMonitor`, `OverloadDetector`, `Governor`, `HealthRingBuffer`, and SQLite persistence (`Database`).
+  * 1 Hz background sampler loop in `main.rs` ticking metrics, emitting real-time events, and periodically aggregating 1-minute rollups into SQLite.
+- Tauri IPC Commands (`app/src-tauri/src/ipc/commands.rs`):
+  * `cmd://health_get_snapshot` (`cmd_health_get_snapshot`) -> Returns `HealthSnapshotResponse`.
+  * `cmd://health_get_history` (`cmd_health_get_history`) -> Returns `HealthHistoryResponse` (15m from ring buffer, longer ranges from SQLite).
+  * `cmd://health_get_thresholds` (`cmd_health_get_thresholds`) -> Returns `OverloadThresholds`.
+  * `cmd://health_set_thresholds` (`cmd_health_set_thresholds`) -> Updates and returns `OverloadThresholds`.
+- Real-Time Push Events:
+  * `evt://health/sample` -> Pushes latest `HealthSample` at 1 Hz max.
+  * `evt://health/state_changed` -> Emitted when overall health state transitions (`HealthStateChangedEvent`).
+  * `evt://health/alert` -> Emitted when a sensor trips overload threshold or de-escalates (`HealthAlert`).
+- Exact TypeScript Mirror (`app/src/types/ipc.ts`):
+  * `HealthState`, `CpuMetrics`, `PsiMetrics`, `MemoryMetrics`, `DiskMetrics`, `NetworkMetrics`, `ThermalMetrics`, `GpuMetrics`, `PowerMetrics`, `ProcessMetrics`, `FootprintMetrics`.
+  * `HealthSample`, `GovernorDirective`, `HealthSnapshotResponse`, `HealthHistoryPayload`, `HealthRollupRecord`, `HealthHistoryResponse`, `OverloadThresholds`, `HealthAlert`, `HealthStateChangedEvent`.
+- API Contract Synchronized:
+  * Updated `API.md` §2.6 (System Health & Overload Governor commands) and §3.6–3.8 (Health push events).
+
+3. Workspace Suite Verification:
+- `cargo fmt --check`: CLEAN
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`: CLEAN
+- `cargo test --workspace --all-features`: 124 / 124 tests passed
+- `npm run typecheck && npm run lint`: CLEAN

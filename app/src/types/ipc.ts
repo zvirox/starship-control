@@ -567,5 +567,194 @@ export interface ReplayMissionResponse {
   events: MissionTimelineEvent[];
 }
 
+/**
+ * System Health & Overload Monitor Types (GAP-CLOSURE-PLAN.md §14.8).
+ */
+export type HealthState = "normal" | "elevated" | "constrained" | "critical";
+
+export interface CpuMetrics {
+  globalUtilPct: number;
+  coreUtilPct: number[];
+  loadAvg1m: number;
+  loadAvg5m: number;
+  loadAvg15m: number;
+  avgFreqMhz: number;
+}
+
+export interface PsiMetrics {
+  cpuSomeAvg10: number;
+  cpuSomeAvg60: number;
+  memSomeAvg10: number;
+  memSomeAvg60: number;
+  memFullAvg10: number;
+  memFullAvg60: number;
+  ioSomeAvg10: number;
+  ioSomeAvg60: number;
+  ioFullAvg10: number;
+  ioFullAvg60: number;
+}
+
+export interface MemoryMetrics {
+  totalBytes: number;
+  usedBytes: number;
+  availableBytes: number;
+  availablePct: number;
+  swapTotalBytes: number;
+  swapUsedBytes: number;
+  swapInBytesPerSec: number;
+}
+
+export interface DiskMetrics {
+  totalBytes: number;
+  freeBytes: number;
+  freePct: number;
+  readBytesPerSec: number;
+  writeBytesPerSec: number;
+}
+
+export interface NetworkMetrics {
+  rxBytesPerSec: number;
+  txBytesPerSec: number;
+  connectionCount: number;
+}
+
+export interface ThermalMetrics {
+  maxTempCelsius: number;
+  critTempCelsius?: number | null;
+  deltaToMax: number;
+  fanRpm?: number | null;
+}
+
+export interface GpuMetrics {
+  deviceName: string;
+  utilPct: number;
+  vramUsedBytes: number;
+  vramTotalBytes: number;
+  vramUsedPct: number;
+  tempCelsius?: number | null;
+}
+
+export interface PowerMetrics {
+  onAcPower: boolean;
+  batteryPct?: number | null;
+}
+
+export interface ProcessMetrics {
+  pid: number;
+  name: string;
+  cpuPct: number;
+  memBytes: number;
+  isStarshipOwned: boolean;
+}
+
+export interface FootprintMetrics {
+  totalCpuPct: number;
+  totalRssBytes: number;
+  openSockets: number;
+  processCount: number;
+}
+
+export interface HealthSample {
+  timestampMs: number;
+  cpu?: CpuMetrics | null;
+  psi?: PsiMetrics | null;
+  memory?: MemoryMetrics | null;
+  disk?: DiskMetrics | null;
+  network?: NetworkMetrics | null;
+  thermal?: ThermalMetrics | null;
+  gpu?: GpuMetrics | null;
+  power?: PowerMetrics | null;
+  topProcesses: ProcessMetrics[];
+  ownFootprint?: FootprintMetrics | null;
+}
+
+export interface GovernorDirective {
+  currentHealthState: HealthState;
+  maxParallelism: number;
+  allowHeavySteps: boolean;
+  allowLocalInference: boolean;
+  allowBackgroundPrefetch: boolean;
+  shouldPause: boolean;
+  shouldResume: boolean;
+  shouldUnloadIdleModel: boolean;
+  actionMessage: string;
+}
+
+export interface HealthSnapshotResponse {
+  sample: HealthSample;
+  state: HealthState;
+  governorDirective: GovernorDirective;
+}
+
+export interface HealthHistoryPayload {
+  range: "15m" | "1h" | "24h" | "7d" | "30d" | "90d";
+  resolution?: "1s" | "1m" | "1h";
+}
+
+export interface HealthRollupRecord {
+  ts: number;
+  cpuAvg: number;
+  cpuMax: number;
+  memAvailPctMin: number;
+  swapInMax: number;
+  diskFreePctMin: number;
+  tempMax: number;
+  gpuUtilMax?: number | null;
+  vramPctMax?: number | null;
+  psiCpuMax?: number | null;
+  psiMemMax?: number | null;
+  psiIoMax?: number | null;
+  state: string;
+}
+
+export interface HealthHistoryResponse {
+  range: string;
+  samples: HealthSample[];
+  rollups: HealthRollupRecord[];
+}
+
+export interface OverloadThresholds {
+  cpuElevatedPct: number;
+  cpuConstrainedPct: number;
+  cpuCriticalPct: number;
+  cpuExitPct: number;
+  psiElevated: number;
+  psiConstrained: number;
+  psiCritical: number;
+  psiExit: number;
+  memAvailElevatedPct: number;
+  memAvailConstrainedPct: number;
+  memAvailCriticalPct: number;
+  memAvailExitPct: number;
+  swapInCriticalBytesPerSec: number;
+  diskFreeElevatedPct: number;
+  diskFreeConstrainedPct: number;
+  diskFreeCriticalPct: number;
+  diskFreeExitPct: number;
+  thermalDeltaElevated: number;
+  thermalDeltaConstrained: number;
+  thermalDeltaCritical: number;
+  thermalDeltaExit: number;
+  vramElevatedPct: number;
+  vramConstrainedPct: number;
+  vramCriticalPct: number;
+  vramExitPct: number;
+  enterConsecutiveSamples: number;
+  exitConsecutiveSamples: number;
+}
+
+export interface HealthAlert {
+  signal: string;
+  level: HealthState;
+  value: number;
+  action: string;
+}
+
+export interface HealthStateChangedEvent {
+  previousState: HealthState;
+  currentState: HealthState;
+  directive: GovernorDirective;
+}
+
 
 

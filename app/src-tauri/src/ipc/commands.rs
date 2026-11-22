@@ -1693,6 +1693,37 @@ pub async fn cmd_plan_dry_run(payload: PlanDryRunPayload) -> Result<DryRunReport
     DryRunExecutor::execute(&sheet, &validator, &mut dry_run_caller)
 }
 
+#[tauri::command]
+pub async fn cmd_health_get_snapshot(
+    health: tauri::State<'_, std::sync::Arc<crate::health_service::HealthService>>,
+) -> Result<crate::health_service::HealthSnapshotResponse, CoreError> {
+    health.get_snapshot()
+}
+
+#[tauri::command]
+pub async fn cmd_health_get_history(
+    payload: crate::health_service::HealthHistoryPayload,
+    health: tauri::State<'_, std::sync::Arc<crate::health_service::HealthService>>,
+    db: tauri::State<'_, Database>,
+) -> Result<crate::health_service::HealthHistoryResponse, CoreError> {
+    health.get_history(payload, &db)
+}
+
+#[tauri::command]
+pub async fn cmd_health_get_thresholds(
+    health: tauri::State<'_, std::sync::Arc<crate::health_service::HealthService>>,
+) -> Result<starship_health::OverloadThresholds, CoreError> {
+    health.get_thresholds()
+}
+
+#[tauri::command]
+pub async fn cmd_health_set_thresholds(
+    thresholds: starship_health::OverloadThresholds,
+    health: tauri::State<'_, std::sync::Arc<crate::health_service::HealthService>>,
+) -> Result<starship_health::OverloadThresholds, CoreError> {
+    health.set_thresholds(thresholds)
+}
+
 fn chrono_now_iso() -> String {
     // Fast ISO 8601 UTC timestamp generator
     let now = std::time::SystemTime::now();
@@ -1733,5 +1764,119 @@ mod tests {
                 serde_json::from_str(&json_str).expect("deserialize tray state");
             assert_eq!(parsed, variant);
         }
+    }
+
+    #[test]
+    fn test_health_ipc_payloads_serialization_and_schema_parity() {
+        // Verification requirement for 14.8:
+        // "Verify: IPC schema tests (Rust <-> TS types identical)."
+        use crate::health_service::{
+            HealthHistoryPayload, HealthHistoryResponse, HealthSnapshotResponse,
+            HealthStateChangedEvent,
+        };
+        use starship_core::executor::GovernorDirective;
+        use starship_health::{
+            CpuMetrics, HealthAlert, HealthSample, HealthState, MemoryMetrics, OverloadThresholds,
+        };
+
+        // 1. HealthSnapshotResponse serialization
+        let snapshot = HealthSnapshotResponse {
+            sample: HealthSample {
+                timestamp_ms: 1_700_000_000_000,
+                cpu: Some(CpuMetrics {
+                    global_util_pct: 45.0,
+                    core_util_pct: vec![40.0, 50.0],
+                    load_avg_1m: 1.0,
+                    load_avg_5m: 1.0,
+                    load_avg_15m: 1.0,
+                    avg_freq_mhz: 3200,
+                }),
+                memory: Some(MemoryMetrics {
+                    total_bytes: 16_000_000_000,
+                    used_bytes: 8_000_000_000,
+                    available_bytes: 8_000_000_000,
+                    available_pct: 50.0,
+                    swap_total_bytes: 0,
+                    swap_used_bytes: 0,
+                    swap_in_bytes_per_sec: 0.0,
+                }),
+                top_processes: Vec::new(),
+                ..Default::default()
+            },
+            state: HealthState::Normal,
+            governor_directive: GovernorDirective {
+                current_health_state: HealthState::Normal,
+                max_parallelism: 2,
+                allow_heavy_steps: true,
+                allow_local_inference: true,
+                allow_background_prefetch: true,
+                should_pause: false,
+                should_resume: false,
+                should_unload_idle_model: false,
+                action_message: "Normal system health".to_string(),
+            },
+        };
+
+        let json_snapshot = serde_json::to_string(&snapshot).expect("serialize snapshot");
+        assert!(json_snapshot.contains("\"timestampMs\":1700000000000"));
+        assert!(json_snapshot.contains("\"globalUtilPct\":45.0"));
+        assert!(json_snapshot.contains("\"governorDirective\""));
+        assert!(json_snapshot.contains("\"currentHealthState\":\"normal\""));
+
+        // 2. HealthHistoryPayload and Response
+        let history_req = HealthHistoryPayload {
+            range: "15m".to_string(),
+            resolution: Some("1s".to_string()),
+        };
+        let json_history_req =
+            serde_json::to_string(&history_req).expect("serialize history payload");
+        assert!(json_history_req.contains("\"range\":\"15m\""));
+        assert!(json_history_req.contains("\"resolution\":\"1s\""));
+
+        let history_res = HealthHistoryResponse {
+            range: "15m".to_string(),
+            samples: vec![snapshot.sample.clone()],
+            rollups: Vec::new(),
+        };
+        let json_history_res = serde_json::to_string(&history_res).expect("serialize history res");
+        assert!(json_history_res.contains("\"samples\""));
+        assert!(json_history_res.contains("\"rollups\""));
+
+        // 3. OverloadThresholds serialization
+        let thresholds = OverloadThresholds::default();
+        let json_thresholds = serde_json::to_string(&thresholds).expect("serialize thresholds");
+        assert!(json_thresholds.contains("\"cpuElevatedPct\":80.0"));
+        assert!(json_thresholds.contains("\"cpuCriticalPct\":97.0"));
+        assert!(json_thresholds.contains("\"vramElevatedPct\":85.0"));
+
+        // 4. Events serialization
+        let state_evt = HealthStateChangedEvent {
+            previous_state: HealthState::Normal,
+            current_state: HealthState::Elevated,
+            directive: GovernorDirective {
+                current_health_state: HealthState::Elevated,
+                max_parallelism: 2,
+                allow_heavy_steps: true,
+                allow_local_inference: true,
+                allow_background_prefetch: false,
+                should_pause: false,
+                should_resume: false,
+                should_unload_idle_model: false,
+                action_message: "Elevated load".to_string(),
+            },
+        };
+        let json_state_evt = serde_json::to_string(&state_evt).expect("serialize state evt");
+        assert!(json_state_evt.contains("\"previousState\":\"normal\""));
+        assert!(json_state_evt.contains("\"currentState\":\"elevated\""));
+
+        let alert_evt = HealthAlert {
+            signal: "cpu".to_string(),
+            level: HealthState::Elevated,
+            value: 85.0,
+            action: "warn".to_string(),
+        };
+        let json_alert_evt = serde_json::to_string(&alert_evt).expect("serialize alert evt");
+        assert!(json_alert_evt.contains("\"signal\":\"cpu\""));
+        assert!(json_alert_evt.contains("\"level\":\"elevated\""));
     }
 }

@@ -1,5 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+pub mod health_service;
 mod ipc;
 pub mod notification;
 mod shortcut;
@@ -123,15 +124,30 @@ fn main() {
     };
 
     let notifier = std::sync::Arc::new(notification::NotificationManager::new());
+    let health_service = std::sync::Arc::new(health_service::HealthService::new());
+
+    let hs_bg = health_service.clone();
+    let db_bg = db.clone();
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
+        .setup(move |app| {
             shortcut::register_wayland_global_shortcut(app.handle().clone());
+
+            let app_handle = app.handle().clone();
+            tokio::spawn(async move {
+                let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
+                loop {
+                    interval.tick().await;
+                    hs_bg.tick(&app_handle, &db_bg);
+                }
+            });
+
             Ok(())
         })
         .manage(db)
         .manage(notifier)
+        .manage(health_service)
         .invoke_handler(tauri::generate_handler![
             ipc::ipc_hello,
             ipc::cmd_toggle_hud,
@@ -145,6 +161,10 @@ fn main() {
             ipc::cmd_mission_get_timeline,
             ipc::cmd_tray_set_state,
             ipc::cmd_dispatch_notification,
+            ipc::cmd_health_get_snapshot,
+            ipc::cmd_health_get_history,
+            ipc::cmd_health_get_thresholds,
+            ipc::cmd_health_set_thresholds,
             ipc::cmd_mission_send_prompt,
             ipc::cmd_mission_list_messages,
             ipc::cmd_provider_config_set,

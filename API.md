@@ -287,6 +287,65 @@ Configures always-on-top behavior.
 
 ---
 
+### 2.6 System Health & Overload Governor
+
+#### `cmd://health_get_snapshot`
+Obtains instantaneous system metrics, health state, and governor directive.
+* **Payload:** `{}`
+* **Success Output:**
+  ```json
+  {
+    "sample": {
+      "timestampMs": 1700000000000,
+      "cpu": {"globalUtilPct": 42.5, "coreUtilPct": [40.0, 45.0], "loadAvg1m": 1.2, "loadAvg5m": 1.0, "loadAvg15m": 0.8, "avgFreqMhz": 3200},
+      "memory": {"totalBytes": 16000000000, "usedBytes": 8000000000, "availableBytes": 8000000000, "availablePct": 50.0, "swapTotalBytes": 0, "swapUsedBytes": 0, "swapInBytesPerSec": 0.0},
+      "topProcesses": []
+    },
+    "state": "normal",
+    "governorDirective": {
+      "currentHealthState": "normal",
+      "maxParallelism": 2,
+      "allowHeavySteps": true,
+      "allowLocalInference": true,
+      "allowBackgroundPrefetch": true,
+      "shouldPause": false,
+      "shouldResume": false,
+      "shouldUnloadIdleModel": false,
+      "actionMessage": "Normal system health: standard execution"
+    }
+  }
+  ```
+
+#### `cmd://health_get_history`
+Fetches historical system health samples (15m in-memory ring buffer) or rollups (SQLite).
+* **Payload:**
+  ```json
+  {
+    "range": "15m",
+    "resolution": "1s"
+  }
+  ```
+* **Success Output:**
+  ```json
+  {
+    "range": "15m",
+    "samples": [],
+    "rollups": []
+  }
+  ```
+
+#### `cmd://health_get_thresholds`
+Fetches current overload detector thresholds.
+* **Payload:** `{}`
+* **Success Output:** `OverloadThresholds` JSON object.
+
+#### `cmd://health_set_thresholds`
+Updates overload detector thresholds.
+* **Payload:** `OverloadThresholds` JSON object.
+* **Success Output:** Updated `OverloadThresholds` JSON object.
+
+---
+
 ## 3. Real-Time Push Events (`evt://...`)
 
 Events emitted from the Rust backend to the Tauri webview via `app.emit("event_name", payload)`.
@@ -344,6 +403,44 @@ Emitted when an application launches, exits, or registers a socket.
   "appId": "ssp",
   "mode": "live_gui",
   "socketPath": "/run/user/1000/starship/bridges/ssp.sock"
+}
+```
+
+### 3.6 `evt://health/sample`
+Pushed at 1 Hz max with live system metrics snapshot for Cockpit gauges and HUD.
+```json
+{
+  "timestampMs": 1700000000000,
+  "cpu": {"globalUtilPct": 42.5},
+  "memory": {"availablePct": 48.0},
+  "topProcesses": []
+}
+```
+
+### 3.7 `evt://health/state_changed`
+Emitted when the system health state transitions between Normal, Elevated, Constrained, and Critical.
+```json
+{
+  "previousState": "normal",
+  "currentState": "elevated",
+  "directive": {
+    "currentHealthState": "elevated",
+    "maxParallelism": 2,
+    "allowHeavySteps": true,
+    "allowBackgroundPrefetch": false,
+    "shouldPause": false
+  }
+}
+```
+
+### 3.8 `evt://health/alert`
+Emitted whenever an individual sensor trips an overload threshold or recovery rule.
+```json
+{
+  "signal": "cpu",
+  "level": "elevated",
+  "value": 82.5,
+  "action": "warn"
 }
 ```
 
