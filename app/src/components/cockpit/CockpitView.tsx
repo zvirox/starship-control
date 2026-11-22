@@ -1,27 +1,21 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import {
-  Layers,
+  MessageSquare,
   Cpu,
   FileText,
-  Activity,
   Plus,
   Send,
-  Check,
   ExternalLink,
   Search,
-  Database as DbIcon,
-  ShieldCheck,
   Settings,
   ChevronDown,
   Wrench,
   Workflow,
-  Eye,
-  EyeOff,
+  AppWindow,
+  Trash2,
 } from "lucide-react";
-import { GlassPanel } from "../common/GlassPanel";
-import { DesignVerification } from "../common/DesignVerification";
 import { ChatCanvas } from "./ChatCanvas";
 import { ModelSettingsModal } from "./ModelSettingsModal";
 import { ModelControlView } from "./ModelControlView";
@@ -29,12 +23,12 @@ import { AppTopologyView } from "./AppTopologyView";
 import { AppTopologyDrawer } from "./AppTopologyDrawer";
 import { McpToolInspector } from "./McpToolInspector";
 import { ActionApprovalCard } from "./ActionApprovalCard";
-import { PlanWorkflowViewer } from "./PlanWorkflowViewer";
 import { AuditLogView } from "./AuditLogView";
 import { PipelineWorkflowView } from "./PipelineWorkflowView";
 import type {
   HelloResponse,
   ModelRecord,
+  MissionRecord,
   CreateMissionResponse,
   SendPromptResponse,
   PlanActiveResponse,
@@ -44,20 +38,24 @@ import type {
 } from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
-  const [navTab, setNavTab] = useState<"missions" | "pipelines" | "topology" | "tools" | "models" | "audit" | "design">("missions");
+  const [navTab, setNavTab] = useState<"chat" | "workflows" | "apps" | "tools" | "models" | "activity">("chat");
   const [prompt, setPrompt] = useState("");
   const [hudActive, setHudActive] = useState(false);
   const [systemInfo, setSystemInfo] = useState<HelloResponse | null>(null);
   const [models, setModels] = useState<ModelRecord[]>([]);
   const [activeModel, setActiveModel] = useState<ModelRecord | null>(null);
-  const [activeMissionId, setActiveMissionId] = useState<number>(1);
+  const [missions, setMissions] = useState<MissionRecord[]>([]);
+  const [activeMissionId, setActiveMissionId] = useState<number>(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [modelDropdownOpen, setModelDropdownOpen] = useState<boolean>(false);
   const [activePlan, setActivePlan] = useState<PlanActiveResponse | null>(null);
   const [approvalGate, setApprovalGate] = useState<ApprovalNeededEvent | null>(null);
-  const [showPlanViewer, setShowPlanViewer] = useState<boolean>(true);
 
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load available models and system info on mount
   useEffect(() => {
     async function initHandshake() {
       try {
@@ -75,7 +73,26 @@ export const CockpitView: React.FC = () => {
     initHandshake();
   }, []);
 
+  // Load missions from SQLite
+  const loadMissions = useCallback(async () => {
+    try {
+      const list = await invoke<MissionRecord[]>("cmd_mission_list");
+      setMissions(list);
+      if (list.length > 0 && activeMissionId === 0) {
+        setActiveMissionId(list[0].id);
+      }
+    } catch (err) {
+      console.warn("cmd_mission_list call failed:", err);
+    }
+  }, [activeMissionId]);
+
+  useEffect(() => {
+    loadMissions();
+  }, [loadMissions]);
+
+  // Load active plan for current mission
   const fetchActivePlan = useCallback(async (missionId: number) => {
+    if (!missionId) return;
     try {
       const plan = await invoke<PlanActiveResponse | null>("cmd_plan_get_active", {
         payload: { missionId },
@@ -87,7 +104,9 @@ export const CockpitView: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchActivePlan(activeMissionId);
+    if (activeMissionId) {
+      fetchActivePlan(activeMissionId);
+    }
   }, [activeMissionId, fetchActivePlan]);
 
   // Subscribe to real-time approval events
@@ -151,45 +170,65 @@ export const CockpitView: React.FC = () => {
     }
   };
 
-  const handleSendPrompt = async () => {
-    if (!prompt.trim() || isStreaming) return;
+  const handleCreateMission = async () => {
+    try {
+      const createRes = await invoke<CreateMissionResponse>("cmd_mission_create", {
+        payload: {
+          title: "New Conversation",
+          userGoal: "General assistance",
+          modelId: activeModel?.id ?? "qwen2.5-coder-7b-q4",
+        },
+      });
+      setActiveMissionId(createRes.missionId);
+      await loadMissions();
+      inputRef.current?.focus();
+    } catch (err) {
+      console.error("Failed to create mission:", err);
+    }
+  };
 
-    const userPrompt = prompt.trim();
+  const handleDeleteMission = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await invoke("cmd_mission_delete", {
+        payload: { missionId: id },
+      });
+      const remaining = missions.filter((m) => m.id !== id);
+      setMissions(remaining);
+      if (activeMissionId === id) {
+        setActiveMissionId(remaining.length > 0 ? remaining[0].id : 0);
+      }
+    } catch (err) {
+      console.error("Failed to delete mission:", err);
+    }
+  };
+
+  const handleSendPrompt = async (textToSend?: string) => {
+    const rawPrompt = (textToSend ?? prompt).trim();
+    if (!rawPrompt || isStreaming) return;
+
     setPrompt("");
     setIsStreaming(true);
 
     try {
-      // If no mission yet, initialize one
       let mId = activeMissionId;
-      if (!mId) {
+      if (!mId || mId === 0) {
         const createRes = await invoke<CreateMissionResponse>("cmd_mission_create", {
           payload: {
-            title: "Autonomous Session",
-            userGoal: userPrompt,
+            title: rawPrompt.length > 30 ? rawPrompt.slice(0, 30) + "..." : rawPrompt,
+            userGoal: rawPrompt,
             modelId: activeModel?.id ?? "qwen2.5-coder-7b-q4",
           },
         });
         mId = createRes.missionId;
         setActiveMissionId(mId);
-      }
-
-      // Automatically decompose into tasksheet/1 plan if goal is executable
-      try {
-        const plan = await invoke<PlanActiveResponse>("cmd_plan_generate", {
-          payload: {
-            missionId: mId,
-            userGoal: userPrompt,
-          },
-        });
-        setActivePlan(plan);
-      } catch (planErr) {
-        console.warn("cmd_plan_generate notice:", planErr);
+        await loadMissions();
       }
 
       await invoke<SendPromptResponse>("cmd_mission_send_prompt", {
         payload: {
           missionId: mId,
-          prompt: userPrompt,
+          prompt: rawPrompt,
         },
       });
     } catch (err) {
@@ -198,186 +237,108 @@ export const CockpitView: React.FC = () => {
     }
   };
 
+  const filteredMissions = missions.filter((m) =>
+    m.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    m.user_goal.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
-    <div className="flex h-screen w-screen flex-col bg-[#080B10] text-[#F1F5F9] font-sans overflow-hidden">
-      {/* 1. Custom Titlebar (52px) */}
-      <header
-        data-tauri-drag-region
-        className="flex h-[52px] items-center justify-between border-b border-white/10 px-4 bg-[#0E131B]/80 backdrop-blur-md select-none"
-      >
+    <div className="flex h-screen w-screen flex-col bg-[#0B0D11] text-slate-100 antialiased select-none font-sans overflow-hidden">
+      {/* 1. Clean Top Header */}
+      <header className="flex h-13 items-center justify-between border-b border-white/[0.08] px-4 bg-[#0E1015]/95 backdrop-blur-md">
+        {/* Left: Logo & Brand */}
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 border border-orange-400/30 overflow-hidden shadow-[0_0_16px_rgba(249,115,22,0.25)]">
-            <img src="/logo.png" alt="Starship Control" className="h-7 w-7 object-contain" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08]">
+            <img src="/logo.png" alt="Starship Logo" className="h-5 w-5 object-contain" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm tracking-wide text-slate-100">STARSHIP CONTROL</span>
-              <span className="rounded-full bg-cyan-400/10 px-2 py-0.5 text-[10px] font-mono font-medium text-cyan-300 border border-cyan-400/20">
-                v0.1.0 · Autonomous
-              </span>
-            </div>
-            <p className="text-[10px] text-slate-400">Multi-App Agent Orchestrator</p>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-slate-100 tracking-tight">Starship Control</span>
+            <span className="text-[10px] font-medium text-slate-400 bg-white/[0.05] border border-white/[0.08] px-1.5 py-0.5 rounded-md">
+              {systemInfo?.version ? `v${systemInfo.version}` : "v0.1.0"}
+            </span>
           </div>
         </div>
 
-        {/* Center Model Selector Dropdown */}
-        <div className="relative">
-          <button
-            onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-            className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3.5 py-1 text-xs hover:border-cyan-400/50 transition-colors"
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                activeModel?.provider_type === "local_gguf" ? "bg-purple-400" : "bg-cyan-400"
-              } animate-pulse`}
-            />
-            <span className="font-mono text-slate-400">Engine:</span>
-            <span className="font-semibold text-slate-200 font-mono">
-              {activeModel?.name ?? "Qwen 2.5 Coder 7B (Local)"}
-            </span>
-            <span
-              className={`rounded px-1 text-[9px] font-mono border ${
-                activeModel?.provider_type === "local_gguf"
-                  ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
-                  : "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
-              }`}
+        {/* Center: Model Selector & Status */}
+        <div className="flex items-center gap-2.5">
+          {/* Model Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+              className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-200 hover:bg-white/[0.06] hover:border-white/[0.15] transition-colors cursor-pointer"
             >
-              {activeModel?.provider_type === "local_gguf" ? "Vulkan GGUF" : "Cloud SSE"}
-            </span>
-            <ChevronDown className="h-3 w-3 text-slate-400" />
-          </button>
+              <Cpu className="h-3.5 w-3.5 text-sky-400" />
+              <span className="font-medium">{activeModel?.name || "Select Model"}</span>
+              <ChevronDown className="h-3 w-3 text-slate-400" />
+            </button>
 
-          {modelDropdownOpen && (
-            <div className="absolute left-0 mt-1.5 w-64 rounded-xl border border-white/10 bg-[#0E131B]/95 backdrop-blur-2xl p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-50 text-xs">
-              <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold flex justify-between">
-                <span>Available Engines</span>
-                <span>{models.length} loaded</span>
+            {modelDropdownOpen && (
+              <div className="absolute left-0 mt-1 w-64 rounded-xl border border-white/[0.1] bg-[#14171E] p-1.5 shadow-2xl z-50">
+                <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  Select Engine
+                </div>
+                {models.map((m) => (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      setActiveModel(m);
+                      setModelDropdownOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-left cursor-pointer ${
+                      activeModel?.id === m.id
+                        ? "bg-sky-500/15 text-sky-300 font-medium"
+                        : "text-slate-300 hover:bg-white/[0.05]"
+                    }`}
+                  >
+                    <span>{m.name}</span>
+                    <span className="text-[10px] text-slate-500 capitalize">{m.provider_type.replace("cloud_", "")}</span>
+                  </button>
+                ))}
               </div>
-              <button
-                onClick={() => {
-                  setActiveModel({
-                    id: "qwen2.5-coder-7b-q4",
-                    name: "Qwen 2.5 Coder 7B (Q4_K_M)",
-                    provider_type: "local_gguf",
-                    hf_repo_id: null,
-                    file_path: null,
-                    file_size_bytes: null,
-                    quantization: "Q4_K_M",
-                    sha256_hash: null,
-                    download_status: "ready",
-                    context_window: 8192,
-                    gpu_layers: 33,
-                    is_default: true,
-                    created_at: "",
-                    updated_at: "",
-                  });
-                  setModelDropdownOpen(false);
-                }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/5 flex items-center justify-between"
-              >
-                <div>
-                  <div className="font-semibold text-slate-200">Qwen 2.5 Coder 7B</div>
-                  <div className="text-[10px] text-purple-400 font-mono">Local GGUF · Vulkan Offload</div>
-                </div>
-                {activeModel?.id === "qwen2.5-coder-7b-q4" && <Check className="h-3.5 w-3.5 text-cyan-400" />}
-              </button>
+            )}
+          </div>
 
-              <button
-                onClick={() => {
-                  setActiveModel({
-                    id: "claude-3-7-sonnet",
-                    name: "Claude 3.7 Sonnet",
-                    provider_type: "cloud_anthropic",
-                    hf_repo_id: null,
-                    file_path: null,
-                    file_size_bytes: null,
-                    quantization: null,
-                    sha256_hash: null,
-                    download_status: "remote_only",
-                    context_window: 200000,
-                    gpu_layers: 0,
-                    is_default: false,
-                    created_at: "",
-                    updated_at: "",
-                  });
-                  setModelDropdownOpen(false);
-                }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/5 flex items-center justify-between"
-              >
-                <div>
-                  <div className="font-semibold text-slate-200">Claude 3.7 Sonnet</div>
-                  <div className="text-[10px] text-cyan-400 font-mono">Cloud Anthropic SSE</div>
-                </div>
-                {activeModel?.id === "claude-3-7-sonnet" && <Check className="h-3.5 w-3.5 text-cyan-400" />}
-              </button>
-
-              <button
-                onClick={() => {
-                  setActiveModel({
-                    id: "gemini-2.0-flash",
-                    name: "Gemini 2.0 Flash",
-                    provider_type: "cloud_gemini",
-                    hf_repo_id: null,
-                    file_path: null,
-                    file_size_bytes: null,
-                    quantization: null,
-                    sha256_hash: null,
-                    download_status: "remote_only",
-                    context_window: 1000000,
-                    gpu_layers: 0,
-                    is_default: false,
-                    created_at: "",
-                    updated_at: "",
-                  });
-                  setModelDropdownOpen(false);
-                }}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/5 flex items-center justify-between"
-              >
-                <div>
-                  <div className="font-semibold text-slate-200">Gemini 2.0 Flash</div>
-                  <div className="text-[10px] text-cyan-400 font-mono">Cloud Google SSE</div>
-                </div>
-                {activeModel?.id === "gemini-2.0-flash" && <Check className="h-3.5 w-3.5 text-cyan-400" />}
-              </button>
-            </div>
-          )}
+          {/* Status Dot */}
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-white/[0.02] border border-white/[0.06] px-2.5 py-1.5 rounded-xl">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span>Ready</span>
+          </div>
         </div>
 
-        {/* Actions & HUD Launcher */}
+        {/* Right Actions */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsSettingsOpen(true)}
-            title="Configure Cloud API Keys"
-            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+            title="Model Settings & API Keys"
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 transition-colors cursor-pointer"
           >
             <Settings className="h-3.5 w-3.5" />
           </button>
 
           <button
             onClick={handleToggleHud}
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-1 text-xs transition-all ${
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs transition-colors cursor-pointer ${
               hudActive
-                ? "border-cyan-400 bg-cyan-400/20 text-cyan-200 shadow-[0_0_12px_rgba(56,189,248,0.3)]"
-                : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
+                ? "border-sky-400/50 bg-sky-500/15 text-sky-200"
+                : "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:bg-white/[0.08]"
             }`}
           >
-            <ExternalLink className="h-3.5 w-3.5 text-cyan-400" />
-            <span>{hudActive ? "HUD Active" : "Launch Floating HUD"}</span>
+            <ExternalLink className="h-3.5 w-3.5 text-sky-400" />
+            <span>{hudActive ? "HUD Active" : "Launch HUD"}</span>
           </button>
         </div>
       </header>
 
-      {/* 2. Navigation Strip (44px) */}
-      <nav className="flex h-[44px] items-center justify-between border-b border-white/10 px-4 bg-[#080B10]">
+      {/* 2. Simplified Clean Navigation Bar */}
+      <nav className="flex h-11 items-center justify-between border-b border-white/[0.06] px-4 bg-[#0B0D11]">
         <div className="flex items-center gap-1 text-xs">
           {[
-            { id: "missions", label: "Missions & Chat Stream", icon: Layers },
-            { id: "pipelines", label: "Cross-App Pipelines", icon: Workflow },
-            { id: "topology", label: "App Ecosystem", icon: Activity },
-            { id: "tools", label: "MCP Tools", icon: Wrench },
-            { id: "models", label: "Model Control", icon: Cpu },
-            { id: "audit", label: "Audit Log", icon: FileText },
-            { id: "design", label: "Design Law Verification", icon: ShieldCheck },
+            { id: "chat", label: "Chat", icon: MessageSquare },
+            { id: "workflows", label: "Workflows", icon: Workflow },
+            { id: "apps", label: "Connected Apps", icon: AppWindow },
+            { id: "tools", label: "Tools", icon: Wrench },
+            { id: "models", label: "Models", icon: Cpu },
+            { id: "activity", label: "Activity", icon: FileText },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = navTab === tab.id;
@@ -385,38 +346,28 @@ export const CockpitView: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setNavTab(tab.id as typeof navTab)}
-                className={`flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors ${
+                className={`flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors cursor-pointer ${
                   isActive
-                    ? "bg-cyan-500/15 text-cyan-300 font-medium border border-cyan-500/30 shadow-[0_0_12px_rgba(56,189,248,0.2)]"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                    ? "bg-white/[0.08] text-slate-100 font-medium"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]"
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" />
+                <Icon className="h-3.5 w-3.5 text-slate-400" />
                 <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
 
-        <div className="flex items-center gap-3 text-xs font-mono text-slate-400">
-          <div className="flex items-center gap-1.5">
-            <DbIcon className="h-3.5 w-3.5 text-emerald-400" />
-            <span>SQLite WAL (0600):</span>
-            <span className="text-emerald-300 font-semibold">
-              {systemInfo?.database_ready ? "Operational" : "Ready"}
-            </span>
-          </div>
+        <div className="flex items-center gap-3 text-xs text-slate-500">
+          <span>Local First Engine</span>
         </div>
       </nav>
 
-      {/* 3. Main Multi-Drawer Layout */}
-      {navTab === "design" ? (
-        <div className="flex-1 overflow-y-auto p-6">
-          <DesignVerification />
-        </div>
-      ) : navTab === "pipelines" ? (
-        <div className="flex-1 overflow-y-auto p-6 bg-[#080B10]">
-          <div className="max-w-6xl mx-auto w-full">
+      {/* 3. Main Workspace Area */}
+      {navTab === "workflows" ? (
+        <div className="flex-1 overflow-y-auto p-6 bg-[#0B0D11]">
+          <div className="max-w-5xl mx-auto w-full">
             <PipelineWorkflowView
               missionId={activeMissionId}
               activePlan={activePlan}
@@ -426,133 +377,100 @@ export const CockpitView: React.FC = () => {
             />
           </div>
         </div>
+      ) : navTab === "apps" ? (
+        <AppTopologyView />
+      ) : navTab === "tools" ? (
+        <McpToolInspector />
       ) : navTab === "models" ? (
         <ModelControlView
           activeModelId={activeModel?.id}
           onSelectModel={(selected) => {
             setActiveModel(selected);
-            setNavTab("missions");
+            setNavTab("chat");
           }}
         />
-      ) : navTab === "topology" ? (
-        <AppTopologyView />
-      ) : navTab === "tools" ? (
-        <McpToolInspector />
-      ) : navTab === "audit" ? (
+      ) : navTab === "activity" ? (
         <AuditLogView />
       ) : (
+        /* Chat View with Sidebar */
         <div className="flex flex-1 overflow-hidden">
-          {/* Left Mission Drawer (280px) */}
-          <aside className="w-[280px] border-r border-white/10 bg-[#0E131B]/50 flex flex-col justify-between p-3 select-none">
+          {/* Left Sidebar: Conversations (260px) */}
+          <aside className="w-[260px] border-r border-white/[0.06] bg-[#0E1015]/60 flex flex-col justify-between p-3 select-none">
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Missions
-                </span>
-                <button
-                  onClick={async () => {
-                    try {
-                      const res = await invoke<CreateMissionResponse>("cmd_mission_create", {
-                        payload: {
-                          title: "New Orchestration Session",
-                          userGoal: "Pending instruction",
-                          modelId: activeModel?.id ?? "qwen2.5-coder-7b-q4",
-                        },
-                      });
-                      setActiveMissionId(res.missionId);
-                    } catch (e) {
-                      console.warn(e);
-                    }
-                  }}
-                  className="flex items-center gap-1 rounded-md bg-white/5 px-2 py-1 text-[11px] text-cyan-300 hover:bg-white/10 border border-white/10"
-                >
-                  <Plus className="h-3 w-3" />
-                  <span>New</span>
-                </button>
-              </div>
+              {/* New Chat Button */}
+              <button
+                onClick={handleCreateMission}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] px-3 py-2 text-xs font-medium text-slate-100 transition-colors cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5 text-sky-400" />
+                <span>New Chat</span>
+              </button>
 
               {/* Search */}
               <div className="relative">
                 <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-500" />
                 <input
                   type="text"
-                  placeholder="Search missions..."
-                  className="w-full rounded-lg border border-white/10 bg-black/20 pl-8 pr-2 py-1 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search chats..."
+                  className="w-full rounded-xl border border-white/[0.06] bg-black/20 pl-8 pr-2 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-white/[0.15]"
                 />
               </div>
 
-              {/* Mission Sessions */}
-              <div className="space-y-1.5">
-                <div
-                  onClick={() => setActiveMissionId(1)}
-                  className={`rounded-xl border p-2.5 cursor-pointer transition-all ${
-                    activeMissionId === 1
-                      ? "border-cyan-400/40 bg-cyan-500/10 shadow-[0_0_16px_rgba(56,189,248,0.15)]"
-                      : "border-white/5 bg-white/5 opacity-60 hover:opacity-100"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-100">Tutorial Ep4 Screencast</span>
-                    <span className="rounded bg-cyan-400/20 px-1.5 py-0.5 text-[9px] font-mono text-cyan-300 border border-cyan-400/30">
-                      ACTIVE
-                    </span>
+              {/* Conversation List */}
+              <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-250px)]">
+                {filteredMissions.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-slate-500">
+                    No conversations yet
                   </div>
-                  <p className="mt-1 text-[11px] text-slate-400 line-clamp-1">
-                    Trim dead air in EEP, clean audio in ALP
-                  </p>
-                  <div className="mt-2 flex items-center justify-between text-[10px] font-mono text-slate-500">
-                    <span>{activePlan ? `${activePlan.steps.length} steps` : "3 steps"}</span>
-                    <span>1,420 tokens</span>
-                  </div>
-                </div>
+                ) : (
+                  filteredMissions.map((m) => (
+                    <div
+                      key={m.id}
+                      onClick={() => setActiveMissionId(m.id)}
+                      className={`group flex items-center justify-between rounded-xl px-2.5 py-2 text-xs cursor-pointer transition-colors ${
+                        activeMissionId === m.id
+                          ? "bg-white/[0.08] text-slate-100 font-medium"
+                          : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <MessageSquare className="h-3.5 w-3.5 shrink-0 text-slate-500 group-hover:text-slate-400" />
+                        <span className="truncate">{m.title || "Untitled Chat"}</span>
+                      </div>
+                      <button
+                        onClick={(e) => handleDeleteMission(m.id, e)}
+                        title="Delete chat"
+                        className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 p-1 rounded transition-opacity cursor-pointer"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
-            <div className="border-t border-white/10 pt-2 text-[10px] font-mono text-slate-500 flex justify-between">
-              <span>Security Tier: Enforced</span>
-              <span>SO_PEERCRED</span>
+            {/* Sidebar Bottom: Connected Apps status */}
+            <div className="border-t border-white/[0.06] pt-3 text-[11px] text-slate-400 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span>Ecosystem active</span>
+              </span>
+              <button
+                onClick={() => setNavTab("apps")}
+                className="text-slate-400 hover:text-slate-200 text-[11px] underline cursor-pointer"
+              >
+                View apps
+              </button>
             </div>
           </aside>
 
-          {/* Center Canvas (Chat Stream, Plan DAG & Approval Card) */}
-          <main className="flex-1 flex flex-col justify-between overflow-y-auto p-4 bg-[#080B10]">
-            <div className="space-y-4 max-w-4xl mx-auto w-full flex-1 flex flex-col">
-              {/* Mission Header Card */}
-              <GlassPanel recipe="pane" className="p-3.5 space-y-1">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-100">
-                      {activePlan?.title || "Tutorial Ep4 Screencast Assembly"}
-                    </h2>
-                    <p className="text-xs text-slate-400">
-                      Goal: {activePlan?.summary || "Automate multi-app workflow spanning Easy Edits Pro, ScreenStudio Pro, and Audio Labs Pro."}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {activePlan && (
-                      <button
-                        type="button"
-                        onClick={() => setShowPlanViewer(!showPlanViewer)}
-                        className="flex items-center gap-1 text-[11px] font-mono rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-slate-300 hover:bg-white/10 transition-colors"
-                      >
-                        {showPlanViewer ? <EyeOff className="h-3 w-3 text-cyan-400" /> : <Eye className="h-3 w-3 text-cyan-400" />}
-                        <span>{showPlanViewer ? "Hide Plan DAG" : "Show Plan DAG"}</span>
-                      </button>
-                    )}
-                    <span className="font-mono text-xs rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 px-3 py-1 flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-                      <span>Engine: {activeModel?.name}</span>
-                    </span>
-                  </div>
-                </div>
-              </GlassPanel>
-
-              {/* Execution Plan DAG Pipeline Viewer */}
-              {activePlan && showPlanViewer && (
-                <PlanWorkflowViewer plan={activePlan} />
-              )}
-
-              {/* Tier 2 / Tier 3 Active Approval Gate Card */}
+          {/* Center: Chat Stream & Action Cards */}
+          <main className="flex-1 flex flex-col justify-between overflow-hidden bg-[#0B0D11]">
+            <div className="flex-1 flex flex-col overflow-y-auto p-4 max-w-4xl mx-auto w-full">
+              {/* Pending Action Approval Card if required */}
               {(() => {
                 const pendingStep =
                   activePlan?.steps.find(
@@ -575,28 +493,33 @@ export const CockpitView: React.FC = () => {
 
                 if (!pendingStep) return null;
                 return (
-                  <ActionApprovalCard
-                    missionId={activeMissionId}
-                    step={pendingStep}
-                    planTitle={activePlan?.title}
-                    onApprove={handleApproveStep}
-                    onReject={handleRejectStep}
-                  />
+                  <div className="mb-4">
+                    <ActionApprovalCard
+                      missionId={activeMissionId}
+                      step={pendingStep}
+                      planTitle={activePlan?.title}
+                      onApprove={handleApproveStep}
+                      onReject={handleRejectStep}
+                    />
+                  </div>
                 );
               })()}
 
-              {/* Chat Canvas with Real-Time Streaming */}
+              {/* Chat Canvas */}
               <ChatCanvas
                 missionId={activeMissionId}
                 isStreaming={isStreaming}
                 onStreamFinished={() => setIsStreaming(false)}
+                onSelectSuggestion={(selectedPrompt) => handleSendPrompt(selectedPrompt)}
+                onNavigateTab={(tab) => setNavTab(tab as typeof navTab)}
               />
             </div>
 
-            {/* Bottom Instruction Bar */}
-            <div className="mt-3 max-w-4xl mx-auto w-full">
-              <div className="relative flex items-center rounded-2xl border border-white/15 bg-[#0E131B]/90 backdrop-blur-xl p-2 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+            {/* Modern Floating Bottom Input Bar */}
+            <div className="p-4 max-w-4xl mx-auto w-full">
+              <div className="relative flex items-center rounded-2xl border border-white/[0.1] bg-[#12151B] p-2 shadow-lg focus-within:border-sky-500/50 transition-colors">
                 <input
+                  ref={inputRef}
                   type="text"
                   value={prompt}
                   disabled={isStreaming}
@@ -609,29 +532,30 @@ export const CockpitView: React.FC = () => {
                   }}
                   placeholder={
                     isStreaming
-                      ? "Streaming completion tokens..."
-                      : "Enter instruction or workflow goal (e.g., 'Record screen with SSP and clean audio with ALP')..."
+                      ? "Generating response..."
+                      : "Type your message or instruction (e.g. 'Record screen demo and clean vocal track')..."
                   }
                   className="flex-1 bg-transparent px-3 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
                 />
+
                 <button
                   disabled={isStreaming || !prompt.trim()}
-                  onClick={handleSendPrompt}
-                  className="flex h-8 items-center gap-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 px-3.5 text-xs font-semibold text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.35)] transition-transform active:scale-95 disabled:opacity-50"
+                  onClick={() => handleSendPrompt()}
+                  className="flex h-8 items-center gap-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-slate-100 px-3.5 text-xs font-medium transition-colors disabled:opacity-30 cursor-pointer"
                 >
-                  <Send className="h-3.5 w-3.5" />
-                  <span>{isStreaming ? "Streaming..." : "Send"}</span>
+                  <Send className="h-3.5 w-3.5 text-sky-400" />
+                  <span>{isStreaming ? "Thinking..." : "Send"}</span>
                 </button>
               </div>
             </div>
           </main>
 
-          {/* Right Topology Drawer (300px) */}
+          {/* Right Topology Drawer */}
           <AppTopologyDrawer />
         </div>
       )}
 
-      {/* Cloud Provider Credentials Modal */}
+      {/* Model Settings Modal */}
       <ModelSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );

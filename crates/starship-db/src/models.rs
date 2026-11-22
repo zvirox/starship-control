@@ -178,6 +178,52 @@ impl Database {
         })
     }
 
+    /// Lists all active missions ordered by latest update.
+    pub fn list_missions(&self) -> Result<Vec<MissionRecord>, CoreError> {
+        self.with_conn(|conn| {
+            let mut stmt = conn.prepare(
+                "SELECT id, uuid, title, user_goal, active_model_id, provider_type, status,
+                        total_input_tokens, total_output_tokens, cost_usd, created_at, updated_at, archived_at
+                 FROM missions WHERE archived_at IS NULL ORDER BY updated_at DESC, id DESC",
+            )?;
+
+            let rows = stmt.query_map([], |row| {
+                Ok(MissionRecord {
+                    id: row.get(0)?,
+                    uuid: row.get(1)?,
+                    title: row.get(2)?,
+                    user_goal: row.get(3)?,
+                    active_model_id: row.get(4)?,
+                    provider_type: row.get(5)?,
+                    status: row.get(6)?,
+                    total_input_tokens: row.get(7)?,
+                    total_output_tokens: row.get(8)?,
+                    cost_usd: row.get(9)?,
+                    created_at: row.get(10)?,
+                    updated_at: row.get(11)?,
+                    archived_at: row.get(12)?,
+                })
+            })?;
+
+            let mut list = Vec::new();
+            for r in rows {
+                list.push(r?);
+            }
+            Ok(list)
+        })
+    }
+
+    /// Deletes a mission and its associated messages.
+    pub fn delete_mission(&self, id: i64) -> Result<(), CoreError> {
+        self.with_conn(|conn| {
+            conn.execute("DELETE FROM mission_messages WHERE mission_id = ?1", params![id])?;
+            conn.execute("DELETE FROM plan_steps WHERE plan_id IN (SELECT id FROM plans WHERE mission_id = ?1)", params![id])?;
+            conn.execute("DELETE FROM plans WHERE mission_id = ?1", params![id])?;
+            conn.execute("DELETE FROM missions WHERE id = ?1", params![id])?;
+            Ok(())
+        })
+    }
+
     /// Appends a message to the mission messages log.
     pub fn add_message(
         &self,

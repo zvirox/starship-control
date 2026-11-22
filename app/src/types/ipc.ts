@@ -193,6 +193,16 @@ export interface StreamFinishedEvent {
   thought?: string | null;
 }
 
+export interface StreamErrorEvent {
+  missionId: number;
+  message: string;
+  code: string;
+}
+
+export interface DeleteMissionPayload {
+  missionId: number;
+}
+
 /**
  * Provider Config Payload.
  */

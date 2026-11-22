@@ -211,9 +211,8 @@ export const HudView: React.FC = () => {
     <div className="h-screen w-screen flex flex-col items-center justify-center bg-transparent p-2 font-sans select-none overflow-hidden">
       <GlassPanel
         recipe="float"
-        glow={approvalGate ? "rose" : "cyan"}
         className={`w-full max-w-[504px] transition-all duration-300 ${
-          approvalGate ? "border-rose-500/80 shadow-[0_0_32px_rgba(244,63,94,0.35)]" : ""
+          approvalGate ? "border-rose-500/50" : "border-white/[0.08]"
         } ${
           expanded
             ? "h-[224px] p-4 flex flex-col justify-between"
@@ -228,7 +227,7 @@ export const HudView: React.FC = () => {
           {/* Brand Emblem & Model Selection Dropdown */}
           <div className="relative flex items-center gap-2">
             <div
-              className={`flex h-7 w-7 items-center justify-center rounded-full bg-orange-500/10 border border-orange-400/30 overflow-hidden shadow-[0_0_12px_rgba(249,115,22,0.25)] ${
+              className={`flex h-7 w-7 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08] overflow-hidden ${
                 isStreaming ? "animate-pulse" : ""
               }`}
             >
@@ -239,14 +238,14 @@ export const HudView: React.FC = () => {
             <button
               type="button"
               onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-              className="flex items-center gap-1.5 rounded-full bg-white/5 hover:bg-white/10 px-2.5 py-0.5 border border-white/10 text-[11px] font-mono text-slate-300 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] px-2.5 py-1 border border-white/[0.06] text-xs text-slate-300 transition-colors cursor-pointer"
             >
               <span
                 className={`h-1.5 w-1.5 rounded-full ${
-                  activeModel?.provider_type === "local_gguf" ? "bg-purple-400" : "bg-cyan-400"
-                } animate-pulse`}
+                  activeModel?.provider_type === "local_gguf" ? "bg-purple-400" : "bg-sky-400"
+                }`}
               />
-              <span className="font-semibold text-slate-200">
+              <span className="font-medium text-slate-200">
                 {activeModel ? activeModel.name.split(" ")[0] : "Qwen2.5"}
               </span>
               <ChevronDown className="h-2.5 w-2.5 text-slate-400" />
@@ -254,7 +253,7 @@ export const HudView: React.FC = () => {
 
             {/* Model Dropdown Menu */}
             {modelDropdownOpen && (
-              <div className="absolute left-0 top-8 w-52 rounded-xl border border-white/10 bg-[#0E131B]/95 backdrop-blur-2xl p-1 shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-50 text-xs">
+              <div className="absolute left-0 top-9 w-52 rounded-xl border border-white/[0.1] bg-[#14171E] p-1 shadow-2xl z-50 text-xs">
                 {models.map((m) => (
                   <button
                     key={m.id}
@@ -263,12 +262,12 @@ export const HudView: React.FC = () => {
                       setActiveModel(m);
                       setModelDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between ${
-                      activeModel?.id === m.id ? "bg-cyan-500/20 text-cyan-300" : "text-slate-300 hover:bg-white/5"
+                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer ${
+                      activeModel?.id === m.id ? "bg-sky-500/15 text-sky-300 font-medium" : "text-slate-300 hover:bg-white/[0.05]"
                     }`}
                   >
                     <span className="truncate">{m.name}</span>
-                    <span className="text-[9px] font-mono text-slate-400">
+                    <span className="text-[9px] text-slate-500 capitalize">
                       {m.provider_type === "local_gguf" ? "Local" : "Cloud"}
                     </span>
                   </button>
@@ -287,10 +286,10 @@ export const HudView: React.FC = () => {
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder={
                   isStreaming
-                    ? "Executing instruction..."
-                    : "Ask Starship or give instruction..."
+                    ? "Processing..."
+                    : "Ask or instruct Starship..."
                 }
-                className="w-full bg-black/30 border border-white/10 rounded-full px-3 py-1 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 transition-colors disabled:opacity-50"
+                className="w-full bg-black/20 border border-white/[0.08] rounded-xl px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-white/[0.2] transition-colors disabled:opacity-50"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && prompt.trim()) {
                     handleSendPrompt();
@@ -305,12 +304,12 @@ export const HudView: React.FC = () => {
             {/* Microphone Toggle (ALP Audio Labs Voice Input) */}
             <button
               type="button"
-              title={micActive ? "Mute Microphone" : "Voice Transcription (ALP)"}
+              title={micActive ? "Mute Microphone" : "Voice Transcription"}
               onClick={() => setMicActive(!micActive)}
-              className={`flex h-7 w-7 items-center justify-center rounded-full transition-colors ${
+              className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors cursor-pointer ${
                 micActive
-                  ? "bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse"
-                  : "bg-white/5 hover:bg-white/10 text-slate-300"
+                  ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                  : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300"
               }`}
             >
               <Mic className="h-3.5 w-3.5" />
@@ -323,12 +322,12 @@ export const HudView: React.FC = () => {
                 title="Send Prompt"
                 disabled={isStreaming || !prompt.trim()}
                 onClick={handleSendPrompt}
-                className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.4)] transition-transform active:scale-95 disabled:opacity-40"
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-slate-100 transition-colors disabled:opacity-40 cursor-pointer"
               >
                 {isStreaming ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-400" />
                 ) : (
-                  <Send className="h-3.5 w-3.5" />
+                  <Send className="h-3.5 w-3.5 text-sky-400" />
                 )}
               </button>
             )}
@@ -336,9 +335,9 @@ export const HudView: React.FC = () => {
             {/* Expand / Collapse Chevron */}
             <button
               type="button"
-              title={expanded ? "Collapse HUD (520×76)" : "Expand HUD (520×240)"}
+              title={expanded ? "Collapse HUD" : "Expand HUD"}
               onClick={toggleExpand}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 transition-colors"
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
             >
               {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
             </button>
@@ -346,9 +345,9 @@ export const HudView: React.FC = () => {
             {/* Hide HUD */}
             <button
               type="button"
-              title="Hide HUD (Super+Shift+Space to restore)"
+              title="Hide HUD"
               onClick={() => invoke("cmd_toggle_hud")}
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-white/5 hover:bg-rose-500/20 hover:text-rose-300 text-slate-500 transition-colors"
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
             >
               <Minus className="h-3 w-3" />
             </button>
@@ -445,7 +444,7 @@ export const HudView: React.FC = () => {
                       type="button"
                       onClick={handleReject}
                       disabled={isSubmitting}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-rose-500/20 hover:text-rose-300 text-xs text-slate-300 transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] hover:bg-rose-500/10 hover:text-rose-300 text-xs text-slate-300 transition-colors cursor-pointer"
                     >
                       <X className="h-3 w-3 text-rose-400" />
                       <span>Reject</span>
@@ -454,14 +453,14 @@ export const HudView: React.FC = () => {
                       type="button"
                       onClick={handleApprove}
                       disabled={isSubmitting}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-xs shadow-[0_0_16px_rgba(56,189,248,0.4)] transition-transform active:scale-95"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/30 text-xs font-medium transition-colors cursor-pointer"
                     >
                       {isSubmitting ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
-                        <Check className="h-3 w-3 stroke-[3]" />
+                        <Check className="h-3 w-3 stroke-[2.5]" />
                       )}
-                      <span>Approve & Apply</span>
+                      <span>Approve</span>
                     </button>
                   </>
                 ) : (
@@ -474,9 +473,9 @@ export const HudView: React.FC = () => {
                         setHudExpandedState(false);
                       }
                     }}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-xs shadow-[0_0_12px_rgba(56,189,248,0.3)] transition-transform active:scale-95"
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-slate-100 text-xs font-medium transition-colors cursor-pointer"
                   >
-                    <Send className="h-3 w-3" />
+                    <Send className="h-3 w-3 text-sky-400" />
                     <span>Send</span>
                   </button>
                 )}

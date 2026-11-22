@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import {
-  RotateCw,
-  Terminal,
-} from "lucide-react";
+import { RotateCw, Shield } from "lucide-react";
 import type {
   AppTopologyEntry,
   ListAppsResponse,
@@ -127,28 +124,28 @@ export const AppTopologyDrawer: React.FC = () => {
   };
 
   return (
-    <aside className="w-[300px] border-l border-white/10 bg-[#0E131B]/50 flex flex-col justify-between p-3 select-none">
+    <aside className="w-[280px] border-l border-white/[0.06] bg-[#0E1015]/60 flex flex-col justify-between p-3 select-none">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-              Sub-App Topology
+            <span className="text-xs font-semibold text-slate-300">
+              Connected Apps
             </span>
-            <p className="text-[10px] text-slate-500">Unix Domain Sockets & MCP Stdio</p>
+            <p className="text-[11px] text-slate-500">Desktop integrations</p>
           </div>
           <button
             onClick={fetchApps}
-            title="Scan and Ping Sockets"
-            className="flex h-6 w-6 items-center justify-center rounded-md bg-white/5 hover:bg-white/10 text-slate-400 hover:text-cyan-300"
+            title="Refresh app connections"
+            className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
           >
             <RotateCw className="h-3 w-3" />
           </button>
         </div>
 
-        {/* Sub-Apps Matrix */}
-        <div className="space-y-2">
+        {/* Sub-Apps List */}
+        <div className="space-y-1.5">
           {loading ? (
-            <div className="p-4 text-center text-xs text-slate-500">Scanning topology...</div>
+            <div className="p-4 text-center text-xs text-slate-500">Checking connections...</div>
           ) : (
             apps.map((app) => {
               const isLive = app.mode === "live_gui";
@@ -157,26 +154,26 @@ export const AppTopologyDrawer: React.FC = () => {
               return (
                 <div
                   key={app.appId}
-                  className="rounded-xl border border-white/10 bg-white/5 p-2.5 text-xs space-y-1.5 hover:border-white/20 transition-colors"
+                  className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5 text-xs hover:border-white/[0.1] transition-colors"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-semibold text-slate-200">{app.displayName}</div>
-                      <div className="text-[10px] font-mono flex items-center gap-1.5 mt-0.5">
+                      <div className="font-medium text-slate-200">{app.displayName}</div>
+                      <div className="text-[11px] flex items-center gap-1.5 mt-0.5">
                         {isLive ? (
                           <>
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            <span className="text-emerald-300 font-medium">Live GUI</span>
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            <span className="text-emerald-400 text-[10px]">Active</span>
                           </>
                         ) : isHeadless ? (
                           <>
-                            <Terminal className="h-2.5 w-2.5 text-sky-400" />
-                            <span className="text-sky-300">Headless CLI</span>
+                            <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                            <span className="text-sky-300 text-[10px]">Service</span>
                           </>
                         ) : (
                           <>
-                            <span className="h-1.5 w-1.5 rounded-full bg-slate-500" />
-                            <span className="text-slate-400">Offline</span>
+                            <span className="h-1.5 w-1.5 rounded-full bg-slate-600" />
+                            <span className="text-slate-500 text-[10px]">Standby</span>
                           </>
                         )}
                       </div>
@@ -184,14 +181,14 @@ export const AppTopologyDrawer: React.FC = () => {
 
                     <div className="text-right">
                       {app.latencyMs !== null ? (
-                        <span className="text-[10px] font-mono text-cyan-400">
+                        <span className="text-[10px] font-mono text-slate-400">
                           {app.latencyMs.toFixed(1)}ms
                         </span>
                       ) : (
                         <button
                           onClick={() => handleLaunch(app.appId)}
                           disabled={launchingAppId === app.appId}
-                          className="px-2 py-0.5 rounded bg-cyan-400/20 text-cyan-300 hover:bg-cyan-400/30 text-[10px] font-medium border border-cyan-400/30"
+                          className="px-2 py-1 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-[10px] font-medium border border-white/[0.08] transition-colors cursor-pointer"
                         >
                           {launchingAppId === app.appId ? "..." : "Launch"}
                         </button>
@@ -205,34 +202,37 @@ export const AppTopologyDrawer: React.FC = () => {
         </div>
 
         {/* Resource Gauges */}
-        <div className="border-t border-white/10 pt-3 space-y-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Hardware & Budget
+        <div className="border-t border-white/[0.06] pt-3 space-y-2">
+          <span className="text-xs font-semibold text-slate-300">
+            System Resources
           </span>
-          <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-            <div className="rounded-lg border border-white/10 bg-black/30 p-2">
-              <span className="text-[10px] text-slate-500 block">VRAM</span>
-              <span className="text-purple-300 font-semibold">5.4 / 12 GB</span>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2">
+              <span className="text-[10px] text-slate-500 block">VRAM Usage</span>
+              <span className="text-slate-200 font-medium font-mono text-[11px]">5.4 / 12 GB</span>
             </div>
-            <div className="rounded-lg border border-white/10 bg-black/30 p-2">
-              <span className="text-[10px] text-slate-500 block">CPU LOAD</span>
-              <span className="text-cyan-300 font-semibold">12%</span>
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
+              <span className="text-[10px] text-slate-500 block">CPU Load</span>
+              <span className="text-slate-200 font-medium font-mono text-[11px]">12%</span>
             </div>
-            <div className="rounded-lg border border-white/10 bg-black/30 p-2">
-              <span className="text-[10px] text-slate-500 block">TOKENS</span>
-              <span className="text-slate-300 font-semibold">1,420</span>
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
+              <span className="text-[10px] text-slate-500 block">Session Tokens</span>
+              <span className="text-slate-200 font-medium font-mono text-[11px]">1,420</span>
             </div>
-            <div className="rounded-lg border border-white/10 bg-black/30 p-2">
-              <span className="text-[10px] text-slate-500 block">EST. COST</span>
-              <span className="text-emerald-300 font-semibold">$0.00</span>
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2">
+              <span className="text-[10px] text-slate-500 block">Estimated Cost</span>
+              <span className="text-emerald-400 font-medium font-mono text-[11px]">$0.00</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="border-t border-white/10 pt-2 text-[10px] font-mono text-slate-500 flex items-center justify-between">
-        <span>Security Token: Signed</span>
-        <span className="text-emerald-400">SO_PEERCRED OK</span>
+      <div className="border-t border-white/[0.06] pt-2 text-[10px] text-slate-500 flex items-center justify-between">
+        <span className="flex items-center gap-1">
+          <Shield className="h-3 w-3 text-emerald-400" />
+          <span>Local execution verified</span>
+        </span>
+        <span className="text-slate-400 font-mono">Isolated</span>
       </div>
     </aside>
   );

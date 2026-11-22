@@ -7,7 +7,7 @@ use starship_core::pipeline::{
 use starship_core::planner::{TaskSheet, TaskSheetStep};
 use starship_core::safety::{RiskTier, SafetyArbiter};
 use starship_core::{CoreError, ErrorKind};
-use starship_db::schema::{MissionMessageRecord, ModelRecord};
+use starship_db::schema::{MissionMessageRecord, MissionRecord, ModelRecord};
 use starship_db::{Database, NewAuditEntry};
 use starship_infer::dispatcher::InferDispatcher;
 use starship_infer::hf::{DownloadProgress, HfModelMetadata, download_hf_file, search_models};
@@ -85,6 +85,20 @@ pub struct StreamFinishedEvent {
     pub message_id: i64,
     pub content: String,
     pub thought: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StreamErrorEvent {
+    #[serde(rename = "missionId")]
+    pub mission_id: i64,
+    pub message: String,
+    pub code: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeleteMissionPayload {
+    #[serde(rename = "missionId")]
+    pub mission_id: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -367,6 +381,22 @@ pub async fn cmd_mission_create(
 }
 
 #[tauri::command]
+pub async fn cmd_mission_list(
+    state: tauri::State<'_, Database>,
+) -> Result<Vec<MissionRecord>, CoreError> {
+    state.list_missions()
+}
+
+#[tauri::command]
+pub async fn cmd_mission_delete(
+    state: tauri::State<'_, Database>,
+    payload: DeleteMissionPayload,
+) -> Result<bool, CoreError> {
+    state.delete_mission(payload.mission_id)?;
+    Ok(true)
+}
+
+#[tauri::command]
 pub async fn cmd_mission_list_messages(
     state: tauri::State<'_, Database>,
     mission_id: i64,
@@ -496,9 +526,18 @@ pub async fn cmd_mission_send_prompt(
                                     },
                                 );
                             }
+                            tokio::time::sleep(std::time::Duration::from_millis(15)).await;
                         }
                         Err(e) => {
                             error!(target: "starship_ipc", "Stream chunk error: {e}");
+                            let _ = app_handle.emit(
+                                "evt://stream/error",
+                                StreamErrorEvent {
+                                    mission_id,
+                                    message: e.user_message.clone(),
+                                    code: e.code.clone(),
+                                },
+                            );
                             break;
                         }
                     }
@@ -529,7 +568,14 @@ pub async fn cmd_mission_send_prompt(
             }
             Err(e) => {
                 error!(target: "starship_ipc", "Inference dispatch failed: {e}");
-                let _ = app_handle.emit("evt://stream/error", e);
+                let _ = app_handle.emit(
+                    "evt://stream/error",
+                    StreamErrorEvent {
+                        mission_id,
+                        message: e.user_message.clone(),
+                        code: e.code.clone(),
+                    },
+                );
             }
         }
     });

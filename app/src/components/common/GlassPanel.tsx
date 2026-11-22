@@ -15,19 +15,19 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
   ...props
 }) => {
   const recipeClass = {
-    pane: "glass-pane rounded-2xl",
-    float: "glass-float rounded-2xl",
-    modal: "glass-modal rounded-3xl",
-    solid: "bg-[#141B26] border border-white/10 rounded-2xl",
+    pane: "bg-white/[0.03] backdrop-blur-md border border-white/[0.06] rounded-2xl shadow-sm",
+    float: "bg-[#12151B]/95 backdrop-blur-xl border border-white/[0.08] rounded-2xl shadow-2xl",
+    modal: "bg-[#14171E] border border-white/[0.1] rounded-3xl shadow-2xl",
+    solid: "bg-[#12151B] border border-white/[0.06] rounded-2xl",
   }[recipe];
 
   const glowClass = {
     none: "",
-    cyan: "shadow-[0_0_24px_rgba(56,189,248,0.25)] border-cyan-400/40",
-    rose: "shadow-[0_0_24px_rgba(244,63,94,0.30)] border-rose-500/50",
-    amber: "shadow-[0_0_24px_rgba(245,158,11,0.25)] border-amber-500/40",
-    emerald: "shadow-[0_0_24px_rgba(16,185,129,0.25)] border-emerald-500/40",
-    violet: "shadow-[0_0_24px_rgba(168,85,247,0.25)] border-purple-500/40",
+    cyan: "border-sky-500/40 shadow-lg",
+    rose: "border-rose-500/40 shadow-lg",
+    amber: "border-amber-500/40 shadow-lg",
+    emerald: "border-emerald-500/40 shadow-lg",
+    violet: "border-purple-500/40 shadow-lg",
   }[glow];
 
   return (
@@ -36,7 +36,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
       {...props}
     >
       {specular && recipe !== "pane" && (
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-80" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.05] via-transparent to-transparent opacity-60" />
       )}
       <div className="relative z-10">{children}</div>
     </div>
