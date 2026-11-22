@@ -82,11 +82,11 @@ mod tests {
         assert!(grammar.contains("root ::="));
         assert!(grammar.contains("steps-list ::="));
         assert!(grammar.contains("app-id ::="));
-        assert!(grammar.contains("\"eep\""));
-        assert!(grammar.contains("\"ssp\""));
-        assert!(grammar.contains("\"alp\""));
-        assert!(grammar.contains("\"nwp\""));
-        assert!(grammar.contains("\"atp\""));
+        assert!(grammar.contains(r#"\"eep\""#));
+        assert!(grammar.contains(r#"\"ssp\""#));
+        assert!(grammar.contains(r#"\"alp\""#));
+        assert!(grammar.contains(r#"\"nwp\""#));
+        assert!(grammar.contains(r#"\"atp\""#));
         assert!(grammar.contains("[1-3]"));
     }
 }
