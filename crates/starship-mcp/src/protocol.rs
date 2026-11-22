@@ -2,13 +2,15 @@ use crate::client::{McpRequest, McpResponse, UnixTransportClient};
 use async_trait::async_trait;
 use serde::Deserialize;
 use starship_core::CoreError;
-use starship_plugin::{HelloResult, PluginTool};
+use starship_plugin::{HelloResult, PluginTool, ProgressNotification};
 use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, ChildStdout, Command};
 use tracing::debug;
+
+pub type ProgressHandler = Box<dyn FnMut(ProgressNotification) + Send + Sync>;
 
 /// Common abstraction over MCP transports (Unix domain socket or child process stdio).
 #[async_trait]
@@ -18,6 +20,16 @@ pub trait McpTransport: Send + Sync {
         method: &str,
         params: Option<serde_json::Value>,
     ) -> Result<McpResponse, CoreError>;
+
+    async fn send_request_with_progress(
+        &mut self,
+        method: &str,
+        params: Option<serde_json::Value>,
+        on_progress: Option<ProgressHandler>,
+    ) -> Result<McpResponse, CoreError> {
+        let _ = on_progress;
+        self.send_request(method, params).await
+    }
 }
 
 #[async_trait]
@@ -28,6 +40,16 @@ impl McpTransport for UnixTransportClient {
         params: Option<serde_json::Value>,
     ) -> Result<McpResponse, CoreError> {
         self.send_request(method, params).await
+    }
+
+    async fn send_request_with_progress(
+        &mut self,
+        method: &str,
+        params: Option<serde_json::Value>,
+        on_progress: Option<ProgressHandler>,
+    ) -> Result<McpResponse, CoreError> {
+        self.send_request_with_progress(method, params, on_progress)
+            .await
     }
 }
 
@@ -112,6 +134,15 @@ impl McpTransport for StdioTransportClient {
         method: &str,
         params: Option<serde_json::Value>,
     ) -> Result<McpResponse, CoreError> {
+        self.send_request_with_progress(method, params, None).await
+    }
+
+    async fn send_request_with_progress(
+        &mut self,
+        method: &str,
+        params: Option<serde_json::Value>,
+        mut on_progress: Option<ProgressHandler>,
+    ) -> Result<McpResponse, CoreError> {
         let req_id = self.next_id;
         self.next_id += 1;
 
@@ -159,38 +190,73 @@ impl McpTransport for StdioTransportClient {
             )
         })?;
 
-        let mut line = String::new();
-        self.stdout_reader.read_line(&mut line).await.map_err(|e| {
-            CoreError::mcp(
-                "mcp.socket_unreachable",
-                true,
-                format!(
-                    "Failed to read from child stdout {}: {e}",
-                    self.binary_path.display()
-                ),
-                None,
-            )
-        })?;
+        loop {
+            let mut line = String::new();
+            self.stdout_reader.read_line(&mut line).await.map_err(|e| {
+                CoreError::mcp(
+                    "mcp.socket_unreachable",
+                    true,
+                    format!(
+                        "Failed to read from child stdout {}: {e}",
+                        self.binary_path.display()
+                    ),
+                    None,
+                )
+            })?;
 
-        if line.trim().is_empty() {
-            return Err(CoreError::mcp(
-                "mcp.socket_unreachable",
-                true,
-                "Child process closed stdout pipe unexpectedly".to_string(),
-                None,
-            ));
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                return Err(CoreError::mcp(
+                    "mcp.socket_unreachable",
+                    true,
+                    "Child process closed stdout pipe unexpectedly".to_string(),
+                    None,
+                ));
+            }
+
+            // Check if this line is an intermediate progress notification (GAP-CLOSURE-PLAN.md §13.1)
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
+                if let Some(m) = value.get("method").and_then(serde_json::Value::as_str)
+                    && m == "notifications/progress"
+                {
+                    if let Some(params_val) = value.get("params")
+                        && let Ok(prog) =
+                            serde_json::from_value::<ProgressNotification>(params_val.clone())
+                        && let Some(ref mut cb) = on_progress
+                    {
+                        cb(prog);
+                    }
+                    continue;
+                }
+
+                if let Some(id) = value.get("id").and_then(serde_json::Value::as_u64)
+                    && id == req_id
+                {
+                    let resp: McpResponse = serde_json::from_value(value).map_err(|e| {
+                        CoreError::mcp(
+                            "mcp.deserialization_error",
+                            false,
+                            format!("Failed to deserialize response from child: {e}"),
+                            Some(serde_json::json!({ "raw": trimmed })),
+                        )
+                    })?;
+                    return Ok(resp);
+                }
+            }
+
+            let resp: McpResponse = serde_json::from_str(trimmed).map_err(|e| {
+                CoreError::mcp(
+                    "mcp.deserialization_error",
+                    false,
+                    format!("Failed to deserialize response from child: {e}"),
+                    Some(serde_json::json!({ "raw": trimmed })),
+                )
+            })?;
+
+            if resp.id == req_id {
+                return Ok(resp);
+            }
         }
-
-        let resp: McpResponse = serde_json::from_str(&line).map_err(|e| {
-            CoreError::mcp(
-                "mcp.deserialization_error",
-                false,
-                format!("Failed to deserialize response from child: {e}"),
-                Some(serde_json::json!({ "raw": line })),
-            )
-        })?;
-
-        Ok(resp)
     }
 }
 
@@ -297,13 +363,35 @@ impl McpSession {
         arguments: serde_json::Value,
         timeout_ms: u64,
     ) -> Result<serde_json::Value, CoreError> {
-        let params = serde_json::json!({
+        self.call_tool_with_progress(tool_name, arguments, timeout_ms, None, None)
+            .await
+    }
+
+    /// Executes an MCP tool call with optional `progressToken` and streaming progress callback (GAP-CLOSURE-PLAN.md §13.1).
+    pub async fn call_tool_with_progress(
+        &mut self,
+        tool_name: &str,
+        arguments: serde_json::Value,
+        timeout_ms: u64,
+        progress_token: Option<serde_json::Value>,
+        on_progress: Option<ProgressHandler>,
+    ) -> Result<serde_json::Value, CoreError> {
+        let mut params = serde_json::json!({
             "name": tool_name,
             "arguments": arguments,
             "leaseTimeoutMs": timeout_ms,
         });
 
-        let call_future = self.transport.send_request("tools/call", Some(params));
+        if let Some(ref token) = progress_token {
+            params["progressToken"] = token.clone();
+            params["_meta"] = serde_json::json!({
+                "progressToken": token
+            });
+        }
+
+        let call_future =
+            self.transport
+                .send_request_with_progress("tools/call", Some(params), on_progress);
         let resp = tokio::time::timeout(Duration::from_millis(timeout_ms), call_future)
             .await
             .map_err(|_| {

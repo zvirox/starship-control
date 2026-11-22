@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use starship_core::CoreError;
-use starship_plugin::HelloResult;
+use starship_plugin::{HelloResult, ProgressNotification};
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -115,6 +115,20 @@ impl UnixTransportClient {
         method: &str,
         params: Option<serde_json::Value>,
     ) -> Result<McpResponse, CoreError> {
+        self.send_request_with_progress::<fn(ProgressNotification)>(method, params, None)
+            .await
+    }
+
+    /// Sends a JSON-RPC 2.0 request over the socket and handles intermediate streaming progress notifications.
+    pub async fn send_request_with_progress<F>(
+        &mut self,
+        method: &str,
+        params: Option<serde_json::Value>,
+        mut on_progress: Option<F>,
+    ) -> Result<McpResponse, CoreError>
+    where
+        F: FnMut(ProgressNotification) + Send + Sync,
+    {
         let request_id = self.next_id;
         self.next_id += 1;
 
@@ -159,40 +173,123 @@ impl UnixTransportClient {
             )
         })?;
 
-        let mut line = String::new();
-        self.reader.read_line(&mut line).await.map_err(|e| {
-            CoreError::mcp(
-                "mcp.socket_unreachable",
-                true,
-                format!(
-                    "Failed to read response from {}: {e}",
-                    self.socket_path.display()
-                ),
-                None,
-            )
-        })?;
+        loop {
+            let mut line = String::new();
+            self.reader.read_line(&mut line).await.map_err(|e| {
+                CoreError::mcp(
+                    "mcp.socket_unreachable",
+                    true,
+                    format!(
+                        "Failed to read response from {}: {e}",
+                        self.socket_path.display()
+                    ),
+                    None,
+                )
+            })?;
 
-        if line.trim().is_empty() {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                return Err(CoreError::mcp(
+                    "mcp.socket_unreachable",
+                    true,
+                    "Socket closed unexpectedly by peer".to_string(),
+                    None,
+                ));
+            }
+
+            // Check if this line is an intermediate progress notification (GAP-CLOSURE-PLAN.md §13.1)
+            if let Ok(value) = serde_json::from_str::<serde_json::Value>(trimmed) {
+                if let Some(m) = value.get("method").and_then(serde_json::Value::as_str)
+                    && m == "notifications/progress"
+                {
+                    if let Some(params_val) = value.get("params")
+                        && let Ok(prog) =
+                            serde_json::from_value::<ProgressNotification>(params_val.clone())
+                        && let Some(ref mut cb) = on_progress
+                    {
+                        cb(prog);
+                    }
+                    continue;
+                }
+
+                if let Some(id) = value.get("id").and_then(serde_json::Value::as_u64)
+                    && id == request_id
+                {
+                    let resp: McpResponse = serde_json::from_value(value).map_err(|e| {
+                        CoreError::mcp(
+                            "mcp.deserialization_error",
+                            false,
+                            format!("Failed to deserialize MCP response: {e}"),
+                            Some(serde_json::json!({
+                                "rawResponse": trimmed,
+                            })),
+                        )
+                    })?;
+                    return Ok(resp);
+                }
+            }
+
+            let resp: McpResponse = serde_json::from_str(trimmed).map_err(|e| {
+                CoreError::mcp(
+                    "mcp.deserialization_error",
+                    false,
+                    format!("Failed to deserialize MCP response: {e}"),
+                    Some(serde_json::json!({
+                        "rawResponse": trimmed,
+                    })),
+                )
+            })?;
+
+            if resp.id == request_id {
+                return Ok(resp);
+            }
+        }
+    }
+
+    /// Executes an MCP `tools/call` with optional `progressToken` and streaming progress callback (GAP-CLOSURE-PLAN.md §13.1).
+    pub async fn call_tool_with_progress<F>(
+        &mut self,
+        tool_name: &str,
+        arguments: serde_json::Value,
+        progress_token: Option<serde_json::Value>,
+        on_progress: Option<F>,
+    ) -> Result<serde_json::Value, CoreError>
+    where
+        F: FnMut(ProgressNotification) + Send + Sync,
+    {
+        let mut params = serde_json::json!({
+            "name": tool_name,
+            "arguments": arguments,
+        });
+
+        if let Some(ref token) = progress_token {
+            params["progressToken"] = token.clone();
+            params["_meta"] = serde_json::json!({
+                "progressToken": token
+            });
+        }
+
+        let resp = self
+            .send_request_with_progress("tools/call", Some(params), on_progress)
+            .await?;
+
+        if let Some(err) = resp.error {
             return Err(CoreError::mcp(
-                "mcp.socket_unreachable",
-                true,
-                "Socket closed unexpectedly by peer".to_string(),
-                None,
+                "mcp.execution_failed",
+                false,
+                format!("Tool execution failed: {err}"),
+                Some(err),
             ));
         }
 
-        let resp: McpResponse = serde_json::from_str(&line).map_err(|e| {
+        resp.result.ok_or_else(|| {
             CoreError::mcp(
-                "mcp.deserialization_error",
+                "mcp.execution_failed",
                 false,
-                format!("Failed to deserialize MCP response: {e}"),
-                Some(serde_json::json!({
-                    "rawResponse": line,
-                })),
+                "Tool call returned empty result".to_string(),
+                None,
             )
-        })?;
-
-        Ok(resp)
+        })
     }
 
     /// Performs the `starship/hello` handshake to discover app capabilities and tool schemas.

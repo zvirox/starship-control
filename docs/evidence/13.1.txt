@@ -1,0 +1,23 @@
+=== 13.1 Progress Protocol Evidence ===
+Timestamp: 2026-11-22T18:19:03+05:30
+Requirement: `notifications/progress` handling added to `starship-mcp/client.rs`; `starship-plugin` extended with `ProgressReporter` helper; `progressToken` added to `tools/call`.
+Verification: Mock tool emits 10 progress events; host maps them to the right step.
+
+$ cargo test -p starship-mcp --lib tests::test_mock_tool_emits_10_progress_events_mapped_to_step
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.91s
+     Running unittests src/lib.rs (target/debug/build/starship-mcp/6712f97551be5cc6/out/starship_mcp-6712f97551be5cc6)
+
+running 1 test
+test tests::test_mock_tool_emits_10_progress_events_mapped_to_step ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.00s
+
+Verification Details:
+- `starship-plugin`:
+  * Created `ProgressReporter` and `ProgressNotification` structs.
+  * Added `ProgressReporter::from_params` parsing `progressToken` from root parameters or nested `_meta`.
+  * Added synchronous `report_sync` and string formatting for standard newline-delimited MCP progress notifications.
+- `starship-mcp`:
+  * `UnixTransportClient` and `StdioTransportClient` updated to handle intermediate `notifications/progress` messages in their read loops.
+  * Added `call_tool_with_progress` embedding `progressToken` in params and executing callback for each incoming notification before returning the final tool result.
+  * Verified 10 out of 10 sequential progress notifications (0.1 to 1.0) were received and attributed to `step-mission-42`.

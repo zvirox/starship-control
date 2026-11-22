@@ -218,7 +218,7 @@ Step:    pending → ready → awaiting_approval → running
 - **ETA** = Σ remaining weights × EWMA(duration/weight per tool) from `tool_stats`; show a range (p50–p90), mark `~` when < 5 samples.
 - **Stall detection:** no progress event or heartbeat for `max(30 s, 3 × expected interval)` → state `stalled` → triggers F0/F1.
 
-- [ ] **13.1 Progress protocol** — add `notifications/progress` handling to `starship-mcp/client.rs`; extend `starship-plugin` with a `ProgressReporter` helper; add `progressToken` to `tools/call`.
+- [x] **13.1 Progress protocol** — add `notifications/progress` handling to `starship-mcp/client.rs`; extend `starship-plugin` with a `ProgressReporter` helper; add `progressToken` to `tools/call`.
   * *Verify:* mock tool emits 10 progress events; host maps them to the right step.
 - [ ] **13.2 Progress aggregator** — `executor/progress.rs`: computes step/mission progress, ETA, stall flag; throttled to ≤ 4 Hz per mission.
   * *Verify:* unit tests for weighting, ETA with/without history, throttling.
