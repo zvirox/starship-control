@@ -42,6 +42,8 @@ fn main() {
             ipc::cmd_mission_send_prompt,
             ipc::cmd_mission_list_messages,
             ipc::cmd_provider_config_set,
+            ipc::cmd_model_hf_search,
+            ipc::cmd_model_hf_download,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

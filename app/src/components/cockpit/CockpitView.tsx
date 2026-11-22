@@ -21,6 +21,7 @@ import { GlassPanel } from "../common/GlassPanel";
 import { DesignVerification } from "../common/DesignVerification";
 import { ChatCanvas } from "./ChatCanvas";
 import { ModelSettingsModal } from "./ModelSettingsModal";
+import { ModelControlView } from "./ModelControlView";
 import type { HelloResponse, ModelRecord, CreateMissionResponse, SendPromptResponse } from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
@@ -310,6 +311,14 @@ export const CockpitView: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-6">
           <DesignVerification />
         </div>
+      ) : navTab === "models" ? (
+        <ModelControlView
+          activeModelId={activeModel?.id}
+          onSelectModel={(selected) => {
+            setActiveModel(selected);
+            setNavTab("missions");
+          }}
+        />
       ) : (
         <div className="flex flex-1 overflow-hidden">
           {/* Left Mission Drawer (280px) */}

@@ -41,6 +41,52 @@ impl Database {
         })
     }
 
+    /// Registers or updates a downloaded model file in the models table.
+    #[allow(clippy::too_many_arguments)]
+    pub fn register_model(
+        &self,
+        id: &str,
+        name: &str,
+        provider_type: &str,
+        hf_repo_id: Option<&str>,
+        file_path: Option<&str>,
+        file_size_bytes: Option<i64>,
+        quantization: Option<&str>,
+        sha256_hash: Option<&str>,
+        context_window: i64,
+        gpu_layers: i64,
+    ) -> Result<(), CoreError> {
+        self.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO models (
+                    id, name, provider_type, hf_repo_id, file_path, file_size_bytes,
+                    quantization, sha256_hash, download_status, context_window, gpu_layers,
+                    is_default, updated_at
+                ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 'ready', ?9, ?10, 0, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
+                ON CONFLICT(id) DO UPDATE SET
+                    name = excluded.name,
+                    file_path = excluded.file_path,
+                    file_size_bytes = excluded.file_size_bytes,
+                    sha256_hash = excluded.sha256_hash,
+                    download_status = 'ready',
+                    updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')",
+                params![
+                    id,
+                    name,
+                    provider_type,
+                    hf_repo_id,
+                    file_path,
+                    file_size_bytes,
+                    quantization,
+                    sha256_hash,
+                    context_window,
+                    gpu_layers,
+                ],
+            )?;
+            Ok(())
+        })
+    }
+
     /// Fetches a specific model by ID.
     pub fn get_model(&self, id: &str) -> Result<Option<ModelRecord>, CoreError> {
         self.with_conn(|conn| {

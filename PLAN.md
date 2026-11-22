@@ -68,19 +68,19 @@
 
 > **Goal:** In-app discovery, download, and validation of GGUF models directly from Hugging Face.
 
-- [ ] **2.1 Hugging Face Model Search & Metadata Parser**
+- [x] **2.1 Hugging Face Model Search & Metadata Parser**
   - Integrate Hugging Face Hub API to search and list GGUF repositories (filtering by quantizations: `Q4_K_M`, `Q8_0`).
   - Compute model parameter sizes and estimated VRAM requirements.
   - *Verify:* Query returns available GGUF files with exact byte counts.
-- [ ] **2.2 Resumable Chunked File Downloader**
+- [x] **2.2 Resumable Chunked File Downloader**
   - Implement multi-part chunked downloader in `starship-infer` with `Range` header support for paused/interrupted downloads.
   - Stream progress telemetry at 4 Hz (`evt://download/progress`: downloaded bytes, speed MB/s, ETA).
   - *Verify:* Force-killing download and restarting resumes without redownloading existing bytes.
-- [ ] **2.3 Streaming SHA-256 Checksum Verification**
+- [x] **2.3 Streaming SHA-256 Checksum Verification**
   - Pipe downloaded chunks through streaming SHA-256 hasher; reject corrupted downloads before registering.
   - Register verified files into SQLite `models` table.
   - *Verify:* Checksum mismatch immediately purges corrupt file and emits typed `infer.checksum_mismatch`.
-- [ ] **2.4 Model Control UI & Hardware Compatibility Gauge**
+- [x] **2.4 Model Control UI & Hardware Compatibility Gauge**
   - Build Cockpit **Model Control** panel: Hugging Face search input, model cards with quant badges, download progress bars, and VRAM fit badges (`Fits in VRAM`, `Partial Offload`, `CPU Only`).
   - *Verify:* One-click download from Hugging Face registers the model and makes it immediately selectable.
 

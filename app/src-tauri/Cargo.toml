@@ -22,6 +22,7 @@ starship-db = { path = "../../crates/starship-db" }
 starship-infer = { path = "../../crates/starship-infer" }
 futures.workspace = true
 uuid.workspace = true
+dirs.workspace = true
 
 [build-dependencies]
 tauri-build = { version = "2.2", features = [] }

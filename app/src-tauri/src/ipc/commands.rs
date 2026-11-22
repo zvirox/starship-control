@@ -4,6 +4,7 @@ use starship_core::{CoreError, ErrorKind};
 use starship_db::Database;
 use starship_db::schema::{MissionMessageRecord, ModelRecord};
 use starship_infer::dispatcher::InferDispatcher;
+use starship_infer::hf::{DownloadProgress, HfModelMetadata, download_hf_file, search_models};
 use starship_infer::types::{ChatRequest, Message};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, Size};
 use tracing::{error, info};
@@ -74,6 +75,38 @@ pub struct StreamFinishedEvent {
     pub message_id: i64,
     pub content: String,
     pub thought: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SearchModelsPayload {
+    pub query: String,
+    pub limit: Option<usize>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DownloadModelPayload {
+    #[serde(rename = "repoId")]
+    pub repo_id: String,
+    pub filename: String,
+    #[serde(rename = "expectedSha256")]
+    pub expected_sha256: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DownloadModelResponse {
+    #[serde(rename = "downloadJobId")]
+    pub download_job_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DownloadCompleteEvent {
+    #[serde(rename = "downloadJobId")]
+    pub download_job_id: String,
+    #[serde(rename = "modelId")]
+    pub model_id: String,
+    #[serde(rename = "filePath")]
+    pub file_path: String,
+    pub sha256: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -198,6 +231,97 @@ pub async fn cmd_list_models(
     state: tauri::State<'_, Database>,
 ) -> Result<Vec<ModelRecord>, CoreError> {
     state.list_models()
+}
+
+#[tauri::command]
+pub async fn cmd_model_hf_search(
+    payload: SearchModelsPayload,
+) -> Result<Vec<HfModelMetadata>, CoreError> {
+    search_models(&payload.query, payload.limit.unwrap_or(10)).await
+}
+
+#[tauri::command]
+pub async fn cmd_model_hf_download(
+    app: AppHandle,
+    state: tauri::State<'_, Database>,
+    payload: DownloadModelPayload,
+) -> Result<DownloadModelResponse, CoreError> {
+    let job_id = format!("dl_{}", &Uuid::new_v4().to_string()[..8]);
+    let models_dir = dirs::data_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("starship-control")
+        .join("models");
+
+    let target_path = models_dir.join(&payload.filename);
+    let download_url = format!(
+        "https://huggingface.co/{}/resolve/main/{}",
+        payload.repo_id, payload.filename
+    );
+
+    let app_handle = app.clone();
+    let db = state.inner().clone();
+    let job_id_clone = job_id.clone();
+    let filename_clone = payload.filename.clone();
+    let repo_id_clone = payload.repo_id.clone();
+    let expected_sha = payload.expected_sha256.clone();
+
+    info!(target: "starship_ipc", job_id = %job_id, file = %payload.filename, "Initiating GGUF download");
+
+    tokio::spawn(async move {
+        let app_progress = app_handle.clone();
+        let target_path_str = target_path.display().to_string();
+
+        let res = download_hf_file(
+            &job_id_clone,
+            &download_url,
+            &target_path,
+            expected_sha.as_deref(),
+            move |progress: DownloadProgress| {
+                let _ = app_progress.emit("evt://download/progress", progress);
+            },
+        )
+        .await;
+
+        match res {
+            Ok(final_sha) => {
+                let model_id = filename_clone.trim_end_matches(".gguf").to_string();
+                let file_size = std::fs::metadata(&target_path)
+                    .map_or(0, |m| i64::try_from(m.len()).unwrap_or(i64::MAX));
+
+                let _ = db.register_model(
+                    &model_id,
+                    &filename_clone,
+                    "local_gguf",
+                    Some(&repo_id_clone),
+                    Some(&target_path_str),
+                    Some(file_size),
+                    Some("Q4_K_M"),
+                    Some(&final_sha),
+                    8192,
+                    33,
+                );
+
+                let _ = app_handle.emit(
+                    "evt://download/complete",
+                    DownloadCompleteEvent {
+                        download_job_id: job_id_clone.clone(),
+                        model_id,
+                        file_path: target_path_str,
+                        sha256: final_sha,
+                    },
+                );
+                info!(target: "starship_ipc", job_id = %job_id_clone, "GGUF download and SHA-256 validation complete");
+            }
+            Err(e) => {
+                error!(target: "starship_ipc", job_id = %job_id_clone, "Download failed: {e}");
+                let _ = app_handle.emit("evt://download/error", e);
+            }
+        }
+    });
+
+    Ok(DownloadModelResponse {
+        download_job_id: job_id,
+    })
 }
 
 #[tauri::command]

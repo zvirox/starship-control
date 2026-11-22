@@ -1,6 +1,7 @@
 pub mod cloud;
 pub mod dispatcher;
 pub mod engine;
+pub mod hf;
 pub mod local;
 pub mod types;
 

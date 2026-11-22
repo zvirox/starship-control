@@ -47,6 +47,58 @@ export interface ModelRecord {
 }
 
 /**
+ * Hardware compatibility gauge tier (DESIGN.md §6.2).
+ */
+export type HardwareFit = "fits_in_vram" | "partial_offload" | "cpu_only";
+
+/**
+ * Hugging Face GGUF model metadata.
+ */
+export interface HfModelMetadata {
+  repo_id: string;
+  filename: string;
+  file_size_bytes: number;
+  quantization: string;
+  vram_required_mb: number;
+  compatibility: HardwareFit;
+  download_url: string;
+}
+
+/**
+ * Search and download payloads.
+ */
+export interface SearchModelsPayload {
+  query: string;
+  limit?: number;
+}
+
+export interface DownloadModelPayload {
+  repoId: string;
+  filename: string;
+  expectedSha256?: string;
+}
+
+export interface DownloadModelResponse {
+  downloadJobId: string;
+}
+
+export interface DownloadProgress {
+  downloadJobId: string;
+  downloadedBytes: number;
+  totalBytes: number;
+  speedBytesPerSec: number;
+  etaSeconds: number;
+  progressFraction: number;
+}
+
+export interface DownloadCompleteEvent {
+  downloadJobId: string;
+  modelId: string;
+  filePath: string;
+  sha256: string;
+}
+
+/**
  * Mission Record from SQLite missions table (DATABASE.md §3.1).
  */
 export interface MissionRecord {
