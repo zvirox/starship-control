@@ -1,3 +1,4 @@
+pub mod context;
 pub mod error;
 pub mod executor;
 pub mod pipeline;
@@ -5,6 +6,7 @@ pub mod planner;
 pub mod policy;
 pub mod safety;
 
+pub use context::{AppCapability, RouteableTool, TokenBudget, TwoStageToolRouter};
 pub use error::{CoreError, ErrorKind};
 pub use executor::{
     CompletedStepSummary, CrashRecoveryCard, CrashRecoveryManager, DagNode, DagScheduler,

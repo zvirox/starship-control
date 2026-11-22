@@ -1,0 +1,27 @@
+=== Starship Control Task 12.4 Verification Evidence ===
+Timestamp: 2026-11-22T18:00:40+05:30
+Task: 12.4 Two-stage tool routing (context/router.rs & context/budget.rs)
+
+Architecture:
+- Stage 1: Fast candidate application filtering using one-line app capability manifests and domain keyword extraction.
+- Stage 2: Injects only candidate apps' tools, ranked by BM25 scoring over tool identifiers and descriptions.
+- Hard Token Cap: Dynamic TokenBudget strictly limits injected tool definitions (max 1500 tokens), preventing context blowup with large tool catalogs.
+
+520-Tool Mock Stress Test:
+- Injected 500 background noise tools across all 5 ecosystem applications (100 tools per app).
+- Added 20 specific golden target tools across all applications (SSP, ALP, EEP, NWP, ATP).
+- Tested 20 distinct user mission queries.
+
+Results:
+- Token Budget: Injected tool subsets strictly complied with budget (average < 1200 tokens, ceiling 1500 tokens).
+- Routing Accuracy: 20/20 (100.0%) target tools found within the budgeted injected set (Target: ≥ 95.0%).
+
+Test Output:
+running 2 tests
+test context::budget::tests::test_token_budget_tracking_and_consumption ... ok
+Two-stage tool routing accuracy with 520 tools: 20/20 (100.0%)
+test context::router::tests::test_two_stage_routing_with_500_mock_tools ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 61 filtered out; finished in 0.07s
+
+Verification: SUCCESS
