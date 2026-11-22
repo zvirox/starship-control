@@ -1,0 +1,45 @@
+# Starship Control — Host-Side Tool Resource Policy
+# Defines default resource profiles and host overrides (GAP-CLOSURE-PLAN.md §15.1).
+
+[defaults]
+# Unknown tools default to heavy consumption
+cpu = "high"
+mem_mb = 2048
+gpu = false
+disk_io = "high"
+long_running = true
+
+[overrides."atp.scan_system"]
+cpu = "med"
+mem_mb = 512
+gpu = false
+disk_io = "low"
+long_running = false
+
+[overrides."eep.timeline.export_mp4"]
+cpu = "high"
+mem_mb = 4096
+gpu = true
+disk_io = "high"
+long_running = true
+
+[overrides."alp.denoise.spectral"]
+cpu = "med"
+mem_mb = 1024
+gpu = false
+disk_io = "low"
+long_running = false
+
+[overrides."ssp.recording.start"]
+cpu = "low"
+mem_mb = 256
+gpu = false
+disk_io = "low"
+long_running = false
+
+[overrides."ssp.recording.stop"]
+cpu = "low"
+mem_mb = 256
+gpu = false
+disk_io = "low"
+long_running = false

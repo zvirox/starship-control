@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 starship-health = { path = "../starship-health" }
+starship-plugin = { path = "../starship-plugin" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

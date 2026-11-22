@@ -314,7 +314,7 @@ Step:    pending → ready → awaiting_approval → running
 
 > **Goal:** Prevent overload instead of reacting to it.
 
-- [ ] **15.1 Resource profiles** — extend tool metadata: `resourceProfile {cpu: low|med|high, memMb, gpu: bool, diskIo: low|high, longRunning: bool}`; unknown → `high`. Sub-app SDK (`starship-plugin` v1.1) supports declaring it; host can override in `policy/resources.toml`.
+- [x] **15.1 Resource profiles** — extend tool metadata: `resourceProfile {cpu: low|med|high, memMb, gpu: bool, diskIo: low|high, longRunning: bool}`; unknown → `high`. Sub-app SDK (`starship-plugin` v1.1) supports declaring it; host can override in `policy/resources.toml`.
   * *Verify:* unknown tools default to `high` (test).
 - [ ] **15.2 Admission controller** — a step starts only if `headroom(now) ≥ profile` (using current health + reservations of running steps); otherwise queued with reason "waiting for resources" (visible in timeline).
   * *Verify:* with simulated 85 % CPU, a `high` step queues, a `low` step runs.

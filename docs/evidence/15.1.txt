@@ -1,0 +1,9 @@
+
+running 4 tests
+test policy::resources::tests::test_custom_toml_policy ... ok
+test policy::resources::tests::test_unknown_tool_defaults_to_high ... ok
+test policy::resources::tests::test_host_override_takes_precedence ... ok
+test policy::resources::tests::test_declared_profile_used_when_no_override ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 73 filtered out; finished in 0.00s
+

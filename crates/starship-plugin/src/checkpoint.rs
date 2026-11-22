@@ -48,6 +48,7 @@ pub fn standard_checkpoint_tools() -> Vec<PluginTool> {
                 },
                 "required": ["label"]
             }),
+            resource_profile: Some(crate::resource::ResourceProfile::light(128)),
         },
         PluginTool {
             name: TOOL_CHECKPOINT_RESTORE.to_string(),
@@ -60,6 +61,7 @@ pub fn standard_checkpoint_tools() -> Vec<PluginTool> {
                 },
                 "required": ["checkpointId"]
             }),
+            resource_profile: Some(crate::resource::ResourceProfile::medium(256)),
         },
         PluginTool {
             name: TOOL_CHECKPOINT_DROP.to_string(),
@@ -72,6 +74,7 @@ pub fn standard_checkpoint_tools() -> Vec<PluginTool> {
                 },
                 "required": ["checkpointId"]
             }),
+            resource_profile: Some(crate::resource::ResourceProfile::light(64)),
         },
     ]
 }
@@ -187,6 +190,7 @@ mod tests {
             description: "Read only".into(),
             risk_tier: 1,
             parameters: serde_json::json!({}),
+            resource_profile: None,
         }];
         assert!(validate_checkpoint_contract(&safe_tools).is_ok());
 
@@ -196,6 +200,7 @@ mod tests {
             description: "Mutating cut".into(),
             risk_tier: 2,
             parameters: serde_json::json!({}),
+            resource_profile: None,
         }];
         assert!(validate_checkpoint_contract(&mutating_tools_incomplete).is_err());
 

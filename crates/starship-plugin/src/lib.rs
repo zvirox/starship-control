@@ -1,5 +1,6 @@
 pub mod checkpoint;
 pub mod progress;
+pub mod resource;
 
 pub use checkpoint::{
     CheckpointCreateResult, CheckpointHandler, CheckpointRestoreResult, MockCheckpointStore,
@@ -7,6 +8,7 @@ pub use checkpoint::{
     standard_checkpoint_tools, validate_checkpoint_contract,
 };
 pub use progress::{ProgressNotification, ProgressReporter};
+pub use resource::{CpuLevel, DiskIoLevel, ResourceProfile};
 
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -60,6 +62,8 @@ pub struct PluginTool {
     pub description: String,
     pub risk_tier: u8,
     pub parameters: serde_json::Value,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub resource_profile: Option<ResourceProfile>,
 }
 
 /// The response payload for `starship/hello` handshake.
