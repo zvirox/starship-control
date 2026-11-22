@@ -9,7 +9,13 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = ["amdgpu-sysfs"]
+amdgpu-sysfs = []
+nvml = ["dep:nvml-wrapper"]
+
 [dependencies]
 serde.workspace = true
 tracing.workspace = true
 sysinfo = "0.33"
+nvml-wrapper = { version = "0.13", optional = true }

@@ -1,0 +1,39 @@
+=== Task 14.4 Verification Evidence ===
+Timestamp: Sun Nov 22 19:22:58 UTC 2026
+Task: 14.4 GPU samplers (feature-gated) — NVML and amdgpu sysfs; VRAM used/total, util, temp.
+
+1. Test Execution Output (Default & NVML Features):
+$ cargo test -p starship-health --features nvml
+   Compiling starship-health v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-health)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.51s
+     Running unittests src/lib.rs (target/debug/build/starship-health/5aa1ee2f8baa3cc9/out/starship_health-5aa1ee2f8baa3cc9)
+
+running 8 tests
+test sampler::tests::test_container_with_no_gpu_or_hwmon_returns_sample_with_gpu_none ... ok
+test sampler::tests::test_gpu_sampler_handles_missing_gpu_cleanly ... ok
+test sampler::tests::test_hwmon_millidegrees_parser ... ok
+test sampler::tests::test_missing_psi_handled_gracefully ... ok
+test sampler::tests::test_parse_amdgpu_metrics_real_fixtures ... ok
+test sampler::tests::test_psi_parser_with_real_linux_fixtures ... ok
+test sampler::tests::test_adaptive_sampling_rate_intervals ... ok
+test sampler::tests::test_system_sampler_overhead_under_one_percent_on_quiet_machine ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.98s
+
+2. Implementation Details:
+- AMDGPU Sysfs (`amdgpu-sysfs` feature / default):
+  * Scans `/sys/class/drm/card*/device/` during `new()` and caches targets.
+  * Reads `gpu_busy_percent`, `mem_info_vram_used`, `mem_info_vram_total`, and `hwmon/hwmon*/temp1_input`.
+  * Computes VRAM used percentage and parses hardware temperatures in millidegrees C.
+- NVIDIA NVML (`nvml` feature flag):
+  * Uses `nvml-wrapper` with dynamic library loading (`libloading`).
+  * Non-blocking graceful initialization: if NVIDIA driver/GPU is not present at runtime, `Nvml::init()` failure is caught, logged once at debug level, and gracefully deactivates NVML fallback without panics or crashes.
+  * Pulls device name, GPU utilization rate %, memory used/total, and core temperature.
+- Real Hardware Discovery:
+  * Gracefully detects system GPU topology (tested on machine with Intel integrated graphics, verified returns `None` without errors, all tests passing).
+
+3. Workspace Suite Verification:
+- `cargo fmt --check`: CLEAN
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`: CLEAN
+- `cargo test --workspace --all-features`: 115 / 115 tests passed
+- `npm run typecheck && npm run lint`: CLEAN

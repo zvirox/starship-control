@@ -264,7 +264,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* sampler overhead (own CPU) < 1 % average on a quiet machine (measured, recorded).
 - [x] **14.3 PSI + thermal samplers** — parse PSI files (handle absence), hwmon scan with caching of sensor paths.
   * *Verify:* parser tests with real-format fixtures; missing PSI handled.
-- [ ] **14.4 GPU samplers (feature-gated)** — NVML and amdgpu sysfs; VRAM used/total, util, temp.
+- [x] **14.4 GPU samplers (feature-gated)** — NVML and amdgpu sysfs; VRAM used/total, util, temp.
   * *Verify:* feature builds in CI (stub/mocked); manual evidence on real hardware attached when available.
 - [ ] **14.5 Storage** — in-memory ring buffer (15 min @ 1 Hz); SQLite rollups: 1-min averages/max kept 7 days, 1-hour kept 90 days (tables in Appendix B). Prune job daily.
   * *Verify:* 24 h simulated feed produces expected row counts and prune works.

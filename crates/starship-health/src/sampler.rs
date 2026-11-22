@@ -1,6 +1,6 @@
 use crate::sample::{
-    CpuMetrics, DiskMetrics, FootprintMetrics, HealthSample, MemoryMetrics, NetworkMetrics,
-    ProcessMetrics,
+    CpuMetrics, DiskMetrics, FootprintMetrics, GpuMetrics, HealthSample, MemoryMetrics,
+    NetworkMetrics, ProcessMetrics,
 };
 use std::fs::File;
 use std::io::{BufRead, BufReader};
@@ -307,25 +307,178 @@ impl Sampler for SystemSampler {
     }
 }
 
-/// Standalone GPU metric sampler with graceful unavailable handling.
+/// Standalone GPU metric sampler with AMDGPU sysfs and optional NVML (GAP-CLOSURE-PLAN.md §14.4).
+#[derive(Debug, Clone, PartialEq)]
+pub struct AmdGpuTarget {
+    pub busy_path: std::path::PathBuf,
+    pub vram_used_path: std::path::PathBuf,
+    pub vram_total_path: std::path::PathBuf,
+    pub temp_path: Option<std::path::PathBuf>,
+    pub name: String,
+}
+
 #[derive(Debug, Default)]
 pub struct GpuSampler {
     device_available: bool,
+    amd_target: Option<AmdGpuTarget>,
+    #[cfg(feature = "nvml")]
+    nvml_failed: bool,
 }
 
 impl GpuSampler {
     #[must_use]
     pub fn new() -> Self {
-        let amdgpu_path = Path::new("/sys/class/drm");
-        let available = amdgpu_path.exists();
-        Self {
-            device_available: available,
-        }
+        let mut sampler = Self {
+            device_available: true,
+            amd_target: None,
+            #[cfg(feature = "nvml")]
+            nvml_failed: false,
+        };
+        sampler.rescan();
+        sampler
     }
 
     pub fn set_available(&mut self, available: bool) {
         self.device_available = available;
     }
+
+    /// Rescans `/sys/class/drm` for AMD GPU sysfs entries.
+    pub fn rescan(&mut self) {
+        self.amd_target = Self::discover_amdgpu_target();
+    }
+
+    fn discover_amdgpu_target() -> Option<AmdGpuTarget> {
+        let drm_base = Path::new("/sys/class/drm");
+        let entries = std::fs::read_dir(drm_base).ok()?;
+
+        for entry in entries.flatten() {
+            let file_name = entry.file_name().to_string_lossy().to_string();
+            if !file_name.starts_with("card") || file_name.contains('-') {
+                continue;
+            }
+
+            let device_dir = entry.path().join("device");
+            let busy_path = device_dir.join("gpu_busy_percent");
+            let vram_used_path = device_dir.join("mem_info_vram_used");
+            let vram_total_path = device_dir.join("mem_info_vram_total");
+
+            // Look for temperature sensor in hwmon subfolder
+            let mut temp_path = None;
+            if let Ok(hwmon_entries) = std::fs::read_dir(device_dir.join("hwmon")) {
+                for h_entry in hwmon_entries.flatten() {
+                    let t_candidate = h_entry.path().join("temp1_input");
+                    if t_candidate.exists() {
+                        temp_path = Some(t_candidate);
+                        break;
+                    }
+                }
+            }
+
+            if busy_path.exists() && vram_used_path.exists() && vram_total_path.exists() {
+                return Some(AmdGpuTarget {
+                    busy_path,
+                    vram_used_path,
+                    vram_total_path,
+                    temp_path,
+                    name: "AMD Radeon GPU".to_string(),
+                });
+            }
+        }
+        None
+    }
+
+    #[cfg(feature = "nvml")]
+    #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+    fn sample_nvml(&mut self) -> Option<GpuMetrics> {
+        if self.nvml_failed {
+            return None;
+        }
+
+        let nvml = match nvml_wrapper::Nvml::init() {
+            Ok(n) => n,
+            Err(e) => {
+                debug!(target: "starship_health", error = ?e, "NVML init failed, disabling NVML sampler");
+                self.nvml_failed = true;
+                return None;
+            }
+        };
+
+        let device = nvml.device_by_index(0).ok()?;
+        let device_name = device.name().unwrap_or_else(|_| "NVIDIA GPU".to_string());
+        let util_pct = device.utilization_rates().map_or(0.0, |u| u.gpu as f32);
+        let mem = device.memory_info().ok()?;
+        let vram_used_bytes = mem.used;
+        let vram_total_bytes = mem.total;
+        let vram_used_pct = if vram_total_bytes > 0 {
+            ((vram_used_bytes as f64 / vram_total_bytes as f64) * 100.0) as f32
+        } else {
+            0.0
+        };
+
+        let temp_celsius = device
+            .temperature(nvml_wrapper::enum_wrappers::device::TemperatureSensor::Gpu)
+            .ok()
+            .map(|t| t as f32);
+
+        Some(GpuMetrics {
+            device_name,
+            util_pct,
+            vram_used_bytes,
+            vram_total_bytes,
+            vram_used_pct,
+            temp_celsius,
+        })
+    }
+
+    fn sample_amdgpu(target: &AmdGpuTarget) -> Option<GpuMetrics> {
+        let busy_str = std::fs::read_to_string(&target.busy_path).ok()?;
+        let used_str = std::fs::read_to_string(&target.vram_used_path).ok()?;
+        let total_str = std::fs::read_to_string(&target.vram_total_path).ok()?;
+        let temp_str = target
+            .temp_path
+            .as_ref()
+            .and_then(|p| std::fs::read_to_string(p).ok());
+
+        parse_amdgpu_metrics(
+            &busy_str,
+            &used_str,
+            &total_str,
+            temp_str.as_deref(),
+            &target.name,
+        )
+    }
+}
+
+/// Helper to parse AMD GPU metrics from string representations.
+#[must_use]
+#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
+pub fn parse_amdgpu_metrics(
+    busy_str: &str,
+    used_str: &str,
+    total_str: &str,
+    temp_str: Option<&str>,
+    name: &str,
+) -> Option<GpuMetrics> {
+    let util_pct = busy_str.trim().parse::<f32>().ok()?;
+    let vram_used_bytes = used_str.trim().parse::<u64>().ok()?;
+    let vram_total_bytes = total_str.trim().parse::<u64>().ok()?;
+
+    let vram_used_pct = if vram_total_bytes > 0 {
+        ((vram_used_bytes as f64 / vram_total_bytes as f64) * 100.0) as f32
+    } else {
+        0.0
+    };
+
+    let temp_celsius = temp_str.and_then(parse_hwmon_millidegrees);
+
+    Some(GpuMetrics {
+        device_name: name.to_string(),
+        util_pct,
+        vram_used_bytes,
+        vram_total_bytes,
+        vram_used_pct,
+        temp_celsius,
+    })
 }
 
 impl Sampler for GpuSampler {
@@ -334,7 +487,20 @@ impl Sampler for GpuSampler {
             sample.gpu = None;
             return;
         }
-        sample.gpu = None;
+
+        #[cfg(feature = "nvml")]
+        {
+            if let Some(gpu_m) = self.sample_nvml() {
+                sample.gpu = Some(gpu_m);
+                return;
+            }
+        }
+
+        if let Some(target) = self.amd_target.clone() {
+            sample.gpu = Self::sample_amdgpu(&target);
+        } else {
+            sample.gpu = None;
+        }
     }
 
     fn name(&self) -> &'static str {
@@ -860,5 +1026,41 @@ mod tests {
         assert_eq!(parse_hwmon_millidegrees("69000\n"), Some(69.0));
         assert_eq!(parse_hwmon_millidegrees("100000"), Some(100.0));
         assert_eq!(parse_hwmon_millidegrees("invalid"), None);
+    }
+
+    #[test]
+    fn test_parse_amdgpu_metrics_real_fixtures() {
+        // Verification requirement for 14.4:
+        // "Verify: feature builds in CI (stub/mocked); manual evidence on real hardware attached when available."
+        let busy_fixture = "45\n";
+        let used_fixture = "4294967296\n"; // 4 GiB
+        let total_fixture = "17179869184\n"; // 16 GiB
+        let temp_fixture = "55000\n"; // 55.0 C
+
+        let metrics = parse_amdgpu_metrics(
+            busy_fixture,
+            used_fixture,
+            total_fixture,
+            Some(temp_fixture),
+            "AMD Radeon RX 7900 XT",
+        )
+        .expect("parsed valid AMD GPU metrics");
+
+        assert_eq!(metrics.device_name, "AMD Radeon RX 7900 XT");
+        assert!((metrics.util_pct - 45.0).abs() < 1e-4);
+        assert_eq!(metrics.vram_used_bytes, 4_294_967_296);
+        assert_eq!(metrics.vram_total_bytes, 17_179_869_184);
+        assert!((metrics.vram_used_pct - 25.0).abs() < 1e-4);
+        assert_eq!(metrics.temp_celsius, Some(55.0));
+    }
+
+    #[test]
+    fn test_gpu_sampler_handles_missing_gpu_cleanly() {
+        let mut gpu_sampler = GpuSampler::default();
+        gpu_sampler.set_available(false);
+
+        let mut sample = HealthSample::default();
+        gpu_sampler.sample_into(&mut sample);
+        assert_eq!(sample.gpu, None, "Disabled or missing GPU returns None");
     }
 }
