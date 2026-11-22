@@ -258,9 +258,9 @@ Step:    pending → ready → awaiting_approval → running
 | Top processes (CPU, RSS) | `sysinfo` | tag Starship-owned PIDs (core + spawned sub-apps) |
 | Starship's own footprint | self + children | CPU%, RSS, open sockets |
 
-- [ ] **14.1 `starship-health` crate skeleton** — `Sampler` trait per metric group, `HealthSample` struct, graceful `Unavailable` for missing sensors (never panic, never fail the app).
+- [x] **14.1 `starship-health` crate skeleton** — `Sampler` trait per metric group, `HealthSample` struct, graceful `Unavailable` for missing sensors (never panic, never fail the app).
   * *Verify:* on a container with no GPU/hwmon, sampler returns a sample with `gpu: None` and exits cleanly.
-- [ ] **14.2 CPU/mem/disk/net samplers** using `sysinfo` + `/proc`; adaptive rate: **1 Hz** while dashboard/HUD visible, **0.2 Hz** otherwise, **1 Hz** while a mission runs.
+- [x] **14.2 CPU/mem/disk/net samplers** using `sysinfo` + `/proc`; adaptive rate: **1 Hz** while dashboard/HUD visible, **0.2 Hz** otherwise, **1 Hz** while a mission runs.
   * *Verify:* sampler overhead (own CPU) < 1 % average on a quiet machine (measured, recorded).
 - [ ] **14.3 PSI + thermal samplers** — parse PSI files (handle absence), hwmon scan with caching of sensor paths.
   * *Verify:* parser tests with real-format fixtures; missing PSI handled.

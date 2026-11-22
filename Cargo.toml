@@ -7,6 +7,7 @@ members = [
     "crates/starship-mcp",
     "crates/starship-plugin",
     "crates/starship-db",
+    "crates/starship-health",
     "crates/xtask",
 ]
 
