@@ -17,6 +17,7 @@ import {
   Clock,
   History,
   Trash2,
+  Activity,
 } from "lucide-react";
 import { ChatCanvas } from "./ChatCanvas";
 import { ModelSettingsModal } from "./ModelSettingsModal";
@@ -29,6 +30,7 @@ import { AuditLogView } from "./AuditLogView";
 import { PipelineWorkflowView } from "./PipelineWorkflowView";
 import { MissionTimelineView } from "./MissionTimelineView";
 import { MissionHistoryView } from "./MissionHistoryView";
+import { SystemsDashboardView } from "./SystemsDashboardView";
 import type {
   HelloResponse,
   ModelRecord,
@@ -42,7 +44,7 @@ import type {
 } from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
-  const [navTab, setNavTab] = useState<"chat" | "timeline" | "history" | "workflows" | "apps" | "tools" | "models" | "activity">("chat");
+  const [navTab, setNavTab] = useState<"chat" | "timeline" | "history" | "workflows" | "apps" | "tools" | "models" | "systems" | "activity">("chat");
   const [prompt, setPrompt] = useState("");
   const [hudActive, setHudActive] = useState(false);
   const [systemInfo, setSystemInfo] = useState<HelloResponse | null>(null);
@@ -344,6 +346,7 @@ export const CockpitView: React.FC = () => {
             { id: "apps", label: "Connected Apps", icon: AppWindow },
             { id: "tools", label: "Tools", icon: Wrench },
             { id: "models", label: "Models", icon: Cpu },
+            { id: "systems", label: "Systems", icon: Activity },
             { id: "activity", label: "Activity", icon: FileText },
           ].map((tab) => {
             const Icon = tab.icon;
@@ -417,6 +420,8 @@ export const CockpitView: React.FC = () => {
             setNavTab("chat");
           }}
         />
+      ) : navTab === "systems" ? (
+        <SystemsDashboardView />
       ) : navTab === "activity" ? (
         <AuditLogView />
       ) : (

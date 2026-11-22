@@ -1,0 +1,50 @@
+=== Task 14.9 Verification Evidence ===
+Timestamp: Sun Nov 22 19:50:00 UTC 2026
+Task: 14.9 Cockpit "Systems" tab (Dashboard) — Header overall state chip, Gauge row, 15-min sparklines, Top processes table with Starship footprint total, Alerts timeline, Thresholds settings modal.
+
+1. TypeScript & Lint Verification:
+$ cd app && npm run typecheck && npm run lint
+npm notice run starship-control-ui@0.1.0 typecheck
+npm notice run tsc --noEmit
+npm notice run starship-control-ui@0.1.0 lint
+npm notice run tsc --noEmit
+Result: 0 errors, 0 warnings.
+
+2. Rust Workspace Suite Verification:
+$ cargo fmt --check
+Result: CLEAN
+$ cargo clippy --workspace --all-targets -- -D warnings
+Result: CLEAN (0 warnings)
+$ cargo test --workspace
+Result: 124 passed; 0 failed; 0 ignored; finished in 1.26s
+
+3. Implementation Details:
+- Cockpit Navigation Integration (`app/src/components/cockpit/CockpitView.tsx`):
+  * Added `systems` to `navTab` state union: `"chat" | "timeline" | "history" | "workflows" | "apps" | "tools" | "models" | "systems" | "activity"`.
+  * Added navigation bar entry `{ id: "systems", label: "Systems", icon: Activity }`.
+  * Rendered `<SystemsDashboardView />` under active `navTab === "systems"`.
+- Systems Dashboard View Component (`app/src/components/cockpit/SystemsDashboardView.tsx`):
+  * Header & Overall State Chip:
+    - Normal (emerald), Elevated (amber), Constrained (orange), Critical (rose, pulsating).
+    - Displays active governor directive message (e.g., "Standard execution", "Prefetch paused", "Safe-paused").
+    - Range filter selector (15m, 1h, 24h) and Thresholds drawer trigger.
+  * 6 Primary Metric Gauges:
+    - CPU: Utilization %, average clock frequency, and PSI stall pressure mini-bar.
+    - Memory: Utilization %, used/total GB, MemAvailable %, and allocation mini-bar.
+    - GPU: Compute utilization %, detected device name / model, activity bar.
+    - VRAM: Allocation %, used/total GB, capacity bar.
+    - Disk Free: Free %, available GB, read/write MB/s throughput bar.
+    - Thermal: Temperature °C, fan RPM, safety delta margin to critical shutdown.
+  * 15-Minute Telemetry Sparkline:
+    - Real-time SVG polyline rendering 1 Hz sample ring buffer (CPU and Memory trends).
+  * Top Processes Table:
+    - Lists top consumer processes with auto-highlighting for Starship ecosystem apps (`isStarshipOwned`).
+    - Dedicated "Starship Total Footprint" summary row calculating combined process count, total CPU %, and aggregate RSS memory.
+  * Alerts Timeline:
+    - Chronological list of trips, sensor names, threshold states, and governor interventions.
+  * Thresholds Settings Modal:
+    - In-place configuration for CPU Elevated/Critical, MemAvailable Critical, Thermal Delta, and Hysteresis exit counter.
+    - Persists directly over Tauri IPC (`cmd://health_set_thresholds`).
+- Design Law Compliance:
+  * Strict adherence to `DESIGN.md` frosted glass specifications (`bg-white/[0.03]`, `border-white/[0.08]`, `backdrop-blur-md`).
+  * Pure zinc/slate/sky palette with semantic indicator badges; zero cyberpunk neon styling.
