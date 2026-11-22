@@ -1,10 +1,14 @@
 pub mod cet;
 pub mod diagnostics;
 pub mod media;
+pub mod record_and_edit;
 
 pub use cet::{CetEvent, CetHeader, CetTelemetry, CutInterval};
 pub use diagnostics::{DiagnosticsPipeline, SystemMetricsReport};
 pub use media::{ScreencastAssemblyRequest, ScreencastPipeline, ScreencastPipelineResult};
+pub use record_and_edit::{
+    match_pipeline_intent, pipeline_record_and_edit, resolve_plan_or_template,
+};
 
 #[cfg(test)]
 mod tests {

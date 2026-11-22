@@ -199,7 +199,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* with a mock app exposing 500 tools, prompt stays under budget and the correct tool is present in ≥ 95 % of golden cases.
 - [x] **12.5 Plan preview & dry-run** — before executing, show the DAG with tiers, estimated duration (from `tool_stats`), estimated resource profile and checkpoints; "Dry run" executes Tier 1 inspection steps only and validates arguments against live app state.
   * *Verify:* dry run never calls a Tier 2/3 tool (test asserts).
-- [ ] **12.6 Close the quickstart gap** — add `pipeline_record_and_edit` template (SSP record → CET read → ALP cleanup → EEP import/cuts) so the README's "record a 60-second demo…" prompt is real; planner prefers a matching template over free-form when intent matches (keyword + model confirmation).
+- [x] **12.6 Close the quickstart gap** — add `pipeline_record_and_edit` template (SSP record → CET read → ALP cleanup → EEP import/cuts) so the README's "record a 60-second demo…" prompt is real; planner prefers a matching template over free-form when intent matches (keyword + model confirmation).
   * *Verify:* the quickstart prompt yields a validated 5+ stage plan in no-LLM mode with `--intent record_and_edit`.
 - [ ] **12.7 Planner eval harness** — `cargo xtask eval-planner` runs the golden prompts against configured engines and writes `docs/evidence/planner-eval.json` (valid %, tool-accuracy %, replan rate).
   * *Verify:* report generated; CI runs it against the mock engine only.

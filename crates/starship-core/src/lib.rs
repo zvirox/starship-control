@@ -18,7 +18,8 @@ pub use executor::{
 };
 pub use pipeline::{
     CetEvent, CetHeader, CetTelemetry, CutInterval, DiagnosticsPipeline, ScreencastAssemblyRequest,
-    ScreencastPipeline, ScreencastPipelineResult, SystemMetricsReport,
+    ScreencastPipeline, ScreencastPipelineResult, SystemMetricsReport, match_pipeline_intent,
+    pipeline_record_and_edit, resolve_plan_or_template,
 };
 pub use planner::{
     DEFAULT_MAX_REPAIR_ATTEMPTS, DEFAULT_MAX_STEPS, DEFAULT_MAX_TIER3_STEPS, DryRunExecutor,

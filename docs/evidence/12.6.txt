@@ -1,0 +1,23 @@
+=== 12.6 Quickstart Gap Evidence ===
+Timestamp: 2026-11-22T18:07:32+05:30
+Requirement: The quickstart prompt yields a validated 5+ stage plan in no-LLM mode with `--intent record_and_edit`.
+
+$ cargo test -p starship-core --lib pipeline::record_and_edit
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.54s
+     Running unittests src/lib.rs (target/debug/build/starship-core/9fa1eac12a4f429a/out/starship_core-9fa1eac12a4f429a)
+
+running 1 test
+test pipeline::record_and_edit::tests::test_quickstart_prompt_yields_validated_5_plus_stage_plan ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 64 filtered out; finished in 0.00s
+
+Verification Details:
+- Generated DAG has 6 stages:
+  * Stage 0 (SSP record start): ssp.recording.start [fps: 60, displayId: 0] (Tier 1)
+  * Stage 1 (SSP record stop): ssp.recording.stop (Tier 1)
+  * Stage 2 (CET telemetry inspection): ssp.recording.inspect_take / telemetry (Tier 1)
+  * Stage 3 (ALP audio cleanup): alp.denoise.spectral [strength: 0.85] (Tier 2)
+  * Stage 4 (EEP timeline setup cut): eep.timeline.cut_interval [startMs: 0, endMs: 1500] (Tier 2)
+  * Stage 5 (EEP silence trim): eep.timeline.auto_trim_silence [thresholdDb: -35.0, minSilenceMs: 600] (Tier 2)
+- Validated with TaskSheetValidator: Passed with 0 schema/cycle/dependency violations.
+- Keyword and explicit flag matching works in no-LLM mode.
