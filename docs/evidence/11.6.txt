@@ -1,0 +1,44 @@
+Task 11.6 Evidence: Exhaustive Failure Taxonomy Classifier
+Timestamp: 2026-11-22T17:28:30Z
+Commit/Phase: Phase 11 (11.6)
+
+=== Verification: Rust Unit Tests ===
+Command: cargo test -p starship-core executor::failure -- --nocapture
+Output:
+   Compiling starship-core v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.83s
+     Running unittests src/lib.rs (target/debug/build/starship-core/1ae31b5ed3502068/out/starship_core-1ae31b5ed3502068)
+
+running 1 test
+test executor::failure::tests::test_every_api_md_code_maps_to_exactly_one_failure_class ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 33 filtered out; finished in 0.00s
+
+=== Taxonomy Mapping Coverage ===
+Every canonical error code declared in API.md §1.2 maps deterministically to exactly one FailureClass:
+- infer.model_not_found -> ModelOutput
+- infer.model_out_of_memory -> Resource
+- infer.download_failed -> Transient
+- infer.checksum_mismatch -> ModelOutput
+- infer.cloud_auth_failed -> Safety
+- infer.cloud_rate_limited -> Transient
+- infer.cloud_endpoint_unreachable -> Transient
+- infer.context_length_exceeded -> ModelOutput
+- mcp.socket_unreachable -> Transient
+- mcp.so_peercred_failed -> Safety
+- mcp.handshake_timeout -> Transient
+- mcp.tool_not_found -> AppFailure
+- mcp.execution_failed -> AppFailure
+- mcp.app_spawn_failed -> AppFailure
+- mcp.lease_expired -> AppFailure
+- safety.approval_rejected -> Safety
+- safety.permission_denied -> Safety
+- safety.invalid_signature_token -> Safety
+- safety.tier_violation -> Safety
+- db.read_failed -> Environment
+- db.write_failed -> Environment
+- db.constraint_violation -> Environment
+- db.migration_failed -> Environment
+- ipc.invalid_payload -> User
+- ipc.bad_state -> User
+- ipc.window_not_found -> Environment

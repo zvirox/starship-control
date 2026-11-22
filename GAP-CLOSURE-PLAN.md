@@ -122,9 +122,9 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* diamond DAG runs in expected order; a step exceeding timeout is cancelled via `tools/cancel`.
 - [x] **11.4 Lease & lock supervisor** (the missing module from README) — `executor/lease.rs`: per-resource locks keyed `app:project:track`; leases carry `leaseTimeoutMs`; heartbeat renewal while a step reports progress; on expiry → `tools/cancel` + `mcp.lease_expired`; deadlock-free ordering (sorted lock acquisition).
   * *Verify:* two missions targeting the same EEP project serialize; a crashed holder's lease expires and is released.
-- [ ] **11.5 Idempotency & retry policy** — each tool carries `idempotent: bool` (host default `false`). Retry only if idempotent **or** the call has an idempotency key the app honors. Exponential backoff with jitter: 1 s, 3 s, 9 s; max 3. **Tier 3 steps: 0 automatic retries.**
+- [x] **11.5 Idempotency & retry policy** — each tool carries `idempotent: bool` (host default `false`). Retry only if idempotent **or** the call has an idempotency key the app honors. Exponential backoff with jitter: 1 s, 3 s, 9 s; max 3. **Tier 3 steps: 0 automatic retries.**
   * *Verify:* test matrix of (idempotent × tier × error class) → expected retry count.
-- [ ] **11.6 Failure classifier** — map errors to classes (§ Fallback Plan table) with a single `fn classify(err) -> FailureClass`.
+- [x] **11.6 Failure classifier** — map errors to classes (§ Fallback Plan table) with a single `fn classify(err) -> FailureClass`.
   * *Verify:* every code in `API.md §1.2` maps to exactly one class (test enumerates codes).
 - [ ] **11.7 Checkpoint contract** — extend `starship-plugin` (v1.1): required tools `checkpoint.create(label)` / `checkpoint.restore(id)` / `checkpoint.drop(id)` for any app exposing Tier 2+ tools; host calls `create` before the first Tier 2 step touching a resource and records `checkpoint_id` on the step.
   * *Verify:* mock app: failure after mutation restores prior state.

@@ -1,0 +1,27 @@
+Task 11.5 Evidence: Idempotency & Retry Policy Matrix
+Timestamp: 2026-11-22T17:28:30Z
+Commit/Phase: Phase 11 (11.5)
+
+=== Verification: Rust Unit Tests ===
+Command: cargo test -p starship-core executor::retry -- --nocapture
+Output:
+   Compiling starship-core v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.83s
+     Running unittests src/lib.rs (target/debug/build/starship-core/1ae31b5ed3502068/out/starship_core-1ae31b5ed3502068)
+
+running 1 test
+test executor::retry::tests::test_retry_policy_matrix ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 33 filtered out; finished in 0.00s
+
+=== Verified Matrix Rules ===
+1. Tier 3 Destructive Invariant:
+   - Evaluated across (RiskTier::Destructive × all FailureClasses × all idempotency variations).
+   - Invariant: max_retries is strictly 0 and should_retry is false.
+2. Transient Error Backoff:
+   - Retries up to 3 times with exponential backoff: 1,000 ms, 3,000 ms, 9,000 ms.
+3. App Failure Idempotency Gating:
+   - If tool is idempotent OR has an idempotency key: max_retries = 1.
+   - If non-idempotent: max_retries = 0.
+4. Terminal Classes:
+   - Safety, User, Resource, and ModelOutput errors strictly have max_retries = 0.

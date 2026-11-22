@@ -7,8 +7,9 @@ pub mod safety;
 
 pub use error::{CoreError, ErrorKind};
 pub use executor::{
-    DagNode, DagScheduler, LeaseSupervisor, MissionEvent, MissionState, PauseReason, ResourceLease,
-    StepEvent, StepState, transition_mission, transition_step,
+    DagNode, DagScheduler, FailureClass, LeaseSupervisor, MissionEvent, MissionState, PauseReason,
+    ResourceLease, RetryDecision, RetryPolicy, StepEvent, StepState, classify_error,
+    transition_mission, transition_step,
 };
 pub use pipeline::{
     CetEvent, CetHeader, CetTelemetry, CutInterval, DiagnosticsPipeline, ScreencastAssemblyRequest,
