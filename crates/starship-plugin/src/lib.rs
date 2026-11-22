@@ -1,3 +1,11 @@
+pub mod checkpoint;
+
+pub use checkpoint::{
+    CheckpointCreateResult, CheckpointHandler, CheckpointRestoreResult, MockCheckpointStore,
+    TOOL_CHECKPOINT_CREATE, TOOL_CHECKPOINT_DROP, TOOL_CHECKPOINT_RESTORE,
+    standard_checkpoint_tools, validate_checkpoint_contract,
+};
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;

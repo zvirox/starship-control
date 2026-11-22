@@ -1,0 +1,30 @@
+Task 11.7 Evidence: Checkpoint Contract v1.1 & State Restoration
+Timestamp: 2026-11-22T17:30:30Z
+Commit/Phase: Phase 11 (11.7)
+
+=== Verification: Rust Unit Tests ===
+Command: cargo test -p starship-plugin -- --nocapture
+Output:
+   Compiling starship-plugin v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-plugin)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.47s
+     Running unittests src/lib.rs (target/debug/build/starship-plugin/d4c2b12705add042/out/starship_plugin-d4c2b12705add042)
+
+running 4 tests
+test checkpoint::tests::test_mock_checkpoint_create_mutate_restore_lifecycle ... ok
+test checkpoint::tests::test_checkpoint_contract_validation ... ok
+test tests::test_bridge_server_lifecycle ... ok
+test tests::test_manifest_serialization ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+=== Verified Capabilities ===
+1. Checkpoint Contract v1.1:
+   - Apps exposing Tier 2+ tools are strictly validated for:
+     `checkpoint.create(label) -> checkpointId`
+     `checkpoint.restore(checkpointId) -> restored: bool`
+     `checkpoint.drop(checkpointId) -> dropped: bool`
+   - `validate_checkpoint_contract` rejects any plugin exposing Tier 2+ mutations without these tools.
+2. State Mutation & Rollback Proof:
+   - Before mutating a resource, host issues `checkpoint.create`.
+   - On step failure or corruption, `checkpoint.restore` is invoked.
+   - Proof test verifies application state is restored byte-identical to the pre-mutation baseline.
