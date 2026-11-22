@@ -8,7 +8,6 @@ import {
   Activity,
   Plus,
   Send,
-  RotateCcw,
   Check,
   ExternalLink,
   Search,
@@ -22,6 +21,8 @@ import { DesignVerification } from "../common/DesignVerification";
 import { ChatCanvas } from "./ChatCanvas";
 import { ModelSettingsModal } from "./ModelSettingsModal";
 import { ModelControlView } from "./ModelControlView";
+import { AppTopologyView } from "./AppTopologyView";
+import { AppTopologyDrawer } from "./AppTopologyDrawer";
 import type { HelloResponse, ModelRecord, CreateMissionResponse, SendPromptResponse } from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
@@ -319,6 +320,8 @@ export const CockpitView: React.FC = () => {
             setNavTab("missions");
           }}
         />
+      ) : navTab === "topology" ? (
+        <AppTopologyView />
       ) : (
         <div className="flex flex-1 overflow-hidden">
           {/* Left Mission Drawer (280px) */}
@@ -456,74 +459,7 @@ export const CockpitView: React.FC = () => {
           </main>
 
           {/* Right Topology Drawer (300px) */}
-          <aside className="w-[300px] border-l border-white/10 bg-[#0E131B]/50 flex flex-col justify-between p-3 select-none">
-            <div className="space-y-4">
-              <div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Sub-App Topology
-                </span>
-                <p className="text-[10px] text-slate-500">Unix Domain Sockets & MCP Stdio</p>
-              </div>
-
-              {/* Sub-Apps Matrix */}
-              <div className="space-y-2">
-                {[
-                  { id: "eep", name: "Easy Edits Pro", status: "Live GUI", mode: "socket", ping: "0.4ms" },
-                  { id: "ssp", name: "ScreenStudio Pro", status: "Live GUI", mode: "socket", ping: "0.6ms" },
-                  { id: "alp", name: "Audio Labs Pro", status: "Ready", mode: "socket", ping: "1.1ms" },
-                  { id: "atp", name: "Agentic Tuneup Pro", status: "Headless CLI", mode: "stdio", ping: "—" },
-                  { id: "nwp", name: "Net Watch Pro", status: "eBPF Sensor", mode: "stdio", ping: "—" },
-                ].map((app) => (
-                  <div
-                    key={app.id}
-                    className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 p-2 text-xs"
-                  >
-                    <div>
-                      <div className="font-semibold text-slate-200">{app.name}</div>
-                      <div className="text-[10px] font-mono text-slate-400 flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        <span>{app.status}</span>
-                      </div>
-                    </div>
-                    <div className="text-right font-mono text-[10px] text-slate-400">
-                      <div>{app.mode}</div>
-                      <div className="text-cyan-400">{app.ping}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Resource Gauges */}
-              <div className="border-t border-white/10 pt-3 space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Hardware & Budget
-                </span>
-                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                  <div className="rounded-lg border border-white/10 bg-black/30 p-2">
-                    <span className="text-[10px] text-slate-500 block">VRAM</span>
-                    <span className="text-purple-300 font-semibold">5.4 / 12 GB</span>
-                  </div>
-                  <div className="rounded-lg border border-white/10 bg-black/30 p-2">
-                    <span className="text-[10px] text-slate-500 block">CPU LOAD</span>
-                    <span className="text-cyan-300 font-semibold">12%</span>
-                  </div>
-                  <div className="rounded-lg border border-white/10 bg-black/30 p-2">
-                    <span className="text-[10px] text-slate-500 block">TOKENS</span>
-                    <span className="text-slate-300 font-semibold">1,420</span>
-                  </div>
-                  <div className="rounded-lg border border-white/10 bg-black/30 p-2">
-                    <span className="text-[10px] text-slate-500 block">EST. COST</span>
-                    <span className="text-emerald-300 font-semibold">$0.00</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-white/10 pt-2 text-[10px] font-mono text-slate-500 flex items-center justify-between">
-              <span>Security Token: Valid</span>
-              <RotateCcw className="h-3 w-3 hover:text-cyan-400 cursor-pointer" />
-            </div>
-          </aside>
+          <AppTopologyDrawer />
         </div>
       )}
 

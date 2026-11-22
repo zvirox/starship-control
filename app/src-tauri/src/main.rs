@@ -44,6 +44,9 @@ fn main() {
             ipc::cmd_provider_config_set,
             ipc::cmd_model_hf_search,
             ipc::cmd_model_hf_download,
+            ipc::cmd_topology_list_apps,
+            ipc::cmd_topology_launch_app,
+            ipc::cmd_topology_ping_app,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

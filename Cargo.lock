@@ -3821,6 +3821,8 @@ dependencies = [
  "starship-core",
  "starship-db",
  "starship-infer",
+ "starship-mcp",
+ "starship-plugin",
  "tauri",
  "tauri-build",
  "tauri-plugin-opener",
@@ -3877,11 +3879,15 @@ dependencies = [
 name = "starship-mcp"
 version = "0.1.0"
 dependencies = [
+ "rustix",
  "serde",
  "serde_json",
  "starship-core",
+ "starship-db",
+ "starship-plugin",
  "thiserror 2.0.21",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

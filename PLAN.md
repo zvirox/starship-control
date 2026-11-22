@@ -92,20 +92,20 @@
 
 > **Goal:** Zero-configuration discovery of EEP, SSP, ALP, NWP, and ATP via XDG manifests and Unix domain sockets.
 
-- [ ] **3.1 Shared `starship-plugin` Crate Authoring**
+- [x] **3.1 Shared `starship-plugin` Crate Authoring**
   - Author reusable Rust crate `crates/starship-plugin` with zero third-party dependencies beyond standard library and `serde`.
   - Implement manifest generator writing to `$XDG_DATA_HOME/starship/plugins/<app-id>.json` on app boot.
   - Implement Unix domain socket listener at `$XDG_RUNTIME_DIR/starship/bridges/<app-id>.sock`.
   - *Verify:* Standalone test binary importing `starship-plugin` registers manifest and opens socket cleanly.
-- [ ] **3.2 XDG Manifest Watcher & Registry Scanner**
+- [x] **3.2 XDG Manifest Watcher & Registry Scanner**
   - Implement file-watcher in `starship-mcp` monitoring `$XDG_DATA_HOME/starship/plugins/`.
   - Populate and update `app_registry` SQLite table upon manifest additions or removals.
   - *Verify:* Dropping a mock manifest file triggers an immediate `evt://topology/app_state` event in UI.
-- [ ] **3.3 Unix Socket Client & Linux `SO_PEERCRED` Validation**
+- [x] **3.3 Unix Socket Client & Linux `SO_PEERCRED` Validation**
   - Implement asynchronous Unix domain socket client connecting to active bridge sockets.
   - Verify caller UID using `libc::getsockopt(..., SO_PEERCRED, ...)` to reject cross-user access attempts.
   - *Verify:* Sockets owned by matching UID succeed; mismatched UID or permissions fail with `mcp.so_peercred_failed`.
-- [ ] **3.4 Cockpit App Topology Drawer**
+- [x] **3.4 Cockpit App Topology Drawer**
   - Build Right Topology Drawer in Cockpit displaying tiles for `eep`, `ssp`, `alp`, `nwp`, `atp`.
   - Show connection badge (`● Live GUI`, `◌ Headless CLI`, `✕ Offline`), latency ping, and active capabilities.
   - *Verify:* Launching a mock app updates its tile from Offline to Live GUI in real time.

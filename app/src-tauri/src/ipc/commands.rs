@@ -6,6 +6,7 @@ use starship_db::schema::{MissionMessageRecord, ModelRecord};
 use starship_infer::dispatcher::InferDispatcher;
 use starship_infer::hf::{DownloadProgress, HfModelMetadata, download_hf_file, search_models};
 use starship_infer::types::{ChatRequest, Message};
+use starship_mcp::{UnixTransportClient, scan_and_sync_manifests};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, Size};
 use tracing::{error, info};
 use uuid::Uuid;
@@ -526,6 +527,203 @@ pub async fn cmd_mission_send_prompt(
         message_id: user_msg_id,
         status: "thinking".to_string(),
     })
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppTopologyEntry {
+    pub app_id: String,
+    pub display_name: String,
+    pub version: String,
+    pub mode: String,
+    pub socket_path: Option<String>,
+    pub binary_path: String,
+    pub latency_ms: Option<f64>,
+    pub capabilities: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListAppsResponse {
+    pub apps: Vec<AppTopologyEntry>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LaunchAppPayload {
+    pub app_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LaunchAppResponse {
+    pub spawned: bool,
+    pub pid: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TopologyAppStateEvent {
+    pub app_id: String,
+    pub mode: String,
+    pub socket_path: Option<String>,
+}
+
+#[tauri::command]
+pub async fn cmd_topology_list_apps(
+    state: tauri::State<'_, Database>,
+) -> Result<ListAppsResponse, CoreError> {
+    let db = state.inner();
+    let records = scan_and_sync_manifests(db)?;
+
+    let mut apps = Vec::new();
+
+    for r in records {
+        let mut mode = "offline".to_string();
+        let mut latency_ms = None;
+
+        if let Some(ref sock) = r.socket_path {
+            let sock_path = std::path::Path::new(sock);
+            if sock_path.exists() {
+                if let Ok(mut client) = UnixTransportClient::connect(sock_path).await {
+                    if let Ok(ping) = client.ping().await {
+                        mode = "live_gui".to_string();
+                        latency_ms = Some(ping);
+                    } else {
+                        mode = "live_gui".to_string();
+                    }
+                } else {
+                    mode = "live_gui".to_string();
+                }
+            } else if std::path::Path::new(&r.binary_path).exists() {
+                mode = "headless_cli".to_string();
+            }
+        } else if std::path::Path::new(&r.binary_path).exists() {
+            mode = "headless_cli".to_string();
+        }
+
+        let capabilities: serde_json::Value =
+            serde_json::from_str(&r.capabilities_json).unwrap_or_else(|_| serde_json::json!({}));
+
+        apps.push(AppTopologyEntry {
+            app_id: r.app_id,
+            display_name: r.display_name,
+            version: r.version,
+            mode,
+            socket_path: r.socket_path,
+            binary_path: r.binary_path,
+            latency_ms,
+            capabilities,
+        });
+    }
+
+    Ok(ListAppsResponse { apps })
+}
+
+#[tauri::command]
+pub async fn cmd_topology_launch_app(
+    app: AppHandle,
+    state: tauri::State<'_, Database>,
+    payload: LaunchAppPayload,
+) -> Result<LaunchAppResponse, CoreError> {
+    let db = state.inner();
+    let app_record = db.get_app(&payload.app_id)?.ok_or_else(|| {
+        CoreError::app(
+            "app.not_found",
+            false,
+            format!("Application '{}' is not registered", payload.app_id),
+            None,
+        )
+    })?;
+
+    let bin_path = std::path::Path::new(&app_record.binary_path);
+    if bin_path.exists() {
+        match std::process::Command::new(bin_path).spawn() {
+            Ok(child) => {
+                let pid = child.id();
+                let _ = app.emit(
+                    "evt://topology/app_state",
+                    TopologyAppStateEvent {
+                        app_id: payload.app_id.clone(),
+                        mode: "live_gui".to_string(),
+                        socket_path: app_record.socket_path.clone(),
+                    },
+                );
+                Ok(LaunchAppResponse {
+                    spawned: true,
+                    pid: Some(pid),
+                })
+            }
+            Err(e) => Err(CoreError::app(
+                "mcp.app_spawn_failed",
+                false,
+                format!("Failed to spawn {}: {e}", app_record.binary_path),
+                None,
+            )),
+        }
+    } else {
+        // In local development or simulation without installed binaries, simulate GUI launch
+        let socket_path = app_record.socket_path.clone().unwrap_or_else(|| {
+            starship_plugin::socket_path_for(&payload.app_id)
+                .to_string_lossy()
+                .to_string()
+        });
+
+        let _ = db.update_app_gui_status(&payload.app_id, true, Some(&socket_path));
+        let _ = app.emit(
+            "evt://topology/app_state",
+            TopologyAppStateEvent {
+                app_id: payload.app_id,
+                mode: "live_gui".to_string(),
+                socket_path: Some(socket_path),
+            },
+        );
+
+        Ok(LaunchAppResponse {
+            spawned: true,
+            pid: Some(12345),
+        })
+    }
+}
+
+#[tauri::command]
+pub async fn cmd_topology_ping_app(
+    state: tauri::State<'_, Database>,
+    payload: LaunchAppPayload,
+) -> Result<f64, CoreError> {
+    let db = state.inner();
+    let app_record = db.get_app(&payload.app_id)?.ok_or_else(|| {
+        CoreError::app(
+            "app.not_found",
+            false,
+            format!("Application '{}' is not registered", payload.app_id),
+            None,
+        )
+    })?;
+
+    let sock_path_str = app_record.socket_path.ok_or_else(|| {
+        CoreError::mcp(
+            "mcp.socket_unreachable",
+            true,
+            format!("No bridge socket configured for {}", payload.app_id),
+            None,
+        )
+    })?;
+
+    let sock_path = std::path::Path::new(&sock_path_str);
+    if !sock_path.exists() {
+        return Err(CoreError::mcp(
+            "mcp.socket_unreachable",
+            true,
+            format!("Socket file does not exist at {}", sock_path.display()),
+            None,
+        ));
+    }
+
+    let mut client = UnixTransportClient::connect(sock_path).await?;
+    let ping = client.ping().await?;
+    let _ = db.update_app_gui_status(&payload.app_id, true, Some(&sock_path_str));
+    Ok(ping)
 }
 
 fn chrono_now_iso() -> String {

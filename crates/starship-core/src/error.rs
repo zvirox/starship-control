@@ -109,6 +109,26 @@ impl CoreError {
     ) -> Self {
         Self::new(ErrorKind::Safety, code, retryable, user_message, details)
     }
+
+    #[must_use]
+    pub fn app(
+        code: impl Into<String>,
+        retryable: bool,
+        user_message: impl Into<String>,
+        details: Option<serde_json::Value>,
+    ) -> Self {
+        Self::new(ErrorKind::App, code, retryable, user_message, details)
+    }
+
+    #[must_use]
+    pub fn settings(
+        code: impl Into<String>,
+        retryable: bool,
+        user_message: impl Into<String>,
+        details: Option<serde_json::Value>,
+    ) -> Self {
+        Self::new(ErrorKind::Settings, code, retryable, user_message, details)
+    }
 }
 
 #[cfg(test)]

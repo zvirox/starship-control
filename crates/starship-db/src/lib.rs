@@ -6,8 +6,11 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use tracing::{info, warn};
 
+pub mod apps;
 pub mod models;
 pub mod schema;
+
+pub use apps::AppRecord;
 
 const INITIAL_MIGRATION: &str = include_str!("migrations/0001_initial.sql");
 const CURRENT_SCHEMA_VERSION: u32 = 1;

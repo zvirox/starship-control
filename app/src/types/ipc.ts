@@ -203,3 +203,42 @@ export interface ProviderConfigPayload {
   apiKey?: string;
   isEnabled: boolean;
 }
+
+/**
+ * App connection mode (API.md §2.4).
+ */
+export type AppConnectionMode = "live_gui" | "headless_cli" | "offline";
+
+/**
+ * App Topology Entry (API.md §2.4).
+ */
+export interface AppTopologyEntry {
+  appId: string;
+  displayName: string;
+  version: string;
+  mode: AppConnectionMode;
+  socketPath: string | null;
+  binaryPath: string;
+  latencyMs: number | null;
+  capabilities: Record<string, boolean>;
+}
+
+export interface ListAppsResponse {
+  apps: AppTopologyEntry[];
+}
+
+export interface LaunchAppPayload {
+  appId: string;
+}
+
+export interface LaunchAppResponse {
+  spawned: boolean;
+  pid: number | null;
+}
+
+export interface TopologyAppStateEvent {
+  appId: string;
+  mode: AppConnectionMode;
+  socketPath?: string | null;
+}
+
