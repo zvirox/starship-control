@@ -366,4 +366,29 @@ export interface AuditRecord {
   createdAt: string;
 }
 
+/**
+ * Cross-App Pipeline Payloads (API.md §2.2 / PLAN.md §7).
+ */
+export interface PipelineScreencastPayload {
+  missionId: number;
+  recordingPath: string;
+  cetPath?: string | null;
+  cetContent?: string | null;
+  cleanAudio: boolean;
+  audioPreset?: string | null;
+  introScript?: string | null;
+  targetTimelineTrack: number;
+}
+
+export interface PipelineDiagnosticsPayload {
+  missionId: number;
+  liveConnectionsCount: number;
+  totalBandwidthKbps: number;
+  diskUsedGb: number;
+  diskFreeGb: number;
+  cacheBloatMb: number;
+  reclaimableItems: string[];
+}
+
+
 

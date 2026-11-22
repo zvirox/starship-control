@@ -59,6 +59,8 @@ fn main() {
             ipc::cmd_plan_generate,
             ipc::cmd_plan_approve_step,
             ipc::cmd_plan_reject_step,
+            ipc::cmd_pipeline_screencast,
+            ipc::cmd_pipeline_diagnostics,
             ipc::cmd_audit_list_logs,
         ])
         .run(tauri::generate_context!())

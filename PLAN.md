@@ -183,13 +183,13 @@
 
 > **Goal:** Validate complete multi-app creative pipelines across ScreenStudio Pro, Audio Labs Pro, and Easy Edits Pro.
 
-- [ ] **7.1 CET Telemetry & Cut Assembly Pipeline**
+- [x] **7.1 CET Telemetry & Cut Assembly Pipeline**
   - Implement orchestration pipeline: read `.cet.jsonl` sidecar from SSP recording $\to$ detect silences and clicks $\to$ assemble edit markers $\to$ dispatch cut commands to EEP.
   - *Verify:* Full automated screencast edit applied to EEP timeline via Starship Control.
-- [ ] **7.2 Audio Enhancement & Voice Synthesis Pipeline**
+- [x] **7.2 Audio Enhancement & Voice Synthesis Pipeline**
   - Route extracted audio track to ALP for noise removal and voice mastering; synthesize intro narration via ALP TTS and insert into EEP timeline.
   - *Verify:* EEP project updates with enhanced audio and aligned voiceover track.
-- [ ] **7.3 Systems Health & Diagnostic Pipeline (NWP + ATP)**
+- [x] **7.3 Systems Health & Diagnostic Pipeline (NWP + ATP)**
   - Query network activity from NWP and disk storage metrics from ATP; generate cleanup task sheet upon approval.
   - *Verify:* Unused package caches cleaned upon single-click approval.
 

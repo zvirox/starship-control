@@ -1,5 +1,9 @@
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
+use starship_core::pipeline::{
+    CetTelemetry, DiagnosticsPipeline, ScreencastAssemblyRequest, ScreencastPipeline,
+    SystemMetricsReport,
+};
 use starship_core::planner::{TaskSheet, TaskSheetStep};
 use starship_core::safety::{RiskTier, SafetyArbiter};
 use starship_core::{CoreError, ErrorKind};
@@ -1009,9 +1013,19 @@ pub async fn cmd_plan_generate(
         )
     };
 
-    let plan_rec = db.create_plan(payload.mission_id, &sheet.title, &sheet.summary, &sheet)?;
+    activate_plan_internal(&app, db, &arbiter, payload.mission_id, &sheet)
+}
 
-    let active_plan_opt = db.get_active_plan(payload.mission_id)?;
+fn activate_plan_internal(
+    app: &AppHandle,
+    db: &Database,
+    arbiter: &SafetyArbiter,
+    mission_id: i64,
+    sheet: &TaskSheet,
+) -> Result<PlanActiveResponse, CoreError> {
+    let plan_rec = db.create_plan(mission_id, &sheet.title, &sheet.summary, sheet)?;
+
+    let active_plan_opt = db.get_active_plan(mission_id)?;
     let Some((_, steps)) = active_plan_opt else {
         return Err(CoreError::db(
             "db.plan_not_found",
@@ -1061,7 +1075,7 @@ pub async fn cmd_plan_generate(
         let _ = app.emit(
             "evt://plan/approval_needed",
             ApprovalNeededEvent {
-                mission_id: payload.mission_id,
+                mission_id,
                 plan_id: plan_rec.id,
                 step_id: step.id,
                 app_id: step.app_id,
@@ -1095,79 +1109,99 @@ pub async fn cmd_plan_create(
     let arbiter = SafetyArbiter::default();
 
     let sheet = TaskSheet::from_json(&payload.raw_tasksheet_json)?;
-    let plan_rec = db.create_plan(payload.mission_id, &payload.title, &payload.summary, &sheet)?;
+    activate_plan_internal(&app, db, &arbiter, payload.mission_id, &sheet)
+}
 
-    let active_plan_opt = db.get_active_plan(payload.mission_id)?;
-    let Some((_, steps)) = active_plan_opt else {
-        return Err(CoreError::db(
-            "db.plan_not_found",
-            false,
-            "Failed to retrieve newly created plan",
-            None,
-        ));
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PipelineScreencastPayload {
+    #[serde(rename = "missionId")]
+    pub mission_id: i64,
+    #[serde(rename = "recordingPath")]
+    pub recording_path: String,
+    #[serde(rename = "cetPath")]
+    pub cet_path: Option<String>,
+    #[serde(rename = "cetContent")]
+    pub cet_content: Option<String>,
+    #[serde(rename = "cleanAudio")]
+    pub clean_audio: bool,
+    #[serde(rename = "audioPreset")]
+    pub audio_preset: Option<String>,
+    #[serde(rename = "introScript")]
+    pub intro_script: Option<String>,
+    #[serde(rename = "targetTimelineTrack")]
+    pub target_timeline_track: u32,
+}
+
+#[tauri::command]
+pub async fn cmd_pipeline_screencast(
+    app: AppHandle,
+    state: tauri::State<'_, Database>,
+    payload: PipelineScreencastPayload,
+) -> Result<PlanActiveResponse, CoreError> {
+    let db = state.inner();
+    let arbiter = SafetyArbiter::default();
+
+    let telemetry = if let Some(ref content) = payload.cet_content {
+        Some(CetTelemetry::from_jsonl_str(content)?)
+    } else if let Some(ref path) = payload.cet_path {
+        std::fs::read_to_string(path)
+            .ok()
+            .and_then(|c| CetTelemetry::from_jsonl_str(&c).ok())
+    } else {
+        None
     };
 
-    let mut step_details = Vec::new();
-    let mut pending_approval_step = None;
+    let req = ScreencastAssemblyRequest {
+        recording_path: payload.recording_path,
+        cet_path: payload.cet_path,
+        clean_audio: payload.clean_audio,
+        audio_preset: payload.audio_preset,
+        intro_script: payload.intro_script,
+        target_timeline_track: payload.target_timeline_track,
+    };
 
-    for s in steps {
-        let args_val = serde_json::from_str(&s.arguments_json).unwrap_or(serde_json::Value::Null);
-        let sig_token = if s.risk_tier >= 2 && s.approval_status == "pending" {
-            let tok = arbiter.generate_signature_token(plan_rec.id, s.id, &s.tool_name);
-            if pending_approval_step.is_none() {
-                pending_approval_step = Some((s.clone(), tok.clone()));
-            }
-            Some(tok)
-        } else {
-            None
-        };
+    let result = ScreencastPipeline::plan_assembly(&req, telemetry.as_ref())?;
+    activate_plan_internal(&app, db, &arbiter, payload.mission_id, &result.task_sheet)
+}
 
-        step_details.push(PlanStepDetail {
-            step_id: s.id,
-            step_index: s.step_index,
-            app_id: s.app_id,
-            tool_name: s.tool_name,
-            risk_tier: s.risk_tier,
-            approval_status: s.approval_status,
-            execution_status: s.execution_status,
-            diff_summary: s.diff_summary,
-            arguments: args_val,
-            result: None,
-            error_message: None,
-            signature_token: sig_token,
-        });
-    }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PipelineDiagnosticsPayload {
+    #[serde(rename = "missionId")]
+    pub mission_id: i64,
+    #[serde(rename = "liveConnectionsCount")]
+    pub live_connections_count: usize,
+    #[serde(rename = "totalBandwidthKbps")]
+    pub total_bandwidth_kbps: f64,
+    #[serde(rename = "diskUsedGb")]
+    pub disk_used_gb: f64,
+    #[serde(rename = "diskFreeGb")]
+    pub disk_free_gb: f64,
+    #[serde(rename = "cacheBloatMb")]
+    pub cache_bloat_mb: f64,
+    #[serde(rename = "reclaimableItems")]
+    pub reclaimable_items: Vec<String>,
+}
 
-    if let Some((step, token)) = pending_approval_step {
-        let action_title = step
-            .diff_summary
-            .clone()
-            .unwrap_or_else(|| step.tool_name.clone());
-        let _ = app.emit(
-            "evt://plan/approval_needed",
-            ApprovalNeededEvent {
-                mission_id: payload.mission_id,
-                plan_id: plan_rec.id,
-                step_id: step.id,
-                app_id: step.app_id,
-                risk_tier: step.risk_tier,
-                action_title,
-                diff_summary: step.diff_summary.unwrap_or_default(),
-                checkpoint_name: Some("#bk-01".to_string()),
-                signature_token: token,
-            },
-        );
-    }
+#[tauri::command]
+pub async fn cmd_pipeline_diagnostics(
+    app: AppHandle,
+    state: tauri::State<'_, Database>,
+    payload: PipelineDiagnosticsPayload,
+) -> Result<PlanActiveResponse, CoreError> {
+    let db = state.inner();
+    let arbiter = SafetyArbiter::default();
 
-    Ok(PlanActiveResponse {
-        plan_id: plan_rec.id,
-        mission_id: plan_rec.mission_id,
-        version: plan_rec.version,
-        title: plan_rec.title,
-        summary: plan_rec.summary,
-        status: plan_rec.status,
-        steps: step_details,
-    })
+    let report = SystemMetricsReport {
+        live_connections_count: payload.live_connections_count,
+        total_bandwidth_kbps: payload.total_bandwidth_kbps,
+        disk_used_gb: payload.disk_used_gb,
+        disk_free_gb: payload.disk_free_gb,
+        cache_bloat_mb: payload.cache_bloat_mb,
+        reclaimable_items: payload.reclaimable_items,
+    };
+
+    let sheet = DiagnosticsPipeline::plan_system_maintenance(&report);
+    activate_plan_internal(&app, db, &arbiter, payload.mission_id, &sheet)
 }
 
 #[tauri::command]

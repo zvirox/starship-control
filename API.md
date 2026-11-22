@@ -142,6 +142,39 @@ User declines a proposed mutating step.
   ```
 * **Success Output:** `{"status": "rejected"}`
 
+#### `cmd://pipeline_screencast`
+Generates and activates a multi-app screencast pipeline (SSP $\to$ ALP $\to$ EEP) with automatic silence ripple cuts from CET telemetry.
+* **Payload:**
+  ```json
+  {
+    "missionId": 42,
+    "recordingPath": "/home/user/Videos/demo-01.mkv",
+    "cetPath": "/home/user/Videos/demo-01.cet.jsonl",
+    "cetContent": null,
+    "cleanAudio": true,
+    "audioPreset": "voice_isolate",
+    "introScript": "Welcome to Starship Control.",
+    "targetTimelineTrack": 1
+  }
+  ```
+* **Success Output:** `PlanActiveResponse` (TaskSheet with 5 stages, pending approval gate, and diff summary).
+
+#### `cmd://pipeline_diagnostics`
+Generates and activates a cross-app system health inspection and disk cleanup pipeline (NWP $\to$ ATP) with Tier 3 destructive approval gate.
+* **Payload:**
+  ```json
+  {
+    "missionId": 42,
+    "liveConnectionsCount": 14,
+    "totalBandwidthKbps": 450.0,
+    "diskUsedGb": 120.5,
+    "diskFreeGb": 34.2,
+    "cacheBloatMb": 4300.0,
+    "reclaimableItems": ["~/.cache/cargo/registry", "~/.cache/npm"]
+  }
+  ```
+* **Success Output:** `PlanActiveResponse` (TaskSheet with parallel inspections in Stage 0 and Tier 3 purge gate in Stage 1).
+
 ---
 
 ### 2.3 Model Control & Hugging Face
