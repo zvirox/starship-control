@@ -18,7 +18,7 @@
   - Initialize Tauri 2 with React 19, TypeScript, and Vite inside `app/`.
   - Configure `tauri.conf.json` with two windows: `main` (Cockpit, 1200×800) and `hud` (Floating HUD, 520×76, borderless, transparent, always-on-top, hidden by default).
   - *Verify:* `cargo tauri dev` launches the main glass window; HUD window can be programmatically displayed.
-- [x] **0.3 Tailwind CSS v4 `@theme` & Token Bridging**
+- [ ] **0.3 Tailwind CSS v4 `@theme` & Token Bridging**
   - Import self-hosted fonts (`FamiljenGrotesk`, `JetBrainsMono`) via `@font-face`.
   - Author `tailwind.css` using DESIGN.md tokens (dark/light palettes, glass utility recipes `@utility pane/float/modal`, specular overlays).
   - *Verify:* Swatch verification page renders obsidian canvas, Electric Cyan accents, and frosted glass recipes.
@@ -26,7 +26,7 @@
   - Setup `starship-db` with `rusqlite` bundled, enabling WAL mode, `PRAGMA foreign_keys = ON`, busy timeout 5000ms, and `0600` permissions at `$XDG_DATA_HOME/starship-control/library.db`.
   - Implement `PRAGMA user_version` runner with initial schema `0001_initial.sql` (creating `missions`, `messages`, `plans`, `steps`, `models`, `app_registry`, `audit_log`).
   - *Verify:* Fresh boot creates `library.db` with correct tables; integration test validates CRUD and foreign key cascades.
-- [x] **0.5 Typed IPC Skeleton & Error Format**
+- [ ] **0.5 Typed IPC Skeleton & Error Format**
   - Implement standard `CoreError` envelope (`kind`, `code`, `retryable`, `userMessage`, `details`) in Rust and TypeScript.
   - Implement initial `ipc.hello` handshake command verifying protocol parity.
   - Setup rotating structured logging via `tracing-subscriber` at `$XDG_STATE_HOME/starship-control/`.
@@ -44,13 +44,13 @@
   - Define `InferenceEngine` async trait returning a pinned `Stream<Item = Result<ChatChunk, CoreError>>`.
   - Implement unified `ChatRequest`, `Message`, and `ToolDefinition` abstractions.
   - *Verify:* Mock engine unit test streams token chunks deterministically.
-- [x] **1.2 Cloud SSE Client Implementation**
+- [ ] **1.2 Cloud SSE Client Implementation**
   - Implement OpenAI-compatible streaming client (supporting OpenAI, OpenRouter, and Ollama).
   - Implement Anthropic Claude SSE streaming client (`messages` API).
   - Implement Google Gemini streaming client.
   - Wire encrypted provider configuration storage in `provider_configs` table.
   - *Verify:* Live prompt against configured cloud provider streams tokens smoothly into Cockpit chat.
-- [x] **1.3 Local GGUF Engine Integration (`llama-cpp-2`)**
+- [ ] **1.3 Local GGUF Engine Integration (`llama-cpp-2`)**
   - Author native `llama-cpp-2` wrapper with hardware detection (Vulkan, ROCm, CPU threads).
   - Implement context caching, token sampling, and streaming token generator.
   - Implement RAM/VRAM pre-allocation probe preventing out-of-memory crashes.
@@ -166,7 +166,7 @@
   - Configure Tauri HUD window: borderless, transparent, `alwaysOnTop: true`, `skipTaskbar: true`.
   - Implement resting capsule geometry (520×76) and drag handle with screen corner snapping.
   - *Verify:* HUD floats smoothly over full-screen apps without losing focus or stealing compositor inputs.
-- [x] **6.2 Wayland Global Shortcut Portal (`ashpd`)**
+- [ ] **6.2 Wayland Global Shortcut Portal (`ashpd`)**
   - Register `Super + Shift + Space` via `ashpd` GlobalShortcuts portal on Wayland (with X11 keybinding fallback).
   - Handle portal permission dialog gracefully with educational first-run notice.
   - *Verify:* Pressing shortcut toggles HUD visibility anywhere on desktop.
@@ -204,7 +204,7 @@
 - [x] **8.1 Packaging Metadata & App Icons**
   - Setup desktop entry file `starship-control.desktop` and hicolor vector icons.
   - Author `packaging/aur/PKGBUILD`, `packaging/deb/`, and `packaging/rpm/` specs.
-- [x] **8.2 GitHub Actions CI/CD Pipeline**
+- [ ] **8.2 GitHub Actions CI/CD Pipeline**
   - Author `.github/workflows/ci.yml` (formatting, clippy `-D warnings`, unit tests, typecheck).
   - Author `.github/workflows/release.yml` (multi-arch Linux builds $\to$ GitHub Releases artifacts).
   - *Verify:* Release pipeline generates installable `.deb`, `.rpm`, and `.tar.gz` packages.

@@ -1,0 +1,128 @@
+=== CARGO TEST --WORKSPACE ===
+   Compiling starship-control v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/app/src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.92s
+     Running unittests src/main.rs (target/debug/build/starship-control/0a7c0536706ac4da/out/starship_control-0a7c0536706ac4da)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/build/starship-core/667097008b7a14d8/out/starship_core-667097008b7a14d8)
+
+running 13 tests
+test error::tests::test_core_error_serialization ... ok
+test planner::tests::test_cycle_detection_fails ... ok
+test planner::tests::test_parallel_branches_dag ... ok
+test planner::tests::test_record_screen_and_clean_audio_decomposition ... ok
+test safety::tests::test_tier_1_safe_tool_autonomous_execution ... ok
+test pipeline::tests::test_diagnostics_pipeline_generation ... ok
+test safety::tests::test_tampered_signature_token_fails ... ok
+test planner::tests::test_parse_llm_json_fenced ... ok
+test pipeline::tests::test_cet_telemetry_parsing_and_cut_detection ... ok
+test pipeline::tests::test_screencast_pipeline_dag_resolution ... ok
+test safety::tests::test_tier_2_approved_with_valid_token ... ok
+test safety::tests::test_tier_2_mutating_tool_blocked_without_approval ... ok
+test safety::tests::test_tier_3_destructive_tool_classification_and_gating ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/build/starship-db/b212501c57577310/out/starship_db-b212501c57577310)
+
+running 2 tests
+test apps::tests::test_app_registry_crud ... ok
+test plans::tests::test_plan_lifecycle_and_step_execution ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/migration_test.rs (target/debug/build/starship-db/89a945bcd3ffe886/out/migration_test-89a945bcd3ffe886)
+
+running 3 tests
+test test_database_initial_migration_and_seed_data ... ok
+test test_mission_lifecycle_and_cascading_deletes ... ok
+test test_file_backed_database_permissions ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/build/starship-infer/45214c5da2c2c502/out/starship_infer-45214c5da2c2c502)
+
+running 4 tests
+test tests::test_mock_inference_engine_stream ... ok
+test hf::downloader::tests::test_checksum_verification_success ... ok
+test local::runner::tests::test_local_runner_memory_allocation ... ok
+test local::runner::tests::test_local_runner_missing_file_error ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/build/starship-mcp/a1118f63aad8b8f0/out/starship_mcp-a1118f63aad8b8f0)
+
+running 8 tests
+test registry::tests::test_known_ecosystem_apps ... ok
+test aggregator::tests::test_to_llm_definitions ... ok
+test aggregator::tests::test_build_system_context ... ok
+test aggregator::tests::test_tool_aggregator_curated_tools ... ok
+test tests::test_mcp_session_tool_call_latency_under_1ms ... ok
+test tests::test_unix_transport_client_handshake_and_ping ... ok
+test tests::test_hybrid_execution_router ... ok
+test registry::tests::test_scan_and_sync_in_memory ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/build/starship-plugin/3106dd14fa3e582b/out/starship_plugin-3106dd14fa3e582b)
+
+running 2 tests
+test tests::test_bridge_server_lifecycle ... ok
+test tests::test_manifest_serialization ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests starship_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests starship_db
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests starship_infer
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests starship_mcp
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests starship_plugin
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+=== CARGO CLIPPY --WORKSPACE --ALL-TARGETS -- -D WARNINGS ===
+    Checking starship-control v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/app/src-tauri)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.46s
+
+=== CARGO FMT --CHECK ===
+
+=== APP BUILD & TYPECHECK ===
+npm notice run starship-control-ui@0.1.0 npx
+npm notice run 'tsc' --noEmit
+npm notice run starship-control-ui@0.1.0 build
+npm notice run tsc --noEmit && vite build
+vite v6.4.6 building for production...
+transforming...
+✓ 1609 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.90 kB │ gzip:   0.49 kB
+dist/assets/index-PPGUlVbe.css   63.16 kB │ gzip:   9.86 kB
+dist/assets/index-gW3sGfoG.js   368.38 kB │ gzip: 102.10 kB │ map: 1,533.59 kB
+✓ built in 1.50s

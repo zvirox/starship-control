@@ -52,7 +52,7 @@
 
 > **Goal:** Make "done" mean "proven". CI exists, tests run, README matches reality.
 
-- [ ] **9.0 Ground-Truth Audit**
+- [x] **9.0 Ground-Truth Audit**
   * Build workspace from clean clone. Run `cargo test --workspace`, `cargo clippy --workspace -- -D warnings`, `cd app && npm ci && npx tsc --noEmit && npm run build`.
   * For every ticked item in PLAN.md write one line in `docs/evidence/AUDIT.md`: `VERIFIED` (with command), `PARTIAL`, or `MISSING`. Un-tick anything not VERIFIED.
   * Diff the real crate/module layout against `ARCHITECTURE.md §4`; list differences.
