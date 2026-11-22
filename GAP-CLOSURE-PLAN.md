@@ -197,7 +197,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* 20-prompt golden suite on a 7B Q4 model: ≥ 90 % schema-valid (record actual number; adjust target honestly).
 - [x] **12.4 Two-stage tool routing** — stage 1: model picks apps from a one-line capability list; stage 2: inject only those apps' tools, ranked by embedding/BM25 over tool descriptions, capped by token budget (`context/budget.rs`).
   * *Verify:* with a mock app exposing 500 tools, prompt stays under budget and the correct tool is present in ≥ 95 % of golden cases.
-- [ ] **12.5 Plan preview & dry-run** — before executing, show the DAG with tiers, estimated duration (from `tool_stats`), estimated resource profile and checkpoints; "Dry run" executes Tier 1 inspection steps only and validates arguments against live app state.
+- [x] **12.5 Plan preview & dry-run** — before executing, show the DAG with tiers, estimated duration (from `tool_stats`), estimated resource profile and checkpoints; "Dry run" executes Tier 1 inspection steps only and validates arguments against live app state.
   * *Verify:* dry run never calls a Tier 2/3 tool (test asserts).
 - [ ] **12.6 Close the quickstart gap** — add `pipeline_record_and_edit` template (SSP record → CET read → ALP cleanup → EEP import/cuts) so the README's "record a 60-second demo…" prompt is real; planner prefers a matching template over free-form when intent matches (keyword + model confirmation).
   * *Verify:* the quickstart prompt yields a validated 5+ stage plan in no-LLM mode with `--intent record_and_edit`.

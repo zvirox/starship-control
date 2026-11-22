@@ -325,6 +325,47 @@ export interface CreatePlanPayload {
   rawTasksheetJson: string;
 }
 
+/**
+ * Plan Preview & Dry-Run Payload and Responses (GAP-CLOSURE-PLAN.md §12.5).
+ */
+export interface ResourceProfileEstimate {
+  peakVramMb: number;
+  peakCpuPct: number;
+  diskSpaceRequiredBytes: number;
+}
+
+export interface PlanPreviewResponse {
+  planGoal: string;
+  totalSteps: number;
+  tierCounts: Record<number, number>;
+  estimatedDurationMs: number;
+  resourceProfile: ResourceProfileEstimate;
+  requiredCheckpoints: string[];
+  requiresHumanApproval: boolean;
+}
+
+export interface DryRunStepResult {
+  stepIndex: number;
+  toolName: string;
+  riskTier: number;
+  simulated: boolean;
+  success: boolean;
+  message: string;
+}
+
+export interface DryRunReportResponse {
+  totalSteps: number;
+  tier1Executed: number;
+  tier2Simulated: number;
+  tier3Simulated: number;
+  stepResults: DryRunStepResult[];
+  allPassed: boolean;
+}
+
+export interface PlanDryRunPayload {
+  tasksheetJson: string;
+}
+
 export interface ApproveStepPayload {
   missionId?: number;
   stepId: number;

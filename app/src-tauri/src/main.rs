@@ -149,6 +149,8 @@ fn main() {
             ipc::cmd_plan_get_active,
             ipc::cmd_plan_create,
             ipc::cmd_plan_generate,
+            ipc::cmd_plan_preview,
+            ipc::cmd_plan_dry_run,
             ipc::cmd_plan_approve_step,
             ipc::cmd_plan_reject_step,
             ipc::cmd_pipeline_screencast,

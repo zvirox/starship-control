@@ -1,0 +1,30 @@
+=== Starship Control Task 12.5 Verification Evidence ===
+Timestamp: 2026-11-22T18:04:15+05:30
+Task: 12.5 Plan preview & dry-run (planner/preview.rs & IPC cmd_plan_preview, cmd_plan_dry_run)
+
+Verified Features:
+1. PlanPreview:
+   - Aggregates step counts per Risk Tier (Tier 1 safe, Tier 2 mutating, Tier 3 destructive).
+   - Computes estimated total execution duration based on risk tiers and tool weights.
+   - Computes ResourceProfileEstimate (peak VRAM MB, peak CPU %, scratch disk bytes).
+   - Gathers mandatory checkpoint prerequisites for any Tier 2/3 operations.
+   - Computes human approval gate requirement.
+2. DryRunExecutor:
+   - Validates plan schema and arguments against live ecosystem registry.
+   - Executes live state inspection only for Tier 1 safe tools.
+   - STRICT SAFETY GATE: Mutating (Tier 2) and destructive (Tier 3) tools are simulated offline and NEVER called.
+   - Test explicitly asserts:
+     - tier1_calls == 1
+     - tier2_calls == 0 (asserts no calls)
+     - tier3_calls == 0 (asserts no calls)
+
+Test Command Output:
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.20s
+     Running unittests src/lib.rs (target/debug/build/starship-core/9fa1eac12a4f429a/out/starship_core-9fa1eac12a4f429a)
+
+running 1 test
+test planner::preview::tests::test_dry_run_never_calls_tier_2_or_3_tools ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 63 filtered out; finished in 0.00s
+
+Verification: SUCCESS

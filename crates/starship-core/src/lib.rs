@@ -21,10 +21,11 @@ pub use pipeline::{
     ScreencastPipeline, ScreencastPipelineResult, SystemMetricsReport,
 };
 pub use planner::{
-    DEFAULT_MAX_REPAIR_ATTEMPTS, DEFAULT_MAX_STEPS, DEFAULT_MAX_TIER3_STEPS, GbnfGenerator,
-    PlanDag, PlanGenerator, PlannerPromptBuilder, PlannerRepairLoop, RepairResult,
+    DEFAULT_MAX_REPAIR_ATTEMPTS, DEFAULT_MAX_STEPS, DEFAULT_MAX_TIER3_STEPS, DryRunExecutor,
+    DryRunReport, DryRunStepResult, GbnfGenerator, PlanDag, PlanGenerator, PlanPreview,
+    PlannerPromptBuilder, PlannerRepairLoop, RepairResult, ResourceProfileEstimate,
     TASKSHEET_GBNF_GRAMMAR, TASKSHEET_VERSION_1, TaskSheet, TaskSheetStep, TaskSheetValidator,
-    ToolSchema,
+    Tier1DryRunCaller, ToolSchema,
 };
 pub use policy::{DiffSummarizer, TierPolicy};
 pub use safety::{

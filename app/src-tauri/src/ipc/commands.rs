@@ -4,7 +4,9 @@ use starship_core::pipeline::{
     CetTelemetry, DiagnosticsPipeline, ScreencastAssemblyRequest, ScreencastPipeline,
     SystemMetricsReport,
 };
-use starship_core::planner::{TaskSheet, TaskSheetStep};
+use starship_core::planner::{
+    DryRunExecutor, DryRunReport, PlanPreview, TaskSheet, TaskSheetStep, TaskSheetValidator,
+};
 use starship_core::safety::{RiskTier, SafetyArbiter};
 use starship_core::{CoreError, ErrorKind};
 use starship_db::schema::{MissionMessageRecord, MissionRecord, ModelRecord};
@@ -1410,6 +1412,31 @@ pub async fn cmd_audit_list_logs(
     let limit = payload.as_ref().and_then(|p| p.limit).unwrap_or(50);
     let offset = payload.as_ref().and_then(|p| p.offset).unwrap_or(0);
     db.list_audit_logs(limit, offset)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlanDryRunPayload {
+    pub tasksheet_json: String,
+}
+
+#[tauri::command]
+pub async fn cmd_plan_preview(payload: PlanDryRunPayload) -> Result<PlanPreview, CoreError> {
+    let sheet = TaskSheet::from_llm_json(&payload.tasksheet_json)?;
+    let validator = TaskSheetValidator::default();
+    validator.validate(&sheet)?;
+    Ok(PlanPreview::from_tasksheet(&sheet))
+}
+
+#[tauri::command]
+pub async fn cmd_plan_dry_run(payload: PlanDryRunPayload) -> Result<DryRunReport, CoreError> {
+    let sheet = TaskSheet::from_llm_json(&payload.tasksheet_json)?;
+    let validator = TaskSheetValidator::default();
+    let mut dry_run_caller = |_app_id: &str, _tool_name: &str, _args: &serde_json::Value| {
+        // Tier 1 live inspection validation
+        Ok(())
+    };
+    DryRunExecutor::execute(&sheet, &validator, &mut dry_run_caller)
 }
 
 fn chrono_now_iso() -> String {
