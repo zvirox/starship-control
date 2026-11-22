@@ -268,7 +268,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* feature builds in CI (stub/mocked); manual evidence on real hardware attached when available.
 - [x] **14.5 Storage** — in-memory ring buffer (15 min @ 1 Hz); SQLite rollups: 1-min averages/max kept 7 days, 1-hour kept 90 days (tables in Appendix B). Prune job daily.
   * *Verify:* 24 h simulated feed produces expected row counts and prune works.
-- [ ] **14.6 Overload detector** — rules with **hysteresis** (enter after N consecutive samples, exit after M below a lower threshold) to prevent flapping.
+- [x] **14.6 Overload detector** — rules with **hysteresis** (enter after N consecutive samples, exit after M below a lower threshold) to prevent flapping.
 
   | Signal | Elevated | Constrained | Critical | Exit |
   |--------|----------|-------------|----------|------|

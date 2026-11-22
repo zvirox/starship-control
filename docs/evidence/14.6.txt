@@ -1,0 +1,35 @@
+=== Task 14.6 Verification Evidence ===
+Timestamp: Sun Nov 22 19:31:05 UTC 2026
+Task: 14.6 Overload detector — rules with hysteresis (enter after N consecutive samples, exit after M below a lower threshold) to prevent flapping.
+
+1. Test Execution Output:
+$ cargo test -p starship-health detector
+   Compiling starship-health v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-health)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.29s
+     Running unittests src/lib.rs (target/debug/build/starship-health/6995ce33555a9f84/out/starship_health-6995ce33555a9f84)
+
+running 1 test
+test detector::tests::test_hysteresis_anti_flapping_sustaining_elevated ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+2. Implementation Details:
+- Rules Matrix (`crates/starship-health/src/detector.rs`):
+  * CPU util: Elevated > 80%, Constrained > 90%, Critical > 97%. Exit: < 70%.
+  * PSI CPU `some avg10`: Elevated > 20, Constrained > 40, Critical > 60. Exit: < 10.
+  * MemAvailable: Elevated < 20%, Constrained < 10%, Critical < 5% (or swap-in > 50 MB/s). Exit: > 25%.
+  * Disk free: Elevated < 10%, Constrained < 5%, Critical < 2%. Exit: > 15%.
+  * Thermal delta to max: Elevated < 15 C, Constrained < 10 C, Critical < 5 C. Exit: > 20 C.
+  * VRAM used: Elevated > 85%, Constrained > 92%, Critical > 97%. Exit: < 80%.
+- Anti-Flapping Hysteresis Engine:
+  * Escalation: Requires `enter_consecutive_samples` (default 3) consecutive samples breaching threshold before escalating state.
+  * De-escalation: Requires `exit_consecutive_samples` (default 30 samples / 30s) below lower exit threshold before stepping down.
+  * Intermediate values do not toggle state: if CPU oscillates around 80% (79%, 81%, 78%, 82%), the detector sustains Elevated without generating spurious alert events or flapping state.
+- Alerts and Governor Actions:
+  * Returns `HealthAlert` events on state changes with signal name, level, value, and action (`warn`, `throttle`, `safe_pause`, `deescalate`).
+
+3. Workspace Verification:
+- `cargo fmt --check`: CLEAN
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`: CLEAN
+- `cargo test --workspace --all-features`: 120 / 120 tests passed
+- `npm run typecheck && npm run lint`: CLEAN
