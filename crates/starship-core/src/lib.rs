@@ -9,15 +9,16 @@ pub mod safety;
 pub use context::{AppCapability, RouteableTool, TokenBudget, TwoStageToolRouter};
 pub use error::{CoreError, ErrorKind};
 pub use executor::{
-    CompletedStepSummary, CrashRecoveryCard, CrashRecoveryManager, DagNode, DagScheduler,
-    EtaEstimate, FailureClass, FailureReport, FallbackDecision, FallbackLadderEngine, FallbackRung,
-    Governor, GovernorDirective, HandoffBundle, InterruptedStepInfo, LeaseSupervisor,
-    MIN_SAMPLES_FOR_PRECISE_ETA, MissionEvent, MissionFallbackContext, MissionProgressSnapshot,
-    MissionState, PROGRESS_THROTTLE_INTERVAL, PauseReason, ProgressAggregator, QuarantineManager,
-    QuarantineManifest, QuarantinedItem, RecoveryAction, ResourceLease, RetryDecision, RetryPolicy,
-    RollbackSummary, StepEvent, StepExecutionState, StepProgressTracker, StepState,
-    ToolDurationStats, classify_error, transition_mission, transition_step,
-    AdmissionController, AdmissionDecision,
+    AdmissionController, AdmissionDecision, CompletedStepSummary, CrashRecoveryCard,
+    CrashRecoveryManager, DagNode, DagScheduler, EtaEstimate, FailureClass, FailureReport,
+    FairMissionQueue, FallbackDecision, FallbackLadderEngine, FallbackRung, Governor,
+    GovernorDirective, HandoffBundle, InterruptedStepInfo, LeaseSupervisor,
+    MIN_SAMPLES_FOR_PRECISE_ETA, MissionDispatchDecision, MissionEvent, MissionFallbackContext,
+    MissionPriority, MissionProgressSnapshot, MissionState, PROGRESS_THROTTLE_INTERVAL,
+    PauseReason, ProgressAggregator, QuarantineManager, QuarantineManifest, QuarantinedItem,
+    RecoveryAction, ResourceLease, RetryDecision, RetryPolicy, RollbackSummary, StepEvent,
+    StepExecutionState, StepProgressTracker, StepState, ToolDurationStats, classify_error,
+    transition_mission, transition_step,
 };
 pub use pipeline::{
     CetEvent, CetHeader, CetTelemetry, CutInterval, DiagnosticsPipeline, ScreencastAssemblyRequest,

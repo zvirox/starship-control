@@ -1,0 +1,7 @@
+
+running 2 tests
+test executor::fair_queue::tests::test_user_initiated_preempts_scheduled_in_waiting_queue ... ok
+test executor::fair_queue::tests::test_two_missions_queue_and_run_in_order ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 80 filtered out; finished in 0.00s
+

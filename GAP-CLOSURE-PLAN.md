@@ -322,7 +322,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* simulated low memory triggers fallback with a clear user message and no OOM kill.
 - [x] **15.4 Process containment (optional, feature flag)** — run spawned headless apps via `systemd-run --user --scope -p MemoryMax=… -p CPUWeight=…` when available, so a runaway app can't take the desktop down; fall back to plain spawn with a warning when not.
   * *Verify:* a mock app that allocates unbounded memory is killed by its scope, mission goes to `failed_final` → F1/F5 as appropriate, desktop stays responsive.
-- [ ] **15.5 Fair queueing across missions** — max concurrent missions (default 1 running, others queued), priority = user-initiated > scheduled.
+- [x] **15.5 Fair queueing across missions** — max concurrent missions (default 1 running, others queued), priority = user-initiated > scheduled.
   * *Verify:* two missions queue and run in order.
 
 **DoD (Phase 15):** Heavy steps are scheduled only when the machine can take them; a runaway sub-app cannot freeze the desktop (when containment is available).

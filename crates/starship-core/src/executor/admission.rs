@@ -212,25 +212,28 @@ mod tests {
     use starship_plugin::DiskIoLevel;
 
     fn make_health(cpu_pct: f32, avail_mem_mb: u64) -> HealthSample {
-        let mut sample = HealthSample::default();
-        sample.cpu = Some(CpuMetrics {
-            global_util_pct: cpu_pct,
-            core_util_pct: vec![cpu_pct],
-            load_avg_1m: f64::from(cpu_pct) / 10.0,
-            load_avg_5m: 1.0,
-            load_avg_15m: 1.0,
-            avg_freq_mhz: 3200,
-        });
-        sample.memory = Some(MemoryMetrics {
-            total_bytes: 32 * 1024 * 1024 * 1024,
-            used_bytes: (32 * 1024 - avail_mem_mb) * 1024 * 1024,
-            available_bytes: avail_mem_mb * 1024 * 1024,
-            available_pct: (avail_mem_mb as f32 / (32.0 * 1024.0)) * 100.0,
-            swap_total_bytes: 8 * 1024 * 1024 * 1024,
-            swap_used_bytes: 0,
-            swap_in_bytes_per_sec: 0.0,
-        });
-        sample
+        #[expect(clippy::cast_precision_loss)]
+        let avail_pct = (avail_mem_mb as f32 / 32768.0) * 100.0;
+        HealthSample {
+            cpu: Some(CpuMetrics {
+                global_util_pct: cpu_pct,
+                core_util_pct: vec![cpu_pct],
+                load_avg_1m: f64::from(cpu_pct) / 10.0,
+                load_avg_5m: 1.0,
+                load_avg_15m: 1.0,
+                avg_freq_mhz: 3200,
+            }),
+            memory: Some(MemoryMetrics {
+                total_bytes: 32 * 1024 * 1024 * 1024,
+                used_bytes: (32 * 1024 - avail_mem_mb) * 1024 * 1024,
+                available_bytes: avail_mem_mb * 1024 * 1024,
+                available_pct: avail_pct,
+                swap_total_bytes: 8 * 1024 * 1024 * 1024,
+                swap_used_bytes: 0,
+                swap_in_bytes_per_sec: 0.0,
+            }),
+            ..Default::default()
+        }
     }
 
     #[test]
@@ -306,7 +309,13 @@ mod tests {
         };
 
         // First high step admitted (reserves 50% CPU, total estimated = 90%)
-        let d1 = controller.try_admit(10, "tool.heavy.1", high_profile.clone(), Some(&health_40), 100);
+        let d1 = controller.try_admit(
+            10,
+            "tool.heavy.1",
+            high_profile.clone(),
+            Some(&health_40),
+            100,
+        );
         assert_eq!(d1, AdmissionDecision::Admit);
 
         // Second high step queued due to lack of CPU headroom
@@ -317,7 +326,13 @@ mod tests {
         controller.release(10);
 
         // Now second high step can be admitted
-        let d3 = controller.try_admit(11, "tool.heavy.2", ResourceProfile::default(), Some(&health_40), 150);
+        let d3 = controller.try_admit(
+            11,
+            "tool.heavy.2",
+            ResourceProfile::default(),
+            Some(&health_40),
+            150,
+        );
         assert_eq!(d3, AdmissionDecision::Admit);
     }
 }

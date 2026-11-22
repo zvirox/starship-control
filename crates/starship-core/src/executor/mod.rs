@@ -1,5 +1,6 @@
 pub mod admission;
 pub mod failure;
+pub mod fair_queue;
 pub mod fallback;
 pub mod governor;
 pub mod lease;
@@ -13,6 +14,7 @@ pub mod state;
 
 pub use admission::{ActiveReservation, AdmissionController, AdmissionDecision};
 pub use failure::{FailureClass, classify_error};
+pub use fair_queue::{FairMissionQueue, MissionDispatchDecision, MissionPriority, QueuedMission};
 pub use fallback::{
     FallbackDecision, FallbackLadderEngine, FallbackRung, MissionFallbackContext,
     StepExecutionState,
