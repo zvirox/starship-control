@@ -1,0 +1,30 @@
+Task 11.1 Evidence: Pure Step/Mission State Machine & Property Verification
+Timestamp: 2026-11-22T17:20:10Z
+Commit/Phase: Phase 11 (11.1)
+
+=== Verification: Rust Unit & Property Tests ===
+Command: cargo test -p starship-core executor -- --nocapture
+Output:
+   Compiling starship-core v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.36s
+     Running unittests src/lib.rs (target/debug/build/starship-core/1ae31b5ed3502068/out/starship_core-1ae31b5ed3502068)
+
+running 5 tests
+test executor::state::tests::test_crash_recovery_transitions ... ok
+test executor::state::tests::test_mission_happy_path_lifecycle ... ok
+test executor::state::tests::test_step_retry_and_fallback_ladder ... ok
+test executor::state::tests::test_step_happy_path_and_approval_flow ... ok
+test executor::state::tests::test_property_no_sequence_reaches_illegal_state ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.00s
+
+=== State Machine Behavior ===
+1. Mission Lifecycle:
+   Planning -> Ready -> Running ⇄ Paused(User|Governor|Approval) -> Succeeded | PartiallySucceeded | Failed | Aborted
+2. Step Lifecycle:
+   Pending -> Ready -> AwaitingApproval -> Running -> Succeeded
+   Failures route to FailedRetryable (backoff) or FailedFinal (fallback ladder / degrade / rollback)
+   Crash recovery sets Interrupted; resume transitions back to Ready; abort transitions to Cancelled.
+3. Invariant Guarantees:
+   - Illegal transitions strictly return CoreError with code 'ipc.bad_state'.
+   - Exhaustive property tests verify all state-event combinations and 5,000 randomized state walks without panicking or landing in an invalid state.

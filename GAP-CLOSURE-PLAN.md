@@ -114,7 +114,7 @@ Step:    pending → ready → awaiting_approval → running
          | cancelled | interrupted (set on crash recovery)
 ```
 
-- [ ] **11.1 Step/mission state machine** in `starship-core/src/executor/state.rs` — pure, side-effect-free transition function + exhaustive tests (illegal transitions return `ipc.bad_state`).
+- [x] **11.1 Step/mission state machine** in `starship-core/src/executor/state.rs` — pure, side-effect-free transition function + exhaustive tests (illegal transitions return `ipc.bad_state`).
   * *Verify:* property test: no sequence of events reaches an illegal state.
 - [ ] **11.2 Event-sourced run log** — append-only `mission_events` table (see Appendix B). Every transition, tool call, retry, fallback decision writes an event first, then acts.
   * *Verify:* rebuilding mission state from events equals live state in a test.

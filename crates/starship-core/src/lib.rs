@@ -1,10 +1,15 @@
 pub mod error;
+pub mod executor;
 pub mod pipeline;
 pub mod planner;
 pub mod policy;
 pub mod safety;
 
 pub use error::{CoreError, ErrorKind};
+pub use executor::{
+    MissionEvent, MissionState, PauseReason, StepEvent, StepState, transition_mission,
+    transition_step,
+};
 pub use pipeline::{
     CetEvent, CetHeader, CetTelemetry, CutInterval, DiagnosticsPipeline, ScreencastAssemblyRequest,
     ScreencastPipeline, ScreencastPipelineResult, SystemMetricsReport,
