@@ -9,7 +9,7 @@ fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "starship_control=debug,starship_core=debug,starship_db=debug,info".into()
+                "starship_control=debug,starship_core=debug,starship_db=debug,starship_infer=debug,info".into()
             }),
         )
         .init();
@@ -38,6 +38,10 @@ fn main() {
             ipc::cmd_toggle_hud,
             ipc::cmd_resize_hud,
             ipc::cmd_list_models,
+            ipc::cmd_mission_create,
+            ipc::cmd_mission_send_prompt,
+            ipc::cmd_mission_list_messages,
+            ipc::cmd_provider_config_set,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

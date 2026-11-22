@@ -8,20 +8,20 @@ import {
   Activity,
   Plus,
   Send,
-  CheckCircle2,
-  AlertTriangle,
-  Play,
   RotateCcw,
   Check,
-  X,
   ExternalLink,
   Search,
   Database as DbIcon,
   ShieldCheck,
+  Settings,
+  ChevronDown,
 } from "lucide-react";
 import { GlassPanel } from "../common/GlassPanel";
 import { DesignVerification } from "../common/DesignVerification";
-import type { HelloResponse, ModelRecord } from "../../types/ipc";
+import { ChatCanvas } from "./ChatCanvas";
+import { ModelSettingsModal } from "./ModelSettingsModal";
+import type { HelloResponse, ModelRecord, CreateMissionResponse, SendPromptResponse } from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
   const [navTab, setNavTab] = useState<"missions" | "topology" | "models" | "audit" | "design">("missions");
@@ -29,6 +29,11 @@ export const CockpitView: React.FC = () => {
   const [hudActive, setHudActive] = useState(false);
   const [systemInfo, setSystemInfo] = useState<HelloResponse | null>(null);
   const [models, setModels] = useState<ModelRecord[]>([]);
+  const [activeModel, setActiveModel] = useState<ModelRecord | null>(null);
+  const [activeMissionId, setActiveMissionId] = useState<number>(1);
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [modelDropdownOpen, setModelDropdownOpen] = useState<boolean>(false);
 
   useEffect(() => {
     async function initHandshake() {
@@ -36,6 +41,10 @@ export const CockpitView: React.FC = () => {
         const hello = await invoke<HelloResponse>("ipc_hello");
         setSystemInfo(hello);
         setModels(hello.available_models);
+        if (hello.available_models.length > 0) {
+          const defaultModel = hello.available_models.find((m) => m.is_default) || hello.available_models[0];
+          setActiveModel(defaultModel);
+        }
       } catch (err) {
         console.warn("ipc_hello call in browser mode:", err);
       }
@@ -50,6 +59,40 @@ export const CockpitView: React.FC = () => {
     } catch (err) {
       console.warn("cmd_toggle_hud call failed:", err);
       setHudActive(!hudActive);
+    }
+  };
+
+  const handleSendPrompt = async () => {
+    if (!prompt.trim() || isStreaming) return;
+
+    const userPrompt = prompt.trim();
+    setPrompt("");
+    setIsStreaming(true);
+
+    try {
+      // If no mission yet, initialize one
+      let mId = activeMissionId;
+      if (!mId) {
+        const createRes = await invoke<CreateMissionResponse>("cmd_mission_create", {
+          payload: {
+            title: "Autonomous Session",
+            userGoal: userPrompt,
+            modelId: activeModel?.id ?? "qwen2.5-coder-7b-q4",
+          },
+        });
+        mId = createRes.missionId;
+        setActiveMissionId(mId);
+      }
+
+      await invoke<SendPromptResponse>("cmd_mission_send_prompt", {
+        payload: {
+          missionId: mId,
+          prompt: userPrompt,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to dispatch prompt:", err);
+      setIsStreaming(false);
     }
   };
 
@@ -68,27 +111,146 @@ export const CockpitView: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm tracking-wide text-slate-100">STARSHIP CONTROL</span>
               <span className="rounded-full bg-cyan-400/10 px-2 py-0.5 text-[10px] font-mono font-medium text-cyan-300 border border-cyan-400/20">
-                v0.1.0-alpha
+                Phase 1 Live
               </span>
             </div>
-            <p className="text-[10px] text-slate-400">Desktop AI Orchestration Matrix</p>
+            <p className="text-[10px] text-slate-400">Dual Inference Engine Matrix</p>
           </div>
         </div>
 
-        {/* Center Model Indicator */}
-        <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/30 px-3 py-1">
-          <span className="h-2 w-2 rounded-full bg-purple-400 animate-pulse" />
-          <span className="text-xs font-mono text-slate-300">Active Engine:</span>
-          <span className="text-xs font-semibold text-purple-300 font-mono">
-            {models[0]?.name ?? "Qwen 2.5 Coder 7B (Local GGUF)"}
-          </span>
-          <span className="rounded bg-purple-500/20 px-1 text-[9px] font-mono text-purple-300 border border-purple-500/30">
-            Vulkan 12GB
-          </span>
+        {/* Center Model Selector Dropdown */}
+        <div className="relative">
+          <button
+            onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
+            className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3.5 py-1 text-xs hover:border-cyan-400/50 transition-colors"
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                activeModel?.provider_type === "local_gguf" ? "bg-purple-400" : "bg-cyan-400"
+              } animate-pulse`}
+            />
+            <span className="font-mono text-slate-400">Engine:</span>
+            <span className="font-semibold text-slate-200 font-mono">
+              {activeModel?.name ?? "Qwen 2.5 Coder 7B (Local)"}
+            </span>
+            <span
+              className={`rounded px-1 text-[9px] font-mono border ${
+                activeModel?.provider_type === "local_gguf"
+                  ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                  : "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+              }`}
+            >
+              {activeModel?.provider_type === "local_gguf" ? "Vulkan GGUF" : "Cloud SSE"}
+            </span>
+            <ChevronDown className="h-3 w-3 text-slate-400" />
+          </button>
+
+          {modelDropdownOpen && (
+            <div className="absolute left-0 mt-1.5 w-64 rounded-xl border border-white/10 bg-[#0E131B]/95 backdrop-blur-2xl p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.6)] z-50 text-xs">
+              <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-slate-500 font-semibold flex justify-between">
+                <span>Available Engines</span>
+                <span>{models.length} loaded</span>
+              </div>
+              <button
+                onClick={() => {
+                  setActiveModel({
+                    id: "qwen2.5-coder-7b-q4",
+                    name: "Qwen 2.5 Coder 7B (Q4_K_M)",
+                    provider_type: "local_gguf",
+                    hf_repo_id: null,
+                    file_path: null,
+                    file_size_bytes: null,
+                    quantization: "Q4_K_M",
+                    sha256_hash: null,
+                    download_status: "ready",
+                    context_window: 8192,
+                    gpu_layers: 33,
+                    is_default: true,
+                    created_at: "",
+                    updated_at: "",
+                  });
+                  setModelDropdownOpen(false);
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/5 flex items-center justify-between"
+              >
+                <div>
+                  <div className="font-semibold text-slate-200">Qwen 2.5 Coder 7B</div>
+                  <div className="text-[10px] text-purple-400 font-mono">Local GGUF · Vulkan Offload</div>
+                </div>
+                {activeModel?.id === "qwen2.5-coder-7b-q4" && <Check className="h-3.5 w-3.5 text-cyan-400" />}
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveModel({
+                    id: "claude-3-7-sonnet",
+                    name: "Claude 3.7 Sonnet",
+                    provider_type: "cloud_anthropic",
+                    hf_repo_id: null,
+                    file_path: null,
+                    file_size_bytes: null,
+                    quantization: null,
+                    sha256_hash: null,
+                    download_status: "remote_only",
+                    context_window: 200000,
+                    gpu_layers: 0,
+                    is_default: false,
+                    created_at: "",
+                    updated_at: "",
+                  });
+                  setModelDropdownOpen(false);
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/5 flex items-center justify-between"
+              >
+                <div>
+                  <div className="font-semibold text-slate-200">Claude 3.7 Sonnet</div>
+                  <div className="text-[10px] text-cyan-400 font-mono">Cloud Anthropic SSE</div>
+                </div>
+                {activeModel?.id === "claude-3-7-sonnet" && <Check className="h-3.5 w-3.5 text-cyan-400" />}
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveModel({
+                    id: "gemini-2.0-flash",
+                    name: "Gemini 2.0 Flash",
+                    provider_type: "cloud_gemini",
+                    hf_repo_id: null,
+                    file_path: null,
+                    file_size_bytes: null,
+                    quantization: null,
+                    sha256_hash: null,
+                    download_status: "remote_only",
+                    context_window: 1000000,
+                    gpu_layers: 0,
+                    is_default: false,
+                    created_at: "",
+                    updated_at: "",
+                  });
+                  setModelDropdownOpen(false);
+                }}
+                className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-white/5 flex items-center justify-between"
+              >
+                <div>
+                  <div className="font-semibold text-slate-200">Gemini 2.0 Flash</div>
+                  <div className="text-[10px] text-cyan-400 font-mono">Cloud Google SSE</div>
+                </div>
+                {activeModel?.id === "gemini-2.0-flash" && <Check className="h-3.5 w-3.5 text-cyan-400" />}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Actions & HUD Launcher */}
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            title="Configure Cloud API Keys"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-slate-300 transition-colors"
+          >
+            <Settings className="h-3.5 w-3.5" />
+          </button>
+
           <button
             onClick={handleToggleHud}
             className={`flex items-center gap-1.5 rounded-lg border px-3 py-1 text-xs transition-all ${
@@ -107,7 +269,7 @@ export const CockpitView: React.FC = () => {
       <nav className="flex h-[44px] items-center justify-between border-b border-white/10 px-4 bg-[#080B10]">
         <div className="flex items-center gap-1 text-xs">
           {[
-            { id: "missions", label: "Missions & Canvas", icon: Layers },
+            { id: "missions", label: "Missions & Chat Stream", icon: Layers },
             { id: "topology", label: "App Ecosystem", icon: Activity },
             { id: "models", label: "Model Control", icon: Cpu },
             { id: "audit", label: "Audit Log", icon: FileText },
@@ -157,7 +319,23 @@ export const CockpitView: React.FC = () => {
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                   Missions
                 </span>
-                <button className="flex items-center gap-1 rounded-md bg-white/5 px-2 py-1 text-[11px] text-cyan-300 hover:bg-white/10 border border-white/10">
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await invoke<CreateMissionResponse>("cmd_mission_create", {
+                        payload: {
+                          title: "New Orchestration Session",
+                          userGoal: "Pending instruction",
+                          modelId: activeModel?.id ?? "qwen2.5-coder-7b-q4",
+                        },
+                      });
+                      setActiveMissionId(res.missionId);
+                    } catch (e) {
+                      console.warn(e);
+                    }
+                  }}
+                  className="flex items-center gap-1 rounded-md bg-white/5 px-2 py-1 text-[11px] text-cyan-300 hover:bg-white/10 border border-white/10"
+                >
                   <Plus className="h-3 w-3" />
                   <span>New</span>
                 </button>
@@ -175,7 +353,14 @@ export const CockpitView: React.FC = () => {
 
               {/* Mission Sessions */}
               <div className="space-y-1.5">
-                <div className="rounded-xl border border-cyan-400/40 bg-cyan-500/10 p-2.5 cursor-pointer shadow-[0_0_16px_rgba(56,189,248,0.15)]">
+                <div
+                  onClick={() => setActiveMissionId(1)}
+                  className={`rounded-xl border p-2.5 cursor-pointer transition-all ${
+                    activeMissionId === 1
+                      ? "border-cyan-400/40 bg-cyan-500/10 shadow-[0_0_16px_rgba(56,189,248,0.15)]"
+                      : "border-white/5 bg-white/5 opacity-60 hover:opacity-100"
+                  }`}
+                >
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-slate-100">Tutorial Ep4 Screencast</span>
                     <span className="rounded bg-cyan-400/20 px-1.5 py-0.5 text-[9px] font-mono text-cyan-300 border border-cyan-400/30">
@@ -190,18 +375,6 @@ export const CockpitView: React.FC = () => {
                     <span>1,420 tokens</span>
                   </div>
                 </div>
-
-                <div className="rounded-xl border border-white/5 bg-white/5 p-2.5 opacity-60 hover:opacity-100 transition-opacity cursor-pointer">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-medium text-slate-200">System Package Tuneup</span>
-                    <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-mono text-emerald-300">
-                      DONE
-                    </span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-slate-400 line-clamp-1">
-                    Purged 1.8GB orphaned packages via ATP
-                  </p>
-                </div>
               </div>
             </div>
 
@@ -211,130 +384,63 @@ export const CockpitView: React.FC = () => {
             </div>
           </aside>
 
-          {/* Center Canvas (Flexible Workspace) */}
+          {/* Center Canvas (Chat Stream & Task Sheet) */}
           <main className="flex-1 flex flex-col justify-between overflow-y-auto p-4 bg-[#080B10]">
-            <div className="space-y-4 max-w-4xl mx-auto w-full">
+            <div className="space-y-4 max-w-4xl mx-auto w-full flex-1 flex flex-col">
               {/* Mission Header Card */}
-              <GlassPanel recipe="pane" className="p-4 space-y-2">
+              <GlassPanel recipe="pane" className="p-3.5 space-y-1">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-base font-bold text-slate-100">
+                    <h2 className="text-sm font-bold text-slate-100">
                       Tutorial Ep4 Screencast Assembly
                     </h2>
                     <p className="text-xs text-slate-400">
                       Goal: Automate multi-app workflow spanning Easy Edits Pro, ScreenStudio Pro, and Audio Labs Pro.
                     </p>
                   </div>
-                  <span className="font-mono text-xs rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 px-3 py-1 flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
-                    <span>Planning (1.2s)</span>
+                  <span className="font-mono text-xs rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 px-3 py-1 flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+                    <span>Engine: {activeModel?.name}</span>
                   </span>
                 </div>
               </GlassPanel>
 
-              {/* Task Sheet Step Cards */}
-              <div className="space-y-2.5">
-                <h3 className="text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                  Execution DAG (Task Sheet v1)
-                </h3>
-
-                {/* Step 1: Safe Inspection (Tier 1) */}
-                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 mt-0.5" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs text-slate-100">
-                          1. Ingest CET telemetry from ScreenStudio Pro
-                        </span>
-                        <span className="rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px] px-1.5 py-0.5 border border-emerald-500/30">
-                          TIER 1 (READ-ONLY)
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Extracted 14 dead-air silence intervals and mouse clicks from CET sidecar.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono text-emerald-400">Complete (18ms)</span>
-                </div>
-
-                {/* Step 2: Audio Labs Pro (Tier 1) */}
-                <div className="rounded-xl border border-cyan-400/30 bg-cyan-400/5 p-3 flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <Play className="h-4 w-4 text-cyan-400 mt-0.5 animate-pulse" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs text-slate-100">
-                          2. Clean voiceover audio in Audio Labs Pro
-                        </span>
-                        <span className="rounded bg-cyan-400/20 text-cyan-300 font-mono text-[9px] px-1.5 py-0.5 border border-cyan-400/30">
-                          TIER 1 (NON-MUTATING)
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        Applying de-reverb and RNNoise spectral gate over track-01.wav.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono text-cyan-400">Running...</span>
-                </div>
-
-                {/* Step 3: Mutating Operation Gate (Tier 2) */}
-                <GlassPanel
-                  recipe="float"
-                  glow="rose"
-                  className="p-4 space-y-3 border-rose-500/40 bg-rose-500/10"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-rose-400 animate-bounce" />
-                      <span className="font-bold text-xs text-rose-300">
-                        HUMAN APPROVAL REQUIRED — Easy Edits Pro
-                      </span>
-                    </div>
-                    <span className="rounded bg-rose-500/20 text-rose-300 font-mono text-[10px] px-2 py-0.5 border border-rose-500/40 font-semibold">
-                      TIER 2 (MUTATING)
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-200">
-                    Proposed Action: Apply 18 ripple cuts and remove 01:24 dead time on main timeline.
-                  </p>
-
-                  <div className="rounded-lg bg-black/40 border border-white/10 p-2.5 font-mono text-[11px] text-slate-300 space-y-1">
-                    <div>Target File: ~/Videos/Tutorial-Ep4.eeproj</div>
-                    <div>Safety Checkpoint: #bk-04 (Auto-created, 100% reversible)</div>
-                    <div>Impact: 18 timeline cuts · 0 audio clips deleted</div>
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-1">
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-xs text-slate-300">
-                      <X className="h-3.5 w-3.5" />
-                      <span>Reject Plan</span>
-                    </button>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-semibold text-xs shadow-[0_0_16px_rgba(56,189,248,0.4)]">
-                      <Check className="h-3.5 w-3.5" />
-                      <span>Approve & Execute</span>
-                    </button>
-                  </div>
-                </GlassPanel>
-              </div>
+              {/* Chat Canvas with Real-Time Streaming */}
+              <ChatCanvas
+                missionId={activeMissionId}
+                isStreaming={isStreaming}
+                onStreamFinished={() => setIsStreaming(false)}
+              />
             </div>
 
             {/* Bottom Instruction Bar */}
-            <div className="mt-4 max-w-4xl mx-auto w-full">
+            <div className="mt-3 max-w-4xl mx-auto w-full">
               <div className="relative flex items-center rounded-2xl border border-white/15 bg-[#0E131B]/90 backdrop-blur-xl p-2 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
                 <input
                   type="text"
                   value={prompt}
+                  disabled={isStreaming}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Enter instruction or request task sheet decomposition..."
-                  className="flex-1 bg-transparent px-3 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendPrompt();
+                    }
+                  }}
+                  placeholder={
+                    isStreaming
+                      ? "Streaming completion tokens..."
+                      : "Enter instruction or workflow goal (e.g., 'Trim 14 silence segments in EEP')..."
+                  }
+                  className="flex-1 bg-transparent px-3 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
                 />
-                <button className="flex h-8 items-center gap-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 px-3 text-xs font-semibold text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.35)] transition-transform active:scale-95">
+                <button
+                  disabled={isStreaming || !prompt.trim()}
+                  onClick={handleSendPrompt}
+                  className="flex h-8 items-center gap-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 px-3.5 text-xs font-semibold text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.35)] transition-transform active:scale-95 disabled:opacity-50"
+                >
                   <Send className="h-3.5 w-3.5" />
-                  <span>Send</span>
+                  <span>{isStreaming ? "Streaming..." : "Send"}</span>
                 </button>
               </div>
             </div>
@@ -411,6 +517,9 @@ export const CockpitView: React.FC = () => {
           </aside>
         </div>
       )}
+
+      {/* Cloud Provider Credentials Modal */}
+      <ModelSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 };

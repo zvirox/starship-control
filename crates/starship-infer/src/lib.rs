@@ -1,47 +1,12 @@
-use async_trait::async_trait;
-use futures::Stream;
-use serde::{Deserialize, Serialize};
-use starship_core::CoreError;
-use std::pin::Pin;
+pub mod cloud;
+pub mod dispatcher;
+pub mod engine;
+pub mod local;
+pub mod types;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ChatChunk {
-    pub content: String,
-    pub thought: Option<String>,
-    pub is_final: bool,
-}
-
-pub type TokenStream = Pin<Box<dyn Stream<Item = Result<ChatChunk, CoreError>> + Send>>;
-
-#[async_trait]
-pub trait InferenceEngine: Send + Sync {
-    async fn stream_chat(&self, prompt: &str) -> Result<TokenStream, CoreError>;
-}
-
-/// Mock inference engine for deterministic verification.
-#[derive(Debug, Default)]
-pub struct MockInferenceEngine;
-
-#[async_trait]
-impl InferenceEngine for MockInferenceEngine {
-    async fn stream_chat(&self, _prompt: &str) -> Result<TokenStream, CoreError> {
-        let chunks = vec![
-            Ok(ChatChunk {
-                content: "Starship".to_string(),
-                thought: Some("Analyzing instruction...".to_string()),
-                is_final: false,
-            }),
-            Ok(ChatChunk {
-                content: " online.".to_string(),
-                thought: None,
-                is_final: true,
-            }),
-        ];
-
-        let stream = futures::stream::iter(chunks);
-        Ok(Box::pin(stream))
-    }
-}
+pub use dispatcher::InferDispatcher;
+pub use engine::{InferenceEngine, MockInferenceEngine};
+pub use types::{ChatChunk, ChatRequest, Message, Role, TokenStream, ToolCall, ToolDefinition};
 
 #[cfg(test)]
 mod tests {
@@ -50,17 +15,30 @@ mod tests {
 
     #[tokio::test]
     async fn test_mock_inference_engine_stream() {
-        let engine = MockInferenceEngine;
-        let mut stream = engine.stream_chat("hello").await.expect("stream_chat");
+        let engine = MockInferenceEngine::default();
+        let req = ChatRequest {
+            model: "mock".to_string(),
+            messages: vec![Message::user("hello")],
+            system_prompt: None,
+            temperature: None,
+            max_tokens: None,
+            tools: vec![],
+            stream: true,
+        };
+
+        let mut stream = engine.stream_chat(req).await.expect("stream_chat");
 
         let chunk1 = stream.next().await.expect("chunk 1").expect("chunk 1 ok");
-        assert_eq!(chunk1.content, "Starship");
-        assert_eq!(chunk1.thought.as_deref(), Some("Analyzing instruction..."));
+        assert_eq!(chunk1.content, "");
+        assert!(chunk1.thought.is_some());
         assert!(!chunk1.is_final);
 
         let chunk2 = stream.next().await.expect("chunk 2").expect("chunk 2 ok");
-        assert_eq!(chunk2.content, " online.");
-        assert!(chunk2.is_final);
+        assert!(chunk2.content.contains("Starship Control acknowledged"));
+        assert!(!chunk2.is_final);
+
+        let chunk3 = stream.next().await.expect("chunk 3").expect("chunk 3 ok");
+        assert!(chunk3.is_final);
 
         assert!(stream.next().await.is_none());
     }

@@ -40,22 +40,22 @@
 
 > **Goal:** Real-time token streaming in Cockpit from both local GGUF models (`llama-cpp-2`) and cloud streaming endpoints (`reqwest` SSE).
 
-- [ ] **1.1 Unified `InferenceEngine` Trait (`starship-infer`)**
+- [x] **1.1 Unified `InferenceEngine` Trait (`starship-infer`)**
   - Define `InferenceEngine` async trait returning a pinned `Stream<Item = Result<ChatChunk, CoreError>>`.
   - Implement unified `ChatRequest`, `Message`, and `ToolDefinition` abstractions.
   - *Verify:* Mock engine unit test streams token chunks deterministically.
-- [ ] **1.2 Cloud SSE Client Implementation**
+- [x] **1.2 Cloud SSE Client Implementation**
   - Implement OpenAI-compatible streaming client (supporting OpenAI, OpenRouter, and Ollama).
   - Implement Anthropic Claude SSE streaming client (`messages` API).
   - Implement Google Gemini streaming client.
   - Wire encrypted provider configuration storage in `provider_configs` table.
   - *Verify:* Live prompt against configured cloud provider streams tokens smoothly into Cockpit chat.
-- [ ] **1.3 Local GGUF Engine Integration (`llama-cpp-2`)**
+- [x] **1.3 Local GGUF Engine Integration (`llama-cpp-2`)**
   - Author native `llama-cpp-2` wrapper with hardware detection (Vulkan, ROCm, CPU threads).
   - Implement context caching, token sampling, and streaming token generator.
   - Implement RAM/VRAM pre-allocation probe preventing out-of-memory crashes.
   - *Verify:* Loading local GGUF file executes inference locally on device with token generation logged.
-- [ ] **1.4 Streaming Token & Thought UI**
+- [x] **1.4 Streaming Token & Thought UI**
   - Author Cockpit chat message canvas with real-time token rendering, code syntax highlighting, and expandable `<thought>` blocks.
   - Emit `evt://token/stream` and `evt://thought/stream` from Rust core to webview.
   - *Verify:* Visual verification of streamed responses in Cockpit with latency timer (`mono-sm`).

@@ -66,6 +66,22 @@ export interface MissionRecord {
 }
 
 /**
+ * Mission Message Record (DATABASE.md §3.2).
+ */
+export interface MissionMessageRecord {
+  id: number;
+  mission_id: number;
+  role: "user" | "assistant" | "system" | "tool";
+  content: string;
+  thought_process: string | null;
+  tool_calls_json: string | null;
+  tool_call_id: string | null;
+  tokens_used: number | null;
+  latency_ms: number | null;
+  created_at: string;
+}
+
+/**
  * Initial handshake response from ipc_hello.
  */
 export interface HelloResponse {
@@ -78,8 +94,60 @@ export interface HelloResponse {
 }
 
 /**
- * HUD resize payload.
+ * Mission creation payload and response.
  */
-export interface HudResizePayload {
-  expanded: boolean;
+export interface CreateMissionPayload {
+  title: string;
+  userGoal: string;
+  modelId: string;
+}
+
+export interface CreateMissionResponse {
+  missionId: number;
+  uuid: string;
+  createdAt: string;
+}
+
+/**
+ * Prompt submission payload and response.
+ */
+export interface SendPromptPayload {
+  missionId: number;
+  prompt: string;
+}
+
+export interface SendPromptResponse {
+  messageId: number;
+  status: string;
+}
+
+/**
+ * Real-time push events (API.md §3).
+ */
+export interface TokenStreamEvent {
+  missionId: number;
+  chunk: string;
+}
+
+export interface ThoughtStreamEvent {
+  missionId: number;
+  thoughtChunk: string;
+}
+
+export interface StreamFinishedEvent {
+  missionId: number;
+  messageId: number;
+  content: string;
+  thought?: string | null;
+}
+
+/**
+ * Provider Config Payload.
+ */
+export interface ProviderConfigPayload {
+  providerId: string;
+  displayName: string;
+  baseUrl: string;
+  apiKey?: string;
+  isEnabled: boolean;
 }

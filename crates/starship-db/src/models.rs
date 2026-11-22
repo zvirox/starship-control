@@ -1,5 +1,5 @@
 use crate::Database;
-use crate::schema::{MissionRecord, ModelRecord};
+use crate::schema::{MissionMessageRecord, MissionRecord, ModelRecord, ProviderConfigRecord};
 use rusqlite::params;
 use starship_core::CoreError;
 
@@ -38,6 +38,43 @@ impl Database {
                 models.push(r?);
             }
             Ok(models)
+        })
+    }
+
+    /// Fetches a specific model by ID.
+    pub fn get_model(&self, id: &str) -> Result<Option<ModelRecord>, CoreError> {
+        self.with_conn(|conn| {
+            let mut stmt = conn.prepare(
+                "SELECT id, name, provider_type, hf_repo_id, file_path, file_size_bytes, 
+                        quantization, sha256_hash, download_status, context_window, gpu_layers, 
+                        is_default, created_at, updated_at 
+                 FROM models WHERE id = ?1",
+            )?;
+
+            let mut rows = stmt.query_map(params![id], |row| {
+                Ok(ModelRecord {
+                    id: row.get(0)?,
+                    name: row.get(1)?,
+                    provider_type: row.get(2)?,
+                    hf_repo_id: row.get(3)?,
+                    file_path: row.get(4)?,
+                    file_size_bytes: row.get(5)?,
+                    quantization: row.get(6)?,
+                    sha256_hash: row.get(7)?,
+                    download_status: row.get(8)?,
+                    context_window: row.get(9)?,
+                    gpu_layers: row.get(10)?,
+                    is_default: row.get::<_, i64>(11)? == 1,
+                    created_at: row.get(12)?,
+                    updated_at: row.get(13)?,
+                })
+            })?;
+
+            if let Some(r) = rows.next() {
+                Ok(Some(r?))
+            } else {
+                Ok(None)
+            }
         })
     }
 
@@ -92,6 +129,112 @@ impl Database {
             } else {
                 Ok(None)
             }
+        })
+    }
+
+    /// Appends a message to the mission messages log.
+    pub fn add_message(
+        &self,
+        mission_id: i64,
+        role: &str,
+        content: &str,
+        thought: Option<&str>,
+    ) -> Result<i64, CoreError> {
+        self.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO mission_messages (mission_id, role, content, thought_process)
+                 VALUES (?1, ?2, ?3, ?4)",
+                params![mission_id, role, content, thought],
+            )?;
+            Ok(conn.last_insert_rowid())
+        })
+    }
+
+    /// Lists messages for a given mission chronologically.
+    pub fn list_messages(&self, mission_id: i64) -> Result<Vec<MissionMessageRecord>, CoreError> {
+        self.with_conn(|conn| {
+            let mut stmt = conn.prepare(
+                "SELECT id, mission_id, role, content, thought_process, tool_calls_json, tool_call_id,
+                        tokens_used, latency_ms, created_at
+                 FROM mission_messages WHERE mission_id = ?1 ORDER BY created_at ASC, id ASC",
+            )?;
+
+            let rows = stmt.query_map(params![mission_id], |row| {
+                Ok(MissionMessageRecord {
+                    id: row.get(0)?,
+                    mission_id: row.get(1)?,
+                    role: row.get(2)?,
+                    content: row.get(3)?,
+                    thought_process: row.get(4)?,
+                    tool_calls_json: row.get(5)?,
+                    tool_call_id: row.get(6)?,
+                    tokens_used: row.get(7)?,
+                    latency_ms: row.get(8)?,
+                    created_at: row.get(9)?,
+                })
+            })?;
+
+            let mut msgs = Vec::new();
+            for r in rows {
+                msgs.push(r?);
+            }
+            Ok(msgs)
+        })
+    }
+
+    /// Retrieves provider configuration for a cloud provider.
+    pub fn get_provider_config(
+        &self,
+        provider_id: &str,
+    ) -> Result<Option<ProviderConfigRecord>, CoreError> {
+        self.with_conn(|conn| {
+            let mut stmt = conn.prepare(
+                "SELECT provider_id, display_name, base_url, api_key_encrypted, is_enabled, created_at, updated_at
+                 FROM provider_configs WHERE provider_id = ?1",
+            )?;
+
+            let mut rows = stmt.query_map(params![provider_id], |row| {
+                Ok(ProviderConfigRecord {
+                    provider_id: row.get(0)?,
+                    display_name: row.get(1)?,
+                    base_url: row.get(2)?,
+                    api_key_encrypted: row.get(3)?,
+                    is_enabled: row.get::<_, i64>(4)? == 1,
+                    created_at: row.get(5)?,
+                    updated_at: row.get(6)?,
+                })
+            })?;
+
+            if let Some(res) = rows.next() {
+                Ok(Some(res?))
+            } else {
+                Ok(None)
+            }
+        })
+    }
+
+    /// Sets or updates a cloud provider configuration.
+    pub fn set_provider_config(
+        &self,
+        provider_id: &str,
+        display_name: &str,
+        base_url: &str,
+        api_key_encrypted: Option<&str>,
+        is_enabled: bool,
+    ) -> Result<(), CoreError> {
+        self.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO provider_configs (provider_id, display_name, base_url, api_key_encrypted, is_enabled)
+                 VALUES (?1, ?2, ?3, ?4, ?5)
+                 ON CONFLICT(provider_id) DO UPDATE SET
+                    display_name = excluded.display_name,
+                    base_url = excluded.base_url,
+                    api_key_encrypted = COALESCE(excluded.api_key_encrypted, provider_configs.api_key_encrypted),
+                    is_enabled = excluded.is_enabled,
+                    updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')",
+                params![provider_id, display_name, base_url, api_key_encrypted, i32::from(is_enabled)],
+            )?;
+            Ok(())
         })
     }
 }
