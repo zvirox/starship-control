@@ -134,7 +134,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* `kill -9` during a step, restart, card appears; resume re-requests approval.
 - [x] **11.10 Fallback ladder engine** — implements §2 below as `executor/fallback.rs`, configurable per pipeline in `fallbacks.toml`.
   * *Verify:* each ladder rung has a test using the mock app (Phase 16 harness stubs are acceptable here).
-- [ ] **11.11 Failure report & handoff bundle** — on terminal failure generate `mission-<id>-report.md` (what ran, what failed, what was rolled back, current state, suggested manual steps) + export bundle (plan JSON, events, logs with secrets scrubbed).
+- [x] **11.11 Failure report & handoff bundle** — on terminal failure generate `mission-<id>-report.md` (what ran, what failed, what was rolled back, current state, suggested manual steps) + export bundle (plan JSON, events, logs with secrets scrubbed).
   * *Verify:* bundle opens, contains no canary secrets.
 
 **DoD (Phase 11):** Killing an app, the core process, or the network mid-mission leads to a defined, recorded, user-visible outcome — never a silent hang.

@@ -1,0 +1,26 @@
+=== Starship Control Task 11.11 Verification Evidence ===
+Timestamp: 2026-11-22T17:44:41+05:30
+Task: 11.11 Failure report & handoff bundle (executor/report.rs)
+
+Verified:
+1. Generation of Markdown failure report `mission-<id>-report.md`:
+   - What Ran (completed steps, risk tiers, durations)
+   - What Failed (failed step, tool, error code, failure class, terminal rung)
+   - What Was Rolled Back (checkpoints restored, quarantine actions)
+   - Current State (leases released, sub-process cleanup)
+   - Suggested Manual Steps (contextual troubleshooting guide)
+2. Export bundle creation with SecretScrubber:
+   - Contains mission report, plan.json, events.json, logs.txt
+   - Rigorously redacts all known API keys, bearer tokens, and custom secrets
+   - Verified that canary secret (`sk-live-canary-key-999888777666555444333`) never appears in exported files or bundle fields
+
+Test Command Output:
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.08s
+     Running unittests src/lib.rs (target/debug/build/starship-core/9fa1eac12a4f429a/out/starship_core-9fa1eac12a4f429a)
+
+running 1 test
+test executor::report::tests::test_failure_report_markdown_and_scrubbed_handoff_bundle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 41 filtered out; finished in 0.00s
+
+Verification: SUCCESS

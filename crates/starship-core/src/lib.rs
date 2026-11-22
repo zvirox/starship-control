@@ -7,10 +7,11 @@ pub mod safety;
 
 pub use error::{CoreError, ErrorKind};
 pub use executor::{
-    CrashRecoveryCard, CrashRecoveryManager, DagNode, DagScheduler, FailureClass, FallbackDecision,
-    FallbackLadderEngine, FallbackRung, InterruptedStepInfo, LeaseSupervisor, MissionEvent,
-    MissionFallbackContext, MissionState, PauseReason, QuarantineManager, QuarantineManifest,
-    QuarantinedItem, RecoveryAction, ResourceLease, RetryDecision, RetryPolicy, StepEvent,
+    CompletedStepSummary, CrashRecoveryCard, CrashRecoveryManager, DagNode, DagScheduler,
+    FailureClass, FailureReport, FallbackDecision, FallbackLadderEngine, FallbackRung,
+    HandoffBundle, InterruptedStepInfo, LeaseSupervisor, MissionEvent, MissionFallbackContext,
+    MissionState, PauseReason, QuarantineManager, QuarantineManifest, QuarantinedItem,
+    RecoveryAction, ResourceLease, RetryDecision, RetryPolicy, RollbackSummary, StepEvent,
     StepExecutionState, StepState, classify_error, transition_mission, transition_step,
 };
 pub use pipeline::{
