@@ -18,7 +18,10 @@ pub use pipeline::{
     CetEvent, CetHeader, CetTelemetry, CutInterval, DiagnosticsPipeline, ScreencastAssemblyRequest,
     ScreencastPipeline, ScreencastPipelineResult, SystemMetricsReport,
 };
-pub use planner::{PlanDag, PlannerPromptBuilder, TASKSHEET_VERSION_1, TaskSheet, TaskSheetStep};
+pub use planner::{
+    DEFAULT_MAX_STEPS, DEFAULT_MAX_TIER3_STEPS, PlanDag, PlannerPromptBuilder, TASKSHEET_VERSION_1,
+    TaskSheet, TaskSheetStep, TaskSheetValidator, ToolSchema,
+};
 pub use policy::{DiffSummarizer, TierPolicy};
 pub use safety::{
     ApprovalRequest, ExecutionPermission, RiskTier, SafetyArbiter, SecretScrubber, SecretVault,

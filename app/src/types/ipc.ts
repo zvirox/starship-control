@@ -8,7 +8,8 @@ export type ErrorKind =
   | "db"
   | "app"
   | "settings"
-  | "ipc";
+  | "ipc"
+  | "plan";
 
 /**
  * Standard error envelope strictly adhering to API.md §1.

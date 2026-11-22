@@ -53,7 +53,21 @@ pub fn classify_error(code: &str) -> FailureClass {
         "infer.context_length_exceeded"
         | "infer.model_not_found"
         | "infer.checksum_mismatch"
-        | "ipc.cycle_detected" => FailureClass::ModelOutput,
+        | "ipc.cycle_detected"
+        | "plan.invalid_schema"
+        | "plan.cycle_detected"
+        | "plan.unknown_tool"
+        | "plan.unknown_app"
+        | "plan.args_invalid"
+        | "plan.duplicate_step_index"
+        | "plan.self_dependency"
+        | "plan.missing_dependency"
+        | "plan.max_steps_exceeded"
+        | "plan.max_tier3_exceeded"
+        | "plan.invalid_risk_tier"
+        | "plan.empty_plan"
+        | "plan.empty_goal"
+        | "planner.unsupported_version" => FailureClass::ModelOutput,
 
         // Safety: approval rejections, permission violations, tamper, manifest untrusted
         "safety.approval_rejected"
@@ -121,6 +135,22 @@ mod tests {
             "ipc.invalid_payload",
             "ipc.bad_state",
             "ipc.window_not_found",
+            "ipc.cycle_detected",
+            // plan.*
+            "plan.invalid_schema",
+            "plan.cycle_detected",
+            "plan.unknown_tool",
+            "plan.unknown_app",
+            "plan.args_invalid",
+            "plan.duplicate_step_index",
+            "plan.self_dependency",
+            "plan.missing_dependency",
+            "plan.max_steps_exceeded",
+            "plan.max_tier3_exceeded",
+            "plan.invalid_risk_tier",
+            "plan.empty_plan",
+            "plan.empty_goal",
+            "planner.unsupported_version",
         ];
 
         for code in api_codes {
@@ -136,7 +166,13 @@ mod tests {
                 "infer.model_out_of_memory" => {
                     assert_eq!(class, FailureClass::Resource);
                 }
-                "infer.context_length_exceeded" | "infer.checksum_mismatch" => {
+                "infer.context_length_exceeded"
+                | "infer.checksum_mismatch"
+                | "plan.invalid_schema"
+                | "plan.cycle_detected"
+                | "plan.unknown_tool"
+                | "plan.unknown_app"
+                | "plan.args_invalid" => {
                     assert_eq!(class, FailureClass::ModelOutput);
                 }
                 "safety.approval_rejected"

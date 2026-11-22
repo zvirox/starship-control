@@ -1,10 +1,12 @@
 pub mod dag;
 pub mod prompt;
 pub mod tasksheet;
+pub mod validator;
 
 pub use dag::PlanDag;
 pub use prompt::PlannerPromptBuilder;
 pub use tasksheet::{TASKSHEET_VERSION_1, TaskSheet, TaskSheetStep};
+pub use validator::{DEFAULT_MAX_STEPS, DEFAULT_MAX_TIER3_STEPS, TaskSheetValidator, ToolSchema};
 
 #[cfg(test)]
 mod tests {

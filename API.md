@@ -27,7 +27,7 @@ Every error returned by a command or emitted over an error event strictly matche
 ### 1.1 Error Envelope Schema
 | Field | Type | Description |
 |---|---|---|
-| `kind` | `string` | Error family: `'infer'`, `'mcp'`, `'safety'`, `'db'`, `'app'`, `'settings'`, `'ipc'`. |
+| `kind` | `string` | Error family: `'infer'`, `'mcp'`, `'safety'`, `'db'`, `'app'`, `'settings'`, `'ipc'`, `'plan'`. |
 | `code` | `string` | Stable, machine-readable identifier in dot notation (`<domain>.<cause>`). |
 | `retryable` | `boolean` | Indicates whether the UI should provide an immediate Retry action. |
 | `userMessage` | `string` | Plain-English message formatted strictly from DESIGN.md vocabulary. Raw errors are logged to disk only. |
@@ -35,10 +35,12 @@ Every error returned by a command or emitted over an error event strictly matche
 
 ### 1.2 Canonical Error Codes
 - **Inference (`infer.*`):** `infer.model_not_found`, `infer.model_out_of_memory`, `infer.download_failed`, `infer.checksum_mismatch`, `infer.cloud_auth_failed`, `infer.cloud_rate_limited`, `infer.cloud_endpoint_unreachable`, `infer.context_length_exceeded`.
-- **MCP & Bridge (`mcp.*`):** `mcp.socket_unreachable`, `mcp.so_peercred_failed`, `mcp.handshake_timeout`, `mcp.tool_not_found`, `mcp.execution_failed`, `mcp.app_spawn_failed`, `mcp.lease_expired`.
+- **MCP & Bridge (`mcp.*`):** `mcp.socket_unreachable`, `mcp.so_peercred_failed`, `mcp.handshake_timeout`, `mcp.tool_not_found`, `mcp.execution_failed`, `mcp.app_spawn_failed`, `mcp.lease_expired`, `mcp.manifest_untrusted`, `mcp.peer_exe_mismatch`, `mcp.checkpoint_unsupported`.
 - **Safety & Permissions (`safety.*`):** `safety.approval_rejected`, `safety.permission_denied`, `safety.invalid_signature_token`, `safety.tier_violation`.
-- **Database & Storage (`db.*`):** `db.read_failed`, `db.write_failed`, `db.constraint_violation`, `db.migration_failed`.
-- **IPC & Window (`ipc.*`):** `ipc.invalid_payload`, `ipc.bad_state`, `ipc.window_not_found`.
+- **Database & Storage (`db.*`):** `db.read_failed`, `db.write_failed`, `db.constraint_violation`, `db.migration_failed`, `db.audit_tampered`.
+- **IPC & Window (`ipc.*`):** `ipc.invalid_payload`, `ipc.bad_state`, `ipc.window_not_found`, `ipc.cycle_detected`.
+- **Planner & Schema (`plan.*`):** `plan.invalid_schema`, `plan.cycle_detected`, `plan.unknown_tool`, `plan.unknown_app`, `plan.args_invalid`, `plan.duplicate_step_index`, `plan.self_dependency`, `plan.missing_dependency`, `plan.max_steps_exceeded`, `plan.max_tier3_exceeded`, `plan.invalid_risk_tier`, `plan.empty_plan`, `plan.empty_goal`, `planner.unsupported_version`.
+- **Executor & Recovery (`exec.*`):** `exec.step_timeout`, `exec.stalled`, `exec.replan_exhausted`, `exec.rollback_failed`.
 
 ---
 

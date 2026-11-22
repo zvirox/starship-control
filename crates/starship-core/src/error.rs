@@ -13,6 +13,7 @@ pub enum ErrorKind {
     App,
     Settings,
     Ipc,
+    Plan,
 }
 
 impl fmt::Display for ErrorKind {
@@ -25,6 +26,7 @@ impl fmt::Display for ErrorKind {
             Self::App => write!(f, "app"),
             Self::Settings => write!(f, "settings"),
             Self::Ipc => write!(f, "ipc"),
+            Self::Plan => write!(f, "plan"),
         }
     }
 }
@@ -118,6 +120,16 @@ impl CoreError {
         details: Option<serde_json::Value>,
     ) -> Self {
         Self::new(ErrorKind::App, code, retryable, user_message, details)
+    }
+
+    #[must_use]
+    pub fn plan(
+        code: impl Into<String>,
+        retryable: bool,
+        user_message: impl Into<String>,
+        details: Option<serde_json::Value>,
+    ) -> Self {
+        Self::new(ErrorKind::Plan, code, retryable, user_message, details)
     }
 
     #[must_use]

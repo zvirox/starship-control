@@ -189,7 +189,7 @@ Step:    pending → ready → awaiting_approval → running
 
 > **Goal:** Close G10–G12. Plans are valid by construction and affordable in a small context window.
 
-- [ ] **12.1 TaskSheet schema & validator** — JSON Schema for `tasksheet/1` (check in `schemas/tasksheet-1.json`); validator checks: schema, unique step ids, DAG acyclic, tools exist in the live registry, arguments validate against each tool's JSON Schema, max steps (default 30), max Tier 3 steps per plan (default 3).
+- [x] **12.1 TaskSheet schema & validator** — JSON Schema for `tasksheet/1` (check in `schemas/tasksheet-1.json`); validator checks: schema, unique step ids, DAG acyclic, tools exist in the live registry, arguments validate against each tool's JSON Schema, max steps (default 30), max Tier 3 steps per plan (default 3).
   * *Verify:* 15 invalid fixtures each rejected with a specific error.
 - [ ] **12.2 Repair loop** — on validation failure, send errors back to the model (≤ 2 attempts), then escalate to F3 chain.
   * *Verify:* mock engine returns bad JSON twice then good → plan accepted; third failure → fallback.
