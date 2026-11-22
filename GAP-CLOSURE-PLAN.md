@@ -191,7 +191,7 @@ Step:    pending → ready → awaiting_approval → running
 
 - [x] **12.1 TaskSheet schema & validator** — JSON Schema for `tasksheet/1` (check in `schemas/tasksheet-1.json`); validator checks: schema, unique step ids, DAG acyclic, tools exist in the live registry, arguments validate against each tool's JSON Schema, max steps (default 30), max Tier 3 steps per plan (default 3).
   * *Verify:* 15 invalid fixtures each rejected with a specific error.
-- [ ] **12.2 Repair loop** — on validation failure, send errors back to the model (≤ 2 attempts), then escalate to F3 chain.
+- [x] **12.2 Repair loop** — on validation failure, send errors back to the model (≤ 2 attempts), then escalate to F3 chain.
   * *Verify:* mock engine returns bad JSON twice then good → plan accepted; third failure → fallback.
 - [ ] **12.3 Constrained decoding for local models** — generate a GBNF grammar from the schema and use it with `llama-cpp-2` sampling; cloud providers use native tool/JSON modes.
   * *Verify:* 20-prompt golden suite on a 7B Q4 model: ≥ 90 % schema-valid (record actual number; adjust target honestly).

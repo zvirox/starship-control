@@ -1,0 +1,22 @@
+=== Starship Control Task 12.2 Verification Evidence ===
+Timestamp: 2026-11-22T17:53:14+05:30
+Task: 12.2 Repair loop (planner/repair.rs)
+
+Verified:
+1. Self-correcting repair loop receives validation errors from TaskSheetValidator.
+2. Formats targeted correction prompt with specific error code and user message, preserving untrusted context fences.
+3. Limits retries to ≤ 2 repair attempts (3 attempts total).
+4. Test 1: Mock engine returns bad JSON twice, then valid JSON on attempt 3 -> Plan accepted with attempts_used = 3.
+5. Test 2: Mock engine returns bad JSON 3 times -> Escalates to Fallback Ladder Rung F3 (F3Replan).
+
+Test Command Output:
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src/lib.rs (target/debug/build/starship-core/9fa1eac12a4f429a/out/starship_core-9fa1eac12a4f429a)
+
+running 2 tests
+test planner::repair::tests::test_repair_loop_third_failure_escalates_to_f3_fallback ... ok
+test planner::repair::tests::test_repair_loop_bad_twice_then_good_accepts_plan ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 58 filtered out; finished in 0.00s
+
+Verification: SUCCESS

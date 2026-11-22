@@ -19,7 +19,8 @@ pub use pipeline::{
     ScreencastPipeline, ScreencastPipelineResult, SystemMetricsReport,
 };
 pub use planner::{
-    DEFAULT_MAX_STEPS, DEFAULT_MAX_TIER3_STEPS, PlanDag, PlannerPromptBuilder, TASKSHEET_VERSION_1,
+    DEFAULT_MAX_REPAIR_ATTEMPTS, DEFAULT_MAX_STEPS, DEFAULT_MAX_TIER3_STEPS, PlanDag,
+    PlanGenerator, PlannerPromptBuilder, PlannerRepairLoop, RepairResult, TASKSHEET_VERSION_1,
     TaskSheet, TaskSheetStep, TaskSheetValidator, ToolSchema,
 };
 pub use policy::{DiffSummarizer, TierPolicy};
