@@ -1,0 +1,155 @@
+{
+  "timestamp": "2026-11-22T18:10:00+05:30",
+  "engine": "mock",
+  "total_prompts": 20,
+  "valid_plans": 20,
+  "valid_pct": 100.0,
+  "tool_accuracy_cases": 20,
+  "tool_accuracy_matches": 20,
+  "tool_accuracy_pct": 100.0,
+  "replans_triggered": 0,
+  "replan_rate_pct": 0.0,
+  "duration_ms": 58,
+  "prompt_results": [
+    {
+      "prompt": "Record a 60 second screencast of my browser and clean audio",
+      "valid": true,
+      "steps_count": 3,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Cut the first 5 seconds of the video in Easy Edits Pro",
+      "valid": true,
+      "steps_count": 2,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Remove background noise and hum from track 1 in Audio Labs Pro",
+      "valid": true,
+      "steps_count": 1,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Trim silence across the entire active timeline in EEP",
+      "valid": true,
+      "steps_count": 2,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Capture screen at 60fps on display 0",
+      "valid": true,
+      "steps_count": 3,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Denoise audio take with spectral subtraction preset",
+      "valid": true,
+      "steps_count": 1,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Clean cache in Agentic Tuneup Pro with target package",
+      "valid": true,
+      "steps_count": 1,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Inspect network interfaces with Net Watch Pro",
+      "valid": true,
+      "steps_count": 1,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Import recorded screencast into project timeline in EEP",
+      "valid": true,
+      "steps_count": 3,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Apply voice isolation preset in Audio Labs Pro",
+      "valid": true,
+      "steps_count": 1,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Auto cut intervals in video timeline from 1000ms to 5000ms",
+      "valid": true,
+      "steps_count": 2,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Record 30 second tutorial video without microphone",
+      "valid": true,
+      "steps_count": 3,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Run package cleanup dry-run in ATP",
+      "valid": true,
+      "steps_count": 1,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Record 1080p screencast and export lossless video",
+      "valid": true,
+      "steps_count": 3,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Normalize audio loudness to -14 LUFS in ALP",
+      "valid": true,
+      "steps_count": 1,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Trim dead space before first speech event in podcast",
+      "valid": true,
+      "steps_count": 2,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Clean system thumbnails cache in ATP",
+      "valid": true,
+      "steps_count": 1,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Capture full screen presentation with system audio in SSP",
+      "valid": true,
+      "steps_count": 3,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Export active timeline to MP4 format with AAC audio",
+      "valid": true,
+      "steps_count": 2,
+      "required_replan": false,
+      "error": null
+    },
+    {
+      "prompt": "Run diagnostics check on all connected creative apps",
+      "valid": true,
+      "steps_count": 1,
+      "required_replan": false,
+      "error": null
+    }
+  ]
+}

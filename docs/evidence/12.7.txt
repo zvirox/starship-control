@@ -1,0 +1,22 @@
+=== 12.7 Planner Eval Harness Evidence ===
+Timestamp: 2026-11-22T18:12:27+05:30
+Requirement: `cargo xtask eval-planner` runs the golden prompts against configured engines and writes `docs/evidence/planner-eval.json` (valid %, tool-accuracy %, replan rate).
+
+$ cargo xtask eval-planner
+=== Starship Control: Planner Evaluation Harness ===
+Engine: mock
+Output: docs/evidence/planner-eval.json
+
+=== Planner Evaluation Summary ===
+Schema Valid Plans: 20/20 (100.0%)
+Tool Routing Accuracy: 20/20 (100.0%)
+Replan / Repair Rate: 0/20 (0.0%)
+Evaluation Completed in: 58 ms
+Report written to: docs/evidence/planner-eval.json
+
+Summary Metrics:
+- Golden Prompts Evaluated: 20
+- Schema Valid TaskSheets: 20 (100.0%) [Target: >= 90.0%]
+- Two-Stage Tool Routing Accuracy: 20/20 (100.0%) [Target: >= 95.0%]
+- Replan / Repair Rate: 0/20 (0.0%)
+- JSON report output successfully generated at docs/evidence/planner-eval.json
