@@ -228,7 +228,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* frontend reconnect replays missed events with no gaps (cursor test).
 - [x] **13.5 Cockpit Mission Timeline UI** — DAG/timeline view: per-step state chips, progress bars, tier badges, retry/fallback markers, elapsed + ETA, live log drawer; "Why did this fallback happen?" link to the event.
   * *Verify:* visual check with a mock mission containing a retry, a fallback and a skipped step; screenshots saved to evidence.
-- [ ] **13.6 HUD progress & tray state** — HUD shows a compact progress ring + current step; tray icon states: Idle / Thinking / Executing / Waiting Approval / **Stalled** / **Overloaded** / Failed.
+- [x] **13.6 HUD progress & tray state** — HUD shows a compact progress ring + current step; tray icon states: Idle / Thinking / Executing / Waiting Approval / **Stalled** / **Overloaded** / Failed.
   * *Verify:* each state reachable through the mock harness; screenshots.
 - [ ] **13.7 Notifications** — desktop notification (portal `Notification` via `ashpd`) on: approval needed, mission finished, mission failed, stalled > 2 min. Rate-limit and dedupe.
   * *Verify:* with Cockpit hidden, completing a mock mission raises exactly one notification.

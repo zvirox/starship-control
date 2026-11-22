@@ -398,6 +398,58 @@ pub async fn cmd_mission_delete(
     Ok(true)
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TrayState {
+    Idle,
+    Thinking,
+    Executing,
+    WaitingApproval,
+    Stalled,
+    Overloaded,
+    Failed,
+}
+
+impl TrayState {
+    #[must_use]
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Idle => "Idle",
+            Self::Thinking => "Thinking",
+            Self::Executing => "Executing",
+            Self::WaitingApproval => "Waiting Approval",
+            Self::Stalled => "Stalled",
+            Self::Overloaded => "Overloaded",
+            Self::Failed => "Failed",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TraySetStatePayload {
+    pub state: TrayState,
+}
+
+#[tauri::command]
+pub async fn cmd_tray_set_state(
+    app: AppHandle,
+    payload: TraySetStatePayload,
+) -> Result<String, CoreError> {
+    info!(target: "starship_tray", state = ?payload.state, "Setting tray state");
+
+    // Emit event to frontend listeners
+    let _ = app.emit("evt://tray/state_changed", &payload);
+
+    // If a system tray is registered, update its tooltip
+    if let Some(tray) = app.tray_by_id("main-tray") {
+        let tooltip = format!("Starship Control — {}", payload.state.label());
+        let _ = tray.set_tooltip(Some(tooltip));
+    }
+
+    Ok(payload.state.label().to_string())
+}
+
 #[tauri::command]
 pub async fn cmd_mission_list_messages(
     state: tauri::State<'_, Database>,
@@ -1568,4 +1620,37 @@ fn chrono_now_iso() -> String {
         .unwrap_or_default();
     let secs = duration.as_secs();
     format!("{secs}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tray_state_all_variants_and_labels() {
+        let cases = [
+            (TrayState::Idle, "idle", "Idle"),
+            (TrayState::Thinking, "thinking", "Thinking"),
+            (TrayState::Executing, "executing", "Executing"),
+            (
+                TrayState::WaitingApproval,
+                "waiting_approval",
+                "Waiting Approval",
+            ),
+            (TrayState::Stalled, "stalled", "Stalled"),
+            (TrayState::Overloaded, "overloaded", "Overloaded"),
+            (TrayState::Failed, "failed", "Failed"),
+        ];
+
+        for (variant, expected_json, expected_label) in cases {
+            assert_eq!(variant.label(), expected_label);
+
+            let json_str = serde_json::to_string(&variant).expect("serialize tray state");
+            assert_eq!(json_str, format!("\"{expected_json}\""));
+
+            let parsed: TrayState =
+                serde_json::from_str(&json_str).expect("deserialize tray state");
+            assert_eq!(parsed, variant);
+        }
+    }
 }

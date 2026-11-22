@@ -137,6 +137,7 @@ fn main() {
             ipc::cmd_mission_create,
             ipc::cmd_mission_delete,
             ipc::cmd_mission_get_timeline,
+            ipc::cmd_tray_set_state,
             ipc::cmd_mission_send_prompt,
             ipc::cmd_mission_list_messages,
             ipc::cmd_provider_config_set,

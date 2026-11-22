@@ -503,5 +503,21 @@ export interface StepStatePayload {
   attempt: number;
 }
 
+/**
+ * System tray icon states (GAP-CLOSURE-PLAN.md §13.6).
+ */
+export type TrayState =
+  | "idle"
+  | "thinking"
+  | "executing"
+  | "waiting_approval"
+  | "stalled"
+  | "overloaded"
+  | "failed";
+
+export interface TraySetStatePayload {
+  state: TrayState;
+}
+
 
 
