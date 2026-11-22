@@ -9,6 +9,10 @@ repository.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
 [dependencies]
 tauri = { version = "2.2", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
