@@ -1,4 +1,5 @@
 pub mod failure;
+pub mod fallback;
 pub mod lease;
 pub mod quarantine;
 pub mod recovery;
@@ -7,6 +8,10 @@ pub mod scheduler;
 pub mod state;
 
 pub use failure::{FailureClass, classify_error};
+pub use fallback::{
+    FallbackDecision, FallbackLadderEngine, FallbackRung, MissionFallbackContext,
+    StepExecutionState,
+};
 pub use lease::{LeaseSupervisor, ResourceLease};
 pub use quarantine::{QuarantineManager, QuarantineManifest, QuarantinedItem};
 pub use recovery::{CrashRecoveryCard, CrashRecoveryManager, InterruptedStepInfo, RecoveryAction};

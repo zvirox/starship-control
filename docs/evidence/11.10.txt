@@ -1,0 +1,29 @@
+=== Starship Control Task 11.10 Verification Evidence ===
+Timestamp: 2026-11-22T17:42:17+05:30
+Task: 11.10 Fallback ladder engine (executor/fallback.rs & fallbacks.toml)
+
+Rungs Verified:
+- F0 (Retry with backoff + jitter)
+- F1 (Alternate transport switching: UDS socket -> stdio MCP)
+- F2 (Alternate tool/route from fallbacks.toml: eep.cut_batch -> eep.cut_interval with re-approval check)
+- F3 (Alternate model / re-plan: max 1 re-plan per mission)
+- F4 (Degrade: skip optional steps, continue in degraded mode)
+- F5 (Rollback: restore checkpoints and quarantine if mutated)
+- F6 (Safe stop & handoff: terminal state with resource release)
+- Safety & User abort: 0 retries, immediate rollback if mutated, safe stop if clean
+- Tier 3 invariant: 0 auto-retries, skips F0 directly to F1/re-approval
+
+Test Command Output:
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.07s
+     Running unittests src/lib.rs (target/debug/build/starship-core/9fa1eac12a4f429a/out/starship_core-9fa1eac12a4f429a)
+
+running 5 tests
+test executor::fallback::tests::test_safety_violation_never_retries_and_rolls_back_if_mutated ... ok
+test executor::fallback::tests::test_ladder_rungs_full_progression_from_f0_to_f6 ... ok
+test executor::fallback::tests::test_safety_violation_stops_immediately_if_unmutated ... ok
+test executor::fallback::tests::test_tier_3_step_never_auto_retries_at_f0 ... ok
+test executor::fallback::tests::test_f4_degrade_for_optional_step ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 36 filtered out; finished in 0.00s
+
+Verification: SUCCESS

@@ -1,0 +1,19 @@
+# Starship Control Tool Fallback Configuration
+# Maps primary tool names to acceptable fallback alternatives.
+# Invariant: Fallbacks never reduce safety tier; Tier 2/3 alternatives require human approval.
+
+[tools."eep.cut_batch"]
+alternatives = ["eep.cut_interval"]
+description = "Fall back from batch timeline slicing to sequential per-interval cuts"
+
+[tools."ssp.export_screencast_fast"]
+alternatives = ["ssp.export_screencast_lossless"]
+description = "Fall back to lossless render if hardware accelerated export fails"
+
+[tools."alp.denoise_neural"]
+alternatives = ["alp.denoise_spectral"]
+description = "Fall back from neural ML denoiser to classical spectral subtraction"
+
+[tools."atp.clean_cache_all"]
+alternatives = ["atp.clean_cache_safe"]
+description = "Fall back to safe cache clean if complete cache wipe fails"
