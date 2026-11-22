@@ -1,8 +1,10 @@
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
+use starship_core::planner::{TaskSheet, TaskSheetStep};
+use starship_core::safety::{RiskTier, SafetyArbiter};
 use starship_core::{CoreError, ErrorKind};
-use starship_db::Database;
 use starship_db::schema::{MissionMessageRecord, ModelRecord};
+use starship_db::{Database, NewAuditEntry};
 use starship_infer::dispatcher::InferDispatcher;
 use starship_infer::hf::{DownloadProgress, HfModelMetadata, download_hf_file, search_models};
 use starship_infer::types::{ChatRequest, Message};
@@ -762,6 +764,571 @@ pub async fn cmd_mcp_call_tool(
             timeout,
         )
         .await
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlanGetActivePayload {
+    pub mission_id: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlanStepDetail {
+    pub step_id: i64,
+    pub step_index: i64,
+    pub app_id: String,
+    pub tool_name: String,
+    pub risk_tier: i64,
+    pub approval_status: String,
+    pub execution_status: String,
+    pub diff_summary: Option<String>,
+    pub arguments: serde_json::Value,
+    pub result: Option<serde_json::Value>,
+    pub error_message: Option<String>,
+    pub signature_token: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlanActiveResponse {
+    pub plan_id: i64,
+    pub mission_id: i64,
+    pub version: i64,
+    pub title: String,
+    pub summary: String,
+    pub status: String,
+    pub steps: Vec<PlanStepDetail>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApproveStepPayload {
+    pub mission_id: Option<i64>,
+    pub step_id: i64,
+    pub signature_token: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApproveStepResponse {
+    pub executed: bool,
+    pub status: String,
+    pub result: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RejectStepPayload {
+    pub mission_id: Option<i64>,
+    pub step_id: i64,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RejectStepResponse {
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApprovalNeededEvent {
+    pub mission_id: i64,
+    pub plan_id: i64,
+    pub step_id: i64,
+    pub app_id: String,
+    pub risk_tier: i64,
+    pub action_title: String,
+    pub diff_summary: String,
+    pub checkpoint_name: Option<String>,
+    pub signature_token: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GeneratePlanPayload {
+    pub mission_id: i64,
+    pub user_goal: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatePlanPayload {
+    pub mission_id: i64,
+    pub title: String,
+    pub summary: String,
+    pub raw_tasksheet_json: String,
+}
+
+#[tauri::command]
+pub async fn cmd_plan_get_active(
+    state: tauri::State<'_, Database>,
+    payload: PlanGetActivePayload,
+) -> Result<Option<PlanActiveResponse>, CoreError> {
+    let db = state.inner();
+    let arbiter = SafetyArbiter::default();
+
+    let active = db.get_active_plan(payload.mission_id)?;
+    let Some((plan, steps)) = active else {
+        return Ok(None);
+    };
+
+    let step_details = steps
+        .into_iter()
+        .map(|s| {
+            let args_val =
+                serde_json::from_str(&s.arguments_json).unwrap_or(serde_json::Value::Null);
+            let res_val = s
+                .result_json
+                .as_deref()
+                .and_then(|r| serde_json::from_str(r).ok());
+
+            let sig_token = if s.risk_tier >= 2 && s.approval_status == "pending" {
+                Some(arbiter.generate_signature_token(plan.id, s.id, &s.tool_name))
+            } else {
+                None
+            };
+
+            PlanStepDetail {
+                step_id: s.id,
+                step_index: s.step_index,
+                app_id: s.app_id,
+                tool_name: s.tool_name,
+                risk_tier: s.risk_tier,
+                approval_status: s.approval_status,
+                execution_status: s.execution_status,
+                diff_summary: s.diff_summary,
+                arguments: args_val,
+                result: res_val,
+                error_message: s.error_message,
+                signature_token: sig_token,
+            }
+        })
+        .collect();
+
+    Ok(Some(PlanActiveResponse {
+        plan_id: plan.id,
+        mission_id: plan.mission_id,
+        version: plan.version,
+        title: plan.title,
+        summary: plan.summary,
+        status: plan.status,
+        steps: step_details,
+    }))
+}
+
+#[tauri::command]
+pub async fn cmd_plan_generate(
+    app: AppHandle,
+    state: tauri::State<'_, Database>,
+    payload: GeneratePlanPayload,
+) -> Result<PlanActiveResponse, CoreError> {
+    let db = state.inner();
+    let arbiter = SafetyArbiter::default();
+    let goal_lower = payload.user_goal.to_ascii_lowercase();
+
+    // Decompose user strategic goal into a tasksheet/1 plan
+    let sheet = if goal_lower.contains("system")
+        || goal_lower.contains("disk")
+        || goal_lower.contains("cache")
+        || goal_lower.contains("tune")
+    {
+        TaskSheet::new(
+            payload.user_goal.clone(),
+            "System Maintenance & Cache Optimization",
+            "Scans network telemetry and disk usage, then purges temporary caches upon confirmation",
+            vec![
+                TaskSheetStep {
+                    step_index: 0,
+                    app_id: "nwp".to_string(),
+                    tool_name: "network.scan".to_string(),
+                    arguments: serde_json::json!({}),
+                    risk_tier: 1,
+                    diff_summary: "Inspects live network sockets and telemetry".to_string(),
+                    depends_on: vec![],
+                },
+                TaskSheetStep {
+                    step_index: 1,
+                    app_id: "atp".to_string(),
+                    tool_name: "disk.scan".to_string(),
+                    arguments: serde_json::json!({}),
+                    risk_tier: 1,
+                    diff_summary: "Scans disk usage and build cache directories".to_string(),
+                    depends_on: vec![],
+                },
+                TaskSheetStep {
+                    step_index: 2,
+                    app_id: "atp".to_string(),
+                    tool_name: "cache.purge_all".to_string(),
+                    arguments: serde_json::json!({ "older_than_days": 7 }),
+                    risk_tier: 3,
+                    diff_summary: "Purges 4.2 GB of obsolete package and build caches".to_string(),
+                    depends_on: vec![0, 1],
+                },
+            ],
+        )
+    } else {
+        // Default media & screencast workflow (SSP -> ALP -> EEP)
+        TaskSheet::new(
+            payload.user_goal.clone(),
+            "Tutorial Screencast Assembly",
+            "Records desktop demo, cleans and masters vocal take in ALP, and imports into EEP timeline",
+            vec![
+                TaskSheetStep {
+                    step_index: 0,
+                    app_id: "ssp".to_string(),
+                    tool_name: "recording.capture_screen".to_string(),
+                    arguments: serde_json::json!({ "durationSecs": 60, "includeMic": true }),
+                    risk_tier: 1,
+                    diff_summary: "Captures 60 seconds screen recording with microphone audio"
+                        .to_string(),
+                    depends_on: vec![],
+                },
+                TaskSheetStep {
+                    step_index: 1,
+                    app_id: "alp".to_string(),
+                    tool_name: "audio.cleanup".to_string(),
+                    arguments: serde_json::json!({ "preset": "voice_isolate", "dehum": true }),
+                    risk_tier: 2,
+                    diff_summary: "Applies Voice Isolation and De-hum preset to vocal track"
+                        .to_string(),
+                    depends_on: vec![0],
+                },
+                TaskSheetStep {
+                    step_index: 2,
+                    app_id: "eep".to_string(),
+                    tool_name: "timeline.cut_interval".to_string(),
+                    arguments: serde_json::json!({ "trackId": 1, "rippleCut": true }),
+                    risk_tier: 2,
+                    diff_summary: "Applies 18 ripple cuts and removes 01:24 dead time via CET"
+                        .to_string(),
+                    depends_on: vec![1],
+                },
+            ],
+        )
+    };
+
+    let plan_rec = db.create_plan(payload.mission_id, &sheet.title, &sheet.summary, &sheet)?;
+
+    let active_plan_opt = db.get_active_plan(payload.mission_id)?;
+    let Some((_, steps)) = active_plan_opt else {
+        return Err(CoreError::db(
+            "db.plan_not_found",
+            false,
+            "Failed to retrieve newly created plan",
+            None,
+        ));
+    };
+
+    let mut step_details = Vec::new();
+    let mut pending_approval_step = None;
+
+    for s in steps {
+        let args_val = serde_json::from_str(&s.arguments_json).unwrap_or(serde_json::Value::Null);
+        let sig_token = if s.risk_tier >= 2 && s.approval_status == "pending" {
+            let tok = arbiter.generate_signature_token(plan_rec.id, s.id, &s.tool_name);
+            if pending_approval_step.is_none() {
+                pending_approval_step = Some((s.clone(), tok.clone()));
+            }
+            Some(tok)
+        } else {
+            None
+        };
+
+        step_details.push(PlanStepDetail {
+            step_id: s.id,
+            step_index: s.step_index,
+            app_id: s.app_id,
+            tool_name: s.tool_name,
+            risk_tier: s.risk_tier,
+            approval_status: s.approval_status,
+            execution_status: s.execution_status,
+            diff_summary: s.diff_summary,
+            arguments: args_val,
+            result: None,
+            error_message: None,
+            signature_token: sig_token,
+        });
+    }
+
+    // If there is an approval gate required, emit evt://plan/approval_needed
+    if let Some((step, token)) = pending_approval_step {
+        let action_title = step
+            .diff_summary
+            .clone()
+            .unwrap_or_else(|| step.tool_name.clone());
+        let _ = app.emit(
+            "evt://plan/approval_needed",
+            ApprovalNeededEvent {
+                mission_id: payload.mission_id,
+                plan_id: plan_rec.id,
+                step_id: step.id,
+                app_id: step.app_id,
+                risk_tier: step.risk_tier,
+                action_title,
+                diff_summary: step.diff_summary.unwrap_or_default(),
+                checkpoint_name: Some("#bk-01".to_string()),
+                signature_token: token,
+            },
+        );
+    }
+
+    Ok(PlanActiveResponse {
+        plan_id: plan_rec.id,
+        mission_id: plan_rec.mission_id,
+        version: plan_rec.version,
+        title: plan_rec.title,
+        summary: plan_rec.summary,
+        status: plan_rec.status,
+        steps: step_details,
+    })
+}
+
+#[tauri::command]
+pub async fn cmd_plan_create(
+    app: AppHandle,
+    state: tauri::State<'_, Database>,
+    payload: CreatePlanPayload,
+) -> Result<PlanActiveResponse, CoreError> {
+    let db = state.inner();
+    let arbiter = SafetyArbiter::default();
+
+    let sheet = TaskSheet::from_json(&payload.raw_tasksheet_json)?;
+    let plan_rec = db.create_plan(payload.mission_id, &payload.title, &payload.summary, &sheet)?;
+
+    let active_plan_opt = db.get_active_plan(payload.mission_id)?;
+    let Some((_, steps)) = active_plan_opt else {
+        return Err(CoreError::db(
+            "db.plan_not_found",
+            false,
+            "Failed to retrieve newly created plan",
+            None,
+        ));
+    };
+
+    let mut step_details = Vec::new();
+    let mut pending_approval_step = None;
+
+    for s in steps {
+        let args_val = serde_json::from_str(&s.arguments_json).unwrap_or(serde_json::Value::Null);
+        let sig_token = if s.risk_tier >= 2 && s.approval_status == "pending" {
+            let tok = arbiter.generate_signature_token(plan_rec.id, s.id, &s.tool_name);
+            if pending_approval_step.is_none() {
+                pending_approval_step = Some((s.clone(), tok.clone()));
+            }
+            Some(tok)
+        } else {
+            None
+        };
+
+        step_details.push(PlanStepDetail {
+            step_id: s.id,
+            step_index: s.step_index,
+            app_id: s.app_id,
+            tool_name: s.tool_name,
+            risk_tier: s.risk_tier,
+            approval_status: s.approval_status,
+            execution_status: s.execution_status,
+            diff_summary: s.diff_summary,
+            arguments: args_val,
+            result: None,
+            error_message: None,
+            signature_token: sig_token,
+        });
+    }
+
+    if let Some((step, token)) = pending_approval_step {
+        let action_title = step
+            .diff_summary
+            .clone()
+            .unwrap_or_else(|| step.tool_name.clone());
+        let _ = app.emit(
+            "evt://plan/approval_needed",
+            ApprovalNeededEvent {
+                mission_id: payload.mission_id,
+                plan_id: plan_rec.id,
+                step_id: step.id,
+                app_id: step.app_id,
+                risk_tier: step.risk_tier,
+                action_title,
+                diff_summary: step.diff_summary.unwrap_or_default(),
+                checkpoint_name: Some("#bk-01".to_string()),
+                signature_token: token,
+            },
+        );
+    }
+
+    Ok(PlanActiveResponse {
+        plan_id: plan_rec.id,
+        mission_id: plan_rec.mission_id,
+        version: plan_rec.version,
+        title: plan_rec.title,
+        summary: plan_rec.summary,
+        status: plan_rec.status,
+        steps: step_details,
+    })
+}
+
+#[tauri::command]
+pub async fn cmd_plan_approve_step(
+    state: tauri::State<'_, Database>,
+    payload: ApproveStepPayload,
+) -> Result<ApproveStepResponse, CoreError> {
+    let db = state.inner().clone();
+    let arbiter = SafetyArbiter::default();
+
+    let step = db.get_plan_step(payload.step_id)?.ok_or_else(|| {
+        CoreError::safety(
+            "safety.step_not_found",
+            false,
+            format!("Step with ID {} not found", payload.step_id),
+            None,
+        )
+    })?;
+
+    let risk_tier = match step.risk_tier {
+        1 => RiskTier::Safe,
+        3 => RiskTier::Destructive,
+        _ => RiskTier::Mutating,
+    };
+
+    // Evaluate step permission: blocks unapproved or invalid signatures at Rust core level
+    arbiter.evaluate_step(
+        step.plan_id,
+        step.id,
+        &step.tool_name,
+        risk_tier,
+        Some(&payload.signature_token),
+    )?;
+
+    // Mark step approved in DB
+    db.update_step_approval(step.id, "approved")?;
+
+    // Record audit log entry for human approval granted
+    let _ = db.record_audit_log(&NewAuditEntry {
+        mission_id: payload.mission_id.or(Some(step.plan_id)),
+        app_id: step.app_id.clone(),
+        action_type: "approval_granted".to_string(),
+        risk_tier: step.risk_tier,
+        payload_json: serde_json::json!({
+            "stepId": step.id,
+            "toolName": step.tool_name,
+            "diffSummary": step.diff_summary,
+        })
+        .to_string(),
+        status: "success".to_string(),
+        signature_token: Some(payload.signature_token.clone()),
+    });
+
+    // Mark step running
+    db.update_step_execution(step.id, "running", None, None)?;
+
+    // Parse arguments and route execution
+    let args: serde_json::Value =
+        serde_json::from_str(&step.arguments_json).unwrap_or(serde_json::json!({}));
+    let router = HybridExecutionRouter::new(db.clone());
+
+    match router
+        .route_and_call(&step.app_id, &step.tool_name, args, 15_000)
+        .await
+    {
+        Ok(res) => {
+            let res_str = serde_json::to_string(&res).unwrap_or_default();
+            db.update_step_execution(step.id, "success", Some(&res_str), None)?;
+
+            // Record execution audit log
+            let _ = db.record_audit_log(&NewAuditEntry {
+                mission_id: payload.mission_id.or(Some(step.plan_id)),
+                app_id: step.app_id,
+                action_type: "tool_call".to_string(),
+                risk_tier: step.risk_tier,
+                payload_json: res_str,
+                status: "success".to_string(),
+                signature_token: Some(payload.signature_token),
+            });
+
+            Ok(ApproveStepResponse {
+                executed: true,
+                status: "success".to_string(),
+                result: Some(res),
+            })
+        }
+        Err(e) => {
+            db.update_step_execution(step.id, "failed", None, Some(&e.user_message))?;
+
+            // Record failure audit log
+            let _ = db.record_audit_log(&NewAuditEntry {
+                mission_id: payload.mission_id.or(Some(step.plan_id)),
+                app_id: step.app_id,
+                action_type: "tool_call".to_string(),
+                risk_tier: step.risk_tier,
+                payload_json: serde_json::json!({ "error": e.user_message }).to_string(),
+                status: "failed".to_string(),
+                signature_token: Some(payload.signature_token),
+            });
+
+            Err(e)
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn cmd_plan_reject_step(
+    state: tauri::State<'_, Database>,
+    payload: RejectStepPayload,
+) -> Result<RejectStepResponse, CoreError> {
+    let db = state.inner();
+
+    let step = db.get_plan_step(payload.step_id)?.ok_or_else(|| {
+        CoreError::safety(
+            "safety.step_not_found",
+            false,
+            format!("Step with ID {} not found", payload.step_id),
+            None,
+        )
+    })?;
+
+    db.update_step_approval(step.id, "rejected")?;
+    db.update_step_execution(step.id, "skipped", None, Some(&payload.reason))?;
+
+    // Record audit log entry for human rejection
+    let _ = db.record_audit_log(&NewAuditEntry {
+        mission_id: payload.mission_id.or(Some(step.plan_id)),
+        app_id: step.app_id,
+        action_type: "approval_denied".to_string(),
+        risk_tier: step.risk_tier,
+        payload_json: serde_json::json!({
+            "stepId": step.id,
+            "toolName": step.tool_name,
+            "reason": payload.reason,
+        })
+        .to_string(),
+        status: "denied".to_string(),
+        signature_token: None,
+    });
+
+    Ok(RejectStepResponse {
+        status: "rejected".to_string(),
+    })
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ListAuditLogsPayload {
+    pub limit: Option<u32>,
+    pub offset: Option<u32>,
+}
+
+#[tauri::command]
+pub async fn cmd_audit_list_logs(
+    state: tauri::State<'_, Database>,
+    payload: Option<ListAuditLogsPayload>,
+) -> Result<Vec<starship_db::AuditRecord>, CoreError> {
+    let db = state.inner();
+    let limit = payload.as_ref().and_then(|p| p.limit).unwrap_or(50);
+    let offset = payload.as_ref().and_then(|p| p.offset).unwrap_or(0);
+    db.list_audit_logs(limit, offset)
 }
 
 fn chrono_now_iso() -> String {

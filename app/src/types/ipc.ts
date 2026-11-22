@@ -261,4 +261,109 @@ export interface CallToolPayload {
   leaseTimeoutMs?: number;
 }
 
+/**
+ * Plan & Safety Step Detail (API.md §2.2).
+ */
+export interface PlanStepDetail {
+  stepId: number;
+  stepIndex: number;
+  appId: string;
+  toolName: string;
+  riskTier: 1 | 2 | 3;
+  approvalStatus: "auto" | "pending" | "approved" | "rejected";
+  executionStatus: "pending" | "running" | "success" | "failed" | "skipped";
+  diffSummary: string | null;
+  arguments: Record<string, unknown>;
+  result?: Record<string, unknown> | null;
+  errorMessage?: string | null;
+  signatureToken?: string | null;
+}
+
+/**
+ * Active Task Sheet Plan Response (API.md §2.2).
+ */
+export interface PlanActiveResponse {
+  planId: number;
+  missionId: number;
+  version: number;
+  title: string;
+  summary: string;
+  status:
+    | "draft"
+    | "pending_approval"
+    | "executing"
+    | "completed"
+    | "rejected"
+    | "failed";
+  steps: PlanStepDetail[];
+}
+
+export interface PlanGetActivePayload {
+  missionId: number;
+}
+
+export interface GeneratePlanPayload {
+  missionId: number;
+  userGoal: string;
+}
+
+export interface CreatePlanPayload {
+  missionId: number;
+  title: string;
+  summary: string;
+  rawTasksheetJson: string;
+}
+
+export interface ApproveStepPayload {
+  missionId?: number;
+  stepId: number;
+  signatureToken: string;
+}
+
+export interface ApproveStepResponse {
+  executed: boolean;
+  status: string;
+  result?: Record<string, unknown> | null;
+}
+
+export interface RejectStepPayload {
+  missionId?: number;
+  stepId: number;
+  reason: string;
+}
+
+export interface RejectStepResponse {
+  status: string;
+}
+
+/**
+ * Real-time push event emitted when human approval is required (API.md §3.3).
+ */
+export interface ApprovalNeededEvent {
+  missionId: number;
+  planId: number;
+  stepId: number;
+  appId: string;
+  riskTier: 1 | 2 | 3;
+  actionTitle: string;
+  diffSummary: string;
+  checkpointName?: string | null;
+  signatureToken: string;
+}
+
+/**
+ * Immutable Audit Record (DATABASE.md §3.8).
+ */
+export interface AuditRecord {
+  id: number;
+  missionId: number | null;
+  appId: string;
+  actionType: string;
+  riskTier: number;
+  payloadJson: string;
+  status: string;
+  signatureToken: string | null;
+  createdAt: string;
+}
+
 

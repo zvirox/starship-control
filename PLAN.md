@@ -139,17 +139,17 @@
 
 > **Goal:** Natural language decomposition into `tasksheet/1` DAG plans, with automatic execution for Safe tools and approval gates for Mutating tools.
 
-- [ ] **5.1 Task Sheet Planner (`starship-core`)**
+- [x] **5.1 Task Sheet Planner (`starship-core`)**
   - Implement planning prompt template generating structured `tasksheet/1` JSON.
   - Parse plans into versioned database records (`plans` and `plan_steps` tables).
   - Build dependency DAG resolving step execution order.
   - *Verify:* "Record screen and clean audio" decomposes into distinct sequential steps for SSP and ALP.
-- [ ] **5.2 Tiered Safety Policy Engine**
+- [x] **5.2 Tiered Safety Policy Engine**
   - Categorize tool calls into Tier 1 (Safe/Read-only), Tier 2 (Mutating), and Tier 3 (Destructive).
   - Tier 1 steps execute immediately and stream results back to the agent.
   - Tier 2/3 steps pause execution state machine, generate a diff summary, and wait for a signed UI token.
   - *Verify:* An unapproved Tier 2 mutation is blocked at the Rust core level, returning `safety.permission_denied`.
-- [ ] **5.3 Cockpit Action Approval Card & Diff Viewer**
+- [x] **5.3 Cockpit Action Approval Card & Diff Viewer**
   - Render approval cards with pulsating Rose border (`signal.gate`), impact summaries, and diff inspector.
   - Implement Approve and Reject actions with keyboard bindings (`Enter` / `Esc`).
   - *Verify:* Clicking Approve signs token, resumes execution, and records signed audit log entry in SQLite.

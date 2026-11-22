@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import {
   Layers,
   Cpu,
@@ -15,6 +16,8 @@ import {
   Settings,
   ChevronDown,
   Wrench,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { GlassPanel } from "../common/GlassPanel";
 import { DesignVerification } from "../common/DesignVerification";
@@ -24,7 +27,19 @@ import { ModelControlView } from "./ModelControlView";
 import { AppTopologyView } from "./AppTopologyView";
 import { AppTopologyDrawer } from "./AppTopologyDrawer";
 import { McpToolInspector } from "./McpToolInspector";
-import type { HelloResponse, ModelRecord, CreateMissionResponse, SendPromptResponse } from "../../types/ipc";
+import { ActionApprovalCard } from "./ActionApprovalCard";
+import { PlanWorkflowViewer } from "./PlanWorkflowViewer";
+import { AuditLogView } from "./AuditLogView";
+import type {
+  HelloResponse,
+  ModelRecord,
+  CreateMissionResponse,
+  SendPromptResponse,
+  PlanActiveResponse,
+  ApprovalNeededEvent,
+  ApproveStepResponse,
+  RejectStepResponse,
+} from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
   const [navTab, setNavTab] = useState<"missions" | "topology" | "tools" | "models" | "audit" | "design">("missions");
@@ -37,6 +52,9 @@ export const CockpitView: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [modelDropdownOpen, setModelDropdownOpen] = useState<boolean>(false);
+  const [activePlan, setActivePlan] = useState<PlanActiveResponse | null>(null);
+  const [approvalGate, setApprovalGate] = useState<ApprovalNeededEvent | null>(null);
+  const [showPlanViewer, setShowPlanViewer] = useState<boolean>(true);
 
   useEffect(() => {
     async function initHandshake() {
@@ -54,6 +72,72 @@ export const CockpitView: React.FC = () => {
     }
     initHandshake();
   }, []);
+
+  const fetchActivePlan = useCallback(async (missionId: number) => {
+    try {
+      const plan = await invoke<PlanActiveResponse | null>("cmd_plan_get_active", {
+        payload: { missionId },
+      });
+      setActivePlan(plan);
+    } catch (err) {
+      console.warn("Failed to fetch active plan:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchActivePlan(activeMissionId);
+  }, [activeMissionId, fetchActivePlan]);
+
+  // Subscribe to real-time approval events
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    async function setupApprovalListener() {
+      unlisten = await listen<ApprovalNeededEvent>("evt://plan/approval_needed", (event) => {
+        if (event.payload.missionId === activeMissionId) {
+          setApprovalGate(event.payload);
+          fetchActivePlan(activeMissionId);
+        }
+      });
+    }
+    setupApprovalListener().catch(console.warn);
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [activeMissionId, fetchActivePlan]);
+
+  const handleApproveStep = async (stepId: number, signatureToken: string) => {
+    try {
+      await invoke<ApproveStepResponse>("cmd_plan_approve_step", {
+        payload: {
+          missionId: activeMissionId,
+          stepId,
+          signatureToken,
+        },
+      });
+      setApprovalGate(null);
+      await fetchActivePlan(activeMissionId);
+    } catch (err) {
+      console.error("Approve step failed:", err);
+      throw err;
+    }
+  };
+
+  const handleRejectStep = async (stepId: number, reason: string) => {
+    try {
+      await invoke<RejectStepResponse>("cmd_plan_reject_step", {
+        payload: {
+          missionId: activeMissionId,
+          stepId,
+          reason,
+        },
+      });
+      setApprovalGate(null);
+      await fetchActivePlan(activeMissionId);
+    } catch (err) {
+      console.error("Reject step failed:", err);
+      throw err;
+    }
+  };
 
   const handleToggleHud = async () => {
     try {
@@ -85,6 +169,19 @@ export const CockpitView: React.FC = () => {
         });
         mId = createRes.missionId;
         setActiveMissionId(mId);
+      }
+
+      // Automatically decompose into tasksheet/1 plan if goal is executable
+      try {
+        const plan = await invoke<PlanActiveResponse>("cmd_plan_generate", {
+          payload: {
+            missionId: mId,
+            userGoal: userPrompt,
+          },
+        });
+        setActivePlan(plan);
+      } catch (planErr) {
+        console.warn("cmd_plan_generate notice:", planErr);
       }
 
       await invoke<SendPromptResponse>("cmd_mission_send_prompt", {
@@ -326,6 +423,8 @@ export const CockpitView: React.FC = () => {
         <AppTopologyView />
       ) : navTab === "tools" ? (
         <McpToolInspector />
+      ) : navTab === "audit" ? (
+        <AuditLogView />
       ) : (
         <div className="flex flex-1 overflow-hidden">
           {/* Left Mission Drawer (280px) */}
@@ -387,7 +486,7 @@ export const CockpitView: React.FC = () => {
                     Trim dead air in EEP, clean audio in ALP
                   </p>
                   <div className="mt-2 flex items-center justify-between text-[10px] font-mono text-slate-500">
-                    <span>3 steps</span>
+                    <span>{activePlan ? `${activePlan.steps.length} steps` : "3 steps"}</span>
                     <span>1,420 tokens</span>
                   </div>
                 </div>
@@ -400,7 +499,7 @@ export const CockpitView: React.FC = () => {
             </div>
           </aside>
 
-          {/* Center Canvas (Chat Stream & Task Sheet) */}
+          {/* Center Canvas (Chat Stream, Plan DAG & Approval Card) */}
           <main className="flex-1 flex flex-col justify-between overflow-y-auto p-4 bg-[#080B10]">
             <div className="space-y-4 max-w-4xl mx-auto w-full flex-1 flex flex-col">
               {/* Mission Header Card */}
@@ -408,18 +507,68 @@ export const CockpitView: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-sm font-bold text-slate-100">
-                      Tutorial Ep4 Screencast Assembly
+                      {activePlan?.title || "Tutorial Ep4 Screencast Assembly"}
                     </h2>
                     <p className="text-xs text-slate-400">
-                      Goal: Automate multi-app workflow spanning Easy Edits Pro, ScreenStudio Pro, and Audio Labs Pro.
+                      Goal: {activePlan?.summary || "Automate multi-app workflow spanning Easy Edits Pro, ScreenStudio Pro, and Audio Labs Pro."}
                     </p>
                   </div>
-                  <span className="font-mono text-xs rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 px-3 py-1 flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-                    <span>Engine: {activeModel?.name}</span>
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {activePlan && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPlanViewer(!showPlanViewer)}
+                        className="flex items-center gap-1 text-[11px] font-mono rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-slate-300 hover:bg-white/10 transition-colors"
+                      >
+                        {showPlanViewer ? <EyeOff className="h-3 w-3 text-cyan-400" /> : <Eye className="h-3 w-3 text-cyan-400" />}
+                        <span>{showPlanViewer ? "Hide Plan DAG" : "Show Plan DAG"}</span>
+                      </button>
+                    )}
+                    <span className="font-mono text-xs rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 px-3 py-1 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+                      <span>Engine: {activeModel?.name}</span>
+                    </span>
+                  </div>
                 </div>
               </GlassPanel>
+
+              {/* Execution Plan DAG Pipeline Viewer */}
+              {activePlan && showPlanViewer && (
+                <PlanWorkflowViewer plan={activePlan} />
+              )}
+
+              {/* Tier 2 / Tier 3 Active Approval Gate Card */}
+              {(() => {
+                const pendingStep =
+                  activePlan?.steps.find(
+                    (s) => s.riskTier >= 2 && s.approvalStatus === "pending"
+                  ) ??
+                  (approvalGate
+                    ? {
+                        stepId: approvalGate.stepId,
+                        stepIndex: 0,
+                        appId: approvalGate.appId,
+                        toolName: approvalGate.actionTitle,
+                        riskTier: approvalGate.riskTier,
+                        approvalStatus: "pending" as const,
+                        executionStatus: "pending" as const,
+                        diffSummary: approvalGate.diffSummary,
+                        arguments: {},
+                        signatureToken: approvalGate.signatureToken,
+                      }
+                    : null);
+
+                if (!pendingStep) return null;
+                return (
+                  <ActionApprovalCard
+                    missionId={activeMissionId}
+                    step={pendingStep}
+                    planTitle={activePlan?.title}
+                    onApprove={handleApproveStep}
+                    onReject={handleRejectStep}
+                  />
+                );
+              })()}
 
               {/* Chat Canvas with Real-Time Streaming */}
               <ChatCanvas
@@ -446,7 +595,7 @@ export const CockpitView: React.FC = () => {
                   placeholder={
                     isStreaming
                       ? "Streaming completion tokens..."
-                      : "Enter instruction or workflow goal (e.g., 'Trim 14 silence segments in EEP')..."
+                      : "Enter instruction or workflow goal (e.g., 'Record screen with SSP and clean audio with ALP')..."
                   }
                   className="flex-1 bg-transparent px-3 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
                 />

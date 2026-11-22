@@ -7,10 +7,14 @@ use std::sync::{Arc, Mutex};
 use tracing::{info, warn};
 
 pub mod apps;
+pub mod audit;
 pub mod models;
+pub mod plans;
 pub mod schema;
 
 pub use apps::AppRecord;
+pub use audit::{AuditRecord, NewAuditEntry};
+pub use plans::{PlanRecord, PlanStepRecord};
 
 const INITIAL_MIGRATION: &str = include_str!("migrations/0001_initial.sql");
 const CURRENT_SCHEMA_VERSION: u32 = 1;

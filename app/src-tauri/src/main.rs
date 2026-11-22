@@ -49,6 +49,12 @@ fn main() {
             ipc::cmd_topology_ping_app,
             ipc::cmd_mcp_list_tools,
             ipc::cmd_mcp_call_tool,
+            ipc::cmd_plan_get_active,
+            ipc::cmd_plan_create,
+            ipc::cmd_plan_generate,
+            ipc::cmd_plan_approve_step,
+            ipc::cmd_plan_reject_step,
+            ipc::cmd_audit_list_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
