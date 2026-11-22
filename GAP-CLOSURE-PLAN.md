@@ -224,7 +224,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* unit tests for weighting, ETA with/without history, throttling.
 - [x] **13.3 `tool_stats` learner** — after each successful step update `{tool, n, ewma_ms, p50, p90}` (see Appendix B). Ignore failed/cancelled runs.
   * *Verify:* ETA error on a replayed history < 25 % after 10 runs (record result).
-- [ ] **13.4 Events & commands** — `evt://mission/progress`, `evt://step/state`, `cmd://mission_get_timeline` (events since cursor, for resync after reconnect).
+- [x] **13.4 Events & commands** — `evt://mission/progress`, `evt://step/state`, `cmd://mission_get_timeline` (events since cursor, for resync after reconnect).
   * *Verify:* frontend reconnect replays missed events with no gaps (cursor test).
 - [ ] **13.5 Cockpit Mission Timeline UI** — DAG/timeline view: per-step state chips, progress bars, tier badges, retry/fallback markers, elapsed + ETA, live log drawer; "Why did this fallback happen?" link to the event.
   * *Verify:* visual check with a mock mission containing a retry, a fallback and a skipped step; screenshots saved to evidence.

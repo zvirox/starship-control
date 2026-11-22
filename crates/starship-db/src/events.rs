@@ -144,3 +144,79 @@ impl Database {
         Ok((mission_state, step_states))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_frontend_reconnect_replays_missed_events_with_no_gaps() {
+        let db = Database::open_in_memory().expect("open in-memory db");
+        let mission_id = db
+            .create_mission(
+                "123e4567-e89b-12d3-a456-426614174000",
+                "Reconnection Test Mission",
+                "Testing cursor-based event replay",
+                "qwen2.5-coder-7b-q4",
+                "local_gguf",
+            )
+            .expect("create mission");
+
+        // 1. Record first batch of 5 events
+        for i in 1..=5 {
+            db.record_mission_event(&NewMissionEvent {
+                mission_id,
+                step_id: Some(i),
+                ts_ms: 1000 + i,
+                kind: "progress".to_string(),
+                payload_json: format!(r#"{{"stepIndex": {i}, "progress": 0.5}}"#),
+            })
+            .expect("record event");
+        }
+
+        // 2. Initial fetch with no cursor (since_id = None)
+        let initial_batch = db
+            .list_mission_events(mission_id, None)
+            .expect("list events");
+        assert_eq!(initial_batch.len(), 5);
+        assert_eq!(initial_batch[0].id, 1);
+        assert_eq!(initial_batch[4].id, 5);
+
+        // Client saves cursor = 5
+        let last_cursor = initial_batch.last().unwrap().id;
+        assert_eq!(last_cursor, 5);
+
+        // 3. Client disconnects. Host records 5 more events while client is offline (events 6..=10)
+        for i in 6..=10 {
+            db.record_mission_event(&NewMissionEvent {
+                mission_id,
+                step_id: Some(i),
+                ts_ms: 2000 + i,
+                kind: "progress".to_string(),
+                payload_json: format!(r#"{{"stepIndex": {i}, "progress": 1.0}}"#),
+            })
+            .expect("record event");
+        }
+
+        // 4. Client reconnects and requests events since cursor = 5
+        let replayed_batch = db
+            .list_mission_events(mission_id, Some(last_cursor))
+            .expect("list events since cursor");
+
+        // Verification requirement for 13.4:
+        // "frontend reconnect replays missed events with no gaps (cursor test)"
+        assert_eq!(replayed_batch.len(), 5);
+        let replayed_ids: Vec<i64> = replayed_batch.iter().map(|e| e.id).collect();
+        assert_eq!(replayed_ids, vec![6, 7, 8, 9, 10]);
+
+        // Verify full continuity: combining initial + replayed batch produces unbroken contiguous sequence [1..=10]
+        let mut full_sequence = initial_batch;
+        full_sequence.extend(replayed_batch);
+        assert_eq!(full_sequence.len(), 10);
+        for (idx, evt) in full_sequence.iter().enumerate() {
+            #[allow(clippy::cast_possible_wrap)]
+            let expected_id = (idx + 1) as i64;
+            assert_eq!(evt.id, expected_id);
+        }
+    }
+}

@@ -442,5 +442,66 @@ export interface PipelineDiagnosticsPayload {
   reclaimableItems: string[];
 }
 
+/**
+ * Event-sourced mission timeline types (GAP-CLOSURE-PLAN.md §13.4).
+ */
+export interface MissionTimelineEvent {
+  id: number;
+  missionId: number;
+  stepId: number | null;
+  tsMs: number;
+  kind: string;
+  payload: Record<string, unknown>;
+}
+
+export interface MissionGetTimelinePayload {
+  missionId: number;
+  sinceId?: number | null;
+}
+
+export interface MissionGetTimelineResponse {
+  missionId: number;
+  cursor: number;
+  events: MissionTimelineEvent[];
+}
+
+/**
+ * Real-time push event for mission progress (`evt://mission/progress`).
+ */
+export interface MissionProgressPayload {
+  missionId: number;
+  missionProgress: number;
+  activeStepIndex?: number | null;
+  stepProgress: number;
+  stepMessage?: string | null;
+  etaRange?: {
+    p50Ms: number;
+    p90Ms: number;
+    isApproximate: boolean;
+  } | null;
+  isStalled: boolean;
+  elapsedMs: number;
+}
+
+/**
+ * Real-time push event for step state transition (`evt://step/state`).
+ */
+export interface StepStatePayload {
+  missionId: number;
+  stepId: number;
+  stepIndex: number;
+  state:
+    | "pending"
+    | "running"
+    | "paused_approval"
+    | "success"
+    | "failed"
+    | "rolled_back"
+    | "skipped";
+  failureClass?: string | null;
+  error?: string | null;
+  attempt: number;
+}
+
 
 

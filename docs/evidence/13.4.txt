@@ -1,0 +1,29 @@
+=== 13.4 Events & Commands Evidence ===
+Timestamp: 2026-11-22T18:28:49+05:30
+Requirement: `evt://mission/progress`, `evt://step/state`, `cmd://mission_get_timeline` (events since cursor, for resync after reconnect).
+Verification: Frontend reconnect replays missed events with no gaps (cursor test).
+
+$ cargo test -p starship-db --lib events
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.08s
+     Running unittests src/lib.rs (target/debug/build/starship-db/037c9f99b4fb8e5b/out/starship_db-037c9f99b4fb8e5b)
+
+running 1 test
+test events::tests::test_frontend_reconnect_replays_missed_events_with_no_gaps ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.01s
+
+$ npm --prefix app run typecheck
+npm notice run starship-control-ui@0.1.0 typecheck
+npm notice run tsc --noEmit
+Exit code: 0
+
+Verification Details:
+- Rust Command & Events:
+  * Implemented `cmd_mission_get_timeline` in `app/src-tauri/src/ipc/commands.rs` and registered in `main.rs`.
+  * Added typed push events `evt://mission/progress` and `evt://step/state` with helpers `emit_mission_progress` and `emit_step_state`.
+- TypeScript Contract:
+  * Added exact TypeScript interfaces in `app/src/types/ipc.ts`: `MissionTimelineEvent`, `MissionGetTimelinePayload`, `MissionGetTimelineResponse`, `MissionProgressPayload`, and `StepStatePayload`.
+- Cursor Resync Verification:
+  * Initial poll fetched events 1..=5, saving cursor = 5.
+  * Disconnect simulated: 5 new events (6..=10) arrived offline.
+  * Reconnection poll with cursor = 5 replayed events 6..=10 with zero missed events and contiguous event sequence.

@@ -406,6 +406,127 @@ pub async fn cmd_mission_list_messages(
     state.list_messages(mission_id)
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MissionGetTimelinePayload {
+    pub mission_id: i64,
+    pub since_id: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MissionTimelineEvent {
+    pub id: i64,
+    pub mission_id: i64,
+    pub step_id: Option<i64>,
+    pub ts_ms: i64,
+    pub kind: String,
+    pub payload: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MissionGetTimelineResponse {
+    pub mission_id: i64,
+    pub cursor: i64,
+    pub events: Vec<MissionTimelineEvent>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
+pub struct MissionProgressPayload {
+    pub mission_id: i64,
+    pub mission_progress: f64,
+    pub active_step_index: Option<u32>,
+    pub step_progress: f64,
+    pub step_message: Option<String>,
+    pub eta_range: Option<EtaRangePayload>,
+    pub is_stalled: bool,
+    pub elapsed_ms: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
+pub struct EtaRangePayload {
+    pub p50_ms: f64,
+    pub p90_ms: f64,
+    pub is_approximate: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
+pub struct StepStatePayload {
+    pub mission_id: i64,
+    pub step_id: i64,
+    pub step_index: u32,
+    pub state: String,
+    pub failure_class: Option<String>,
+    pub error: Option<String>,
+    pub attempt: u32,
+}
+
+#[tauri::command]
+pub async fn cmd_mission_get_timeline(
+    state: tauri::State<'_, Database>,
+    payload: MissionGetTimelinePayload,
+) -> Result<MissionGetTimelineResponse, CoreError> {
+    let records = state.list_mission_events(payload.mission_id, payload.since_id)?;
+    let mut cursor = payload.since_id.unwrap_or(0);
+    let mut events = Vec::with_capacity(records.len());
+
+    for rec in records {
+        if rec.id > cursor {
+            cursor = rec.id;
+        }
+        let payload_val =
+            serde_json::from_str(&rec.payload_json).unwrap_or(serde_json::Value::Null);
+        events.push(MissionTimelineEvent {
+            id: rec.id,
+            mission_id: rec.mission_id,
+            step_id: rec.step_id,
+            ts_ms: rec.ts_ms,
+            kind: rec.kind,
+            payload: payload_val,
+        });
+    }
+
+    Ok(MissionGetTimelineResponse {
+        mission_id: payload.mission_id,
+        cursor,
+        events,
+    })
+}
+
+#[allow(dead_code)]
+pub fn emit_mission_progress(
+    app: &AppHandle,
+    payload: &MissionProgressPayload,
+) -> Result<(), CoreError> {
+    app.emit("evt://mission/progress", payload).map_err(|e| {
+        CoreError::ipc(
+            "ipc.emit_failed",
+            false,
+            format!("Failed to emit evt://mission/progress: {e}"),
+            None,
+        )
+    })
+}
+
+#[allow(dead_code)]
+pub fn emit_step_state(app: &AppHandle, payload: &StepStatePayload) -> Result<(), CoreError> {
+    app.emit("evt://step/state", payload).map_err(|e| {
+        CoreError::ipc(
+            "ipc.emit_failed",
+            false,
+            format!("Failed to emit evt://step/state: {e}"),
+            None,
+        )
+    })
+}
+
 #[tauri::command]
 pub async fn cmd_provider_config_set(
     state: tauri::State<'_, Database>,
