@@ -1,5 +1,6 @@
 pub mod failure;
 pub mod fallback;
+pub mod governor;
 pub mod lease;
 pub mod progress;
 pub mod quarantine;
@@ -14,6 +15,7 @@ pub use fallback::{
     FallbackDecision, FallbackLadderEngine, FallbackRung, MissionFallbackContext,
     StepExecutionState,
 };
+pub use governor::{Governor, GovernorDirective};
 pub use lease::{LeaseSupervisor, ResourceLease};
 pub use progress::{
     EtaEstimate, MIN_SAMPLES_FOR_PRECISE_ETA, MissionProgressSnapshot, PROGRESS_THROTTLE_INTERVAL,

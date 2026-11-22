@@ -284,7 +284,7 @@ Step:    pending → ready → awaiting_approval → running
 
   Thresholds are **defaults** (user-editable in Settings). Overall state = worst signal; `Normal → Elevated → Constrained → Critical`.
   * *Verify:* replay tests: synthetic traces produce expected state transitions with no flapping.
-- [ ] **14.7 Governor (actions per state)** — in `starship-core/src/governor.rs`:
+- [x] **14.7 Governor (actions per state)** — in `starship-core/src/governor.rs`:
   * **Elevated:** warning chip; stop background prefetch (e.g., model metadata refresh); log event.
   * **Constrained:** parallelism → 1; no new *heavy* steps (by resource profile, 15.1); unload idle local model; lower local-inference threads.
   * **Critical:** **safe-pause** at next step boundary (never kill mid-write); request checkpoint if supported; refuse new local inference; notify. Auto-resume after state is ≤ Elevated for 60 s **only if** the mission was governor-paused (never if user-paused or awaiting approval).

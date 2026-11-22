@@ -11,12 +11,12 @@ pub use error::{CoreError, ErrorKind};
 pub use executor::{
     CompletedStepSummary, CrashRecoveryCard, CrashRecoveryManager, DagNode, DagScheduler,
     EtaEstimate, FailureClass, FailureReport, FallbackDecision, FallbackLadderEngine, FallbackRung,
-    HandoffBundle, InterruptedStepInfo, LeaseSupervisor, MIN_SAMPLES_FOR_PRECISE_ETA, MissionEvent,
-    MissionFallbackContext, MissionProgressSnapshot, MissionState, PROGRESS_THROTTLE_INTERVAL,
-    PauseReason, ProgressAggregator, QuarantineManager, QuarantineManifest, QuarantinedItem,
-    RecoveryAction, ResourceLease, RetryDecision, RetryPolicy, RollbackSummary, StepEvent,
-    StepExecutionState, StepProgressTracker, StepState, ToolDurationStats, classify_error,
-    transition_mission, transition_step,
+    Governor, GovernorDirective, HandoffBundle, InterruptedStepInfo, LeaseSupervisor,
+    MIN_SAMPLES_FOR_PRECISE_ETA, MissionEvent, MissionFallbackContext, MissionProgressSnapshot,
+    MissionState, PROGRESS_THROTTLE_INTERVAL, PauseReason, ProgressAggregator, QuarantineManager,
+    QuarantineManifest, QuarantinedItem, RecoveryAction, ResourceLease, RetryDecision, RetryPolicy,
+    RollbackSummary, StepEvent, StepExecutionState, StepProgressTracker, StepState,
+    ToolDurationStats, classify_error, transition_mission, transition_step,
 };
 pub use pipeline::{
     CetEvent, CetHeader, CetTelemetry, CutInterval, DiagnosticsPipeline, ScreencastAssemblyRequest,

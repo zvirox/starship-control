@@ -1,0 +1,39 @@
+=== Task 14.7 Verification Evidence ===
+Timestamp: Sun Nov 22 19:36:25 UTC 2026
+Task: 14.7 Governor actions — starship-core governor module responding to detector state.
+
+1. Test Execution Output:
+$ cargo test -p starship-core --lib executor::governor
+   Compiling starship-core v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.55s
+     Running unittests src/lib.rs (target/debug/build/starship-core/16bc05a77c760dd0/out/starship_core-16bc05a77c760dd0)
+
+running 4 tests
+test executor::governor::tests::test_governor_directives_across_all_health_states ... ok
+test executor::governor::tests::test_governor_never_resumes_user_paused_or_approval_paused_missions ... ok
+test executor::governor::tests::test_governor_auto_resume_only_for_governor_paused_missions_after_cooldown ... ok
+test executor::governor::tests::test_simulated_load_scenario_pauses_and_resumes_mock_mission ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 69 filtered out; finished in 0.05s
+
+2. Implementation Details:
+- Governor Directives (`crates/starship-core/src/executor/governor.rs`):
+  * Normal: Full parallelism (default 2), heavy steps allowed, local inference allowed, background prefetch enabled.
+  * Elevated: Parallelism maintained, background prefetch dropped, warning alert issued.
+  * Constrained: Parallelism capped to 1, heavy steps blocked, idle local model unloaded.
+  * Critical: Safe-pause issued at step boundary (`should_pause: true`), local inference refused, background prefetch disabled.
+- Safety & Non-Interference Invariants:
+  * Governor NEVER kills external user applications; it only throttles and pauses Starship Control's own calls and processes.
+  * Safe-pause transitions missions into `MissionState::Paused(PauseReason::Governor)`.
+- Auto-Resume Contract Law:
+  * Only missions paused with `PauseReason::Governor` are eligible for auto-resume.
+  * Missions paused by users (`PauseReason::User`) or awaiting approval (`PauseReason::Approval`) are strictly never auto-resumed by the governor.
+  * Recovery requires sustained state <= Elevated for >= 60s cooldown (configured to 40ms in test harness).
+- Simulated Load Scenario Test:
+  * `test_simulated_load_scenario_pauses_and_resumes_mock_mission`: High CPU (99%) + low memory (3.1%) drives detector to Critical -> Governor triggers safe-pause -> Load subsides back to Normal -> Governor enforces quiet window -> Automatically resumes mission back to `MissionState::Running`.
+
+3. Workspace Suite Verification:
+- `cargo fmt --check`: CLEAN
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`: CLEAN
+- `cargo test --workspace --all-features`: 123 / 123 tests passed
+- `npm run typecheck && npm run lint`: CLEAN
