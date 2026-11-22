@@ -7,7 +7,7 @@ use tracing::{info, warn};
 /// Initializes the Wayland `GlobalShortcuts` portal for Starship Control (`Super + Shift + Space`).
 /// Handles portal permission dialog gracefully with educational first-run notice (`PLAN.md §6.2`).
 pub fn register_wayland_global_shortcut(app: AppHandle) {
-    tokio::spawn(async move {
+    tauri::async_runtime::spawn(async move {
         match setup_portal_shortcut(app).await {
             Ok(()) => {
                 info!(target: "starship_portal", "Wayland GlobalShortcuts portal loop completed");

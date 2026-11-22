@@ -4,16 +4,16 @@
 </p>
 
 <p align="center">
-  <strong>The Local-First AI Agent Cockpit & Multi-App Orchestrator for Linux</strong>
+  <strong>Native Linux AI agent orchestrator and unified command center for desktop applications</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/zvirox/starship-control/releases"><img src="https://img.shields.io/badge/Release-v0.0.1--planning-blue.svg" alt="Release" /></a>
+  <a href="https://github.com/zvirox/starship-control/releases/tag/v0.1.0-alpha.1"><img src="https://img.shields.io/badge/Release-v0.1.0--alpha.1-blue.svg" alt="Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License" /></a>
-  <a href="#4-tech-stack"><img src="https://img.shields.io/badge/Platform-Linux_(Wayland_&_X11)-orange.svg" alt="Platform" /></a>
-  <a href="#4-tech-stack"><img src="https://img.shields.io/badge/Rust-1.92+-informational.svg" alt="Rust" /></a>
-  <a href="#4-tech-stack"><img src="https://img.shields.io/badge/Shell-Tauri_2_·_Frosted_Glass-indigo.svg" alt="Tauri 2" /></a>
-  <a href="#4-tech-stack"><img src="https://img.shields.io/badge/Protocol-MCP_JSON--RPC_2.0-brightgreen.svg" alt="MCP" /></a>
+  <a href="#tech-stack"><img src="https://img.shields.io/badge/Platform-Linux_(Wayland_&_X11)-orange.svg" alt="Platform" /></a>
+  <a href="#tech-stack"><img src="https://img.shields.io/badge/Rust-1.85+-informational.svg" alt="Rust" /></a>
+  <a href="#tech-stack"><img src="https://img.shields.io/badge/Shell-Tauri_2_·_Frosted_Glass-indigo.svg" alt="Tauri 2" /></a>
+  <a href="#tech-stack"><img src="https://img.shields.io/badge/Protocol-MCP_JSON--RPC_2.0-brightgreen.svg" alt="MCP" /></a>
 </p>
 
 <p align="center">
@@ -28,11 +28,11 @@
 
 ---
 
-## 1. Overview & Vision
+## Overview
 
-**Starship Control** is the mission command center and central AI agent orchestrator for the **Mother Ship** Linux native software suite. It acts as the intelligent bridge connecting autonomous AI models (both local GGUF models running directly on device hardware and frontier cloud APIs) with specialized high-performance desktop applications.
+Most creative tools and desktop utilities run inside their own silos. A video editor knows nothing about your audio tracks until you export files manually. A screen recorder dumps files into a folder and expects you to cut pauses by hand. System monitors tell you when a disk fills up, but they leave cache cleanup to shell scripts.
 
-On Linux today, specialized creative tools and systems monitors each expose deep, capable agentic tool surfaces via the **Model Context Protocol (MCP)**. However, these tools operate in isolated silos. Starship Control unites them: users state their high-level intent, and Starship Control plans, decomposes, coordinates, and verifies multi-app execution pipelines across the entire ecosystem.
+**Starship Control** links these apps together. It is a native Linux mission control center that turns plain language goals into multi-app execution pipelines. You tell the agent what you want done, and Starship Control breaks the task into structured dependency graphs, routes commands to the right desktop tools via Model Context Protocol (MCP), and halts execution before any irreversible change takes effect.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -43,8 +43,8 @@ On Linux today, specialized creative tools and systems monitors each expose deep
    ┌────────────────────────────────┐    ┌───────────────────────────────┐
    │         COCKPIT WINDOW         │    │         FLOATING HUD          │
    │  1200×800 Strategic Workspace  │    │  520×76 Companion Glass Bar   │
-   │  Mission Stream · Model Mgr    │    │  Global Shortcut: Super+Shift+Space│
-   │  App Topology · Audit Trail    │    │  Dynamic Approval Expansion   │
+   │  Mission Stream · Model Mgr    │    │  Global Shortcut: Super+Shift+Space
+   │  App Topology · Pipeline Studio│    │  Dynamic Approval Expansion   │
    └───────────────┬────────────────┘    └───────────────┬───────────────┘
                    │                                     │
                    └──────────────────┬──────────────────┘
@@ -82,85 +82,227 @@ On Linux today, specialized creative tools and systems monitors each expose deep
             │                         │                         │
             ▼                         ▼                         ▼
    ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-   │  NET WATCH PRO  │       │AGENTIC TUNEUP PRO       │  FUTURE APPS    │
-   │(Network Monitor)│       │ (System Cleaner)│       │(Plugin Bridge)  │
+   │  NET WATCH PRO  │       │AGENTIC TUNEUP PRO│      │  CUSTOM APPS    │
+   │(Network Monitor)│       │ (System Cleaner)│       │(starship-plugin)│
    │ starship-plugin │       │ starship-plugin │       │ starship-plugin │
    └─────────────────┘       └─────────────────┘       └─────────────────┘
 ```
 
 ---
 
-## 2. The Orchestrated App Ecosystem
+## Features
 
-Starship Control coordinates the following primary applications and telemetry formats via the shared **`starship-plugin` SDK**:
+### Dual-Engine Intelligence
+- **Local GGUF models:** Download and run open weights directly on hardware via `llama-cpp-2`. Supports Vulkan and ROCm GPU offloading with automatic CPU thread fallback.
+- **In-app Hugging Face downloader:** Search GGUF repositories inside the app, resume interrupted downloads in chunks, and verify integrity with streaming SHA-256 hashes.
+- **Cloud providers:** Connect to Anthropic Claude, Google Gemini, OpenAI, or OpenRouter with Server-Sent Events (SSE) token streaming.
 
-| Sub-Application | Domain & Role | Tech Stack | Primary Capabilities Orchestrated |
+### Dual-Surface Interface
+- **The Cockpit (1200×800):** Mission command center with real-time token streaming, a live ecosystem app drawer, Model Control panel, Cross-App Pipeline studio, and SQLite audit logs.
+- **The Floating HUD (520×76):** Translucent companion capsule summoned with `Super + Shift + Space`. Stays pinned above full-screen windows, lets you submit quick prompts, and expands to 520×240 px when a tool needs human sign-off.
+
+### Zero-Configuration Discovery
+- **`starship-plugin` SDK:** Sub-applications install a small manifest file into `$XDG_DATA_HOME/starship/plugins/`. Starship Control discovers them as soon as they write their manifest.
+- **Kernel-level authentication:** Starship Control talks over Unix domain sockets at `$XDG_RUNTIME_DIR/starship/bridges/<app>.sock`. Every connection verifies peer UID using Linux `SO_PEERCRED` to reject cross-user requests.
+- **Headless CLI fallback:** If a target application is closed, Starship Control launches its binary in headless mode (`<binary> --mcp`) over standard I/O pipes.
+
+### Native Safety Arbiter
+- **Tier 1 (Safe):** Read-only operations (inspecting video files, querying socket tables, reading timeline markers) execute immediately.
+- **Tier 2 (Mutating):** Edits to projects, audio files, or timeline cuts pause the agent. The UI displays an interactive diff summary and halts until you sign an approval token.
+- **Tier 3 (Destructive):** File deletions and cache purges trigger a high-visibility warning card with confirmation requirements before disk writes happen.
+
+### Cross-App Telemetry Pipelines
+- **Automated screencast edits:** Reads Common Event Telemetry (`.cet.jsonl`) sidecars generated by ScreenStudio Pro, detects silence intervals longer than 1200ms, sends vocal tracks to Audio Labs Pro for noise reduction, and applies ripple cuts directly to Easy Edits Pro timelines.
+- **System maintenance:** Runs parallel network inspections via Net Watch Pro and disk scans via Agentic Tuneup Pro, building a clean DAG with a single-click purge gate.
+
+---
+
+## Supported Ecosystem Applications
+
+Starship Control connects directly to applications built with the `starship-plugin` SDK:
+
+| Application | Role | Stack | Key Capabilities |
 |---|---|---|---|
-| [**Easy Edits Pro (EEP)**](https://github.com/zvirox/easy-edits-pro) | NLE Video Editor | Rust, Tauri 2, React, GStreamer | 490+ editing verbs, multi-track timeline cuts, scene-referred color grading, audio track alignment, rendering. |
-| [**ScreenStudio Pro (SSP)**](https://github.com/zvirox/screen-studio-pro) | Screen Recorder & HUD | Rust, Tauri 2, React 19, PipeWire | Wayland monitor/window/region capture, PipeWire audio, webcam PiP, hardware encoding, CET event logging. |
-| [**Audio Labs Pro (ALP)**](https://github.com/zvirox/audio-labs-pro) | Audio Studio & Voice Lab | Rust 1.92+, iced 0.14, ONNX | Multitrack audio recording, voice cleanup/denoising, local Kokoro-82M TTS, Moonshine STT dictation, voice cloning. |
-| [**Net Watch Pro (NWP)**](https://github.com/zvirox/net-watch-pro) | Network & Data Tracker | Rust, Tauri 2, Svelte 5, Aya eBPF | In-kernel eBPF per-process byte accounting, connection auditing, data usage tracking, network leak detection. |
-| [**Agentic Tuneup Pro (ATP)**](https://github.com/zvirox/agentic-tuneup-pro) | System Cleaner & Optimizer | Rust, Tauri 2, React 19 | Package manager cache pruning (pacman/apt/dnf/flatpak), dev artifact cleanup, orphan package removals. |
-| [**Capture Event Track (CET)**](https://github.com/zvirox/capture-event-track) | Telemetry Specification | JSON Lines (`.cet.jsonl`) | Recorder-neutral telemetry describing mouse clicks, cursor motion, and window focus used to automate cuts in EEP. |
+| [**Easy Edits Pro (EEP)**](https://github.com/zvirox/easy-edits-pro) | Video Editor | Rust, Tauri 2, GStreamer | 490+ editing verbs, multi-track timeline cuts, audio alignment |
+| [**ScreenStudio Pro (SSP)**](https://github.com/zvirox/screen-studio-pro) | Screen Recorder | Rust, Tauri 2, PipeWire | Monitor/window capture, webcam PiP, CET telemetry export |
+| [**Audio Labs Pro (ALP)**](https://github.com/zvirox/audio-labs-pro) | Audio Studio | Rust, iced, ONNX | Vocal isolation, Kokoro-82M TTS synthesis, audio mastering |
+| [**Net Watch Pro (NWP)**](https://github.com/zvirox/net-watch-pro) | Network Monitor | Rust, Svelte 5, Aya eBPF | Real-time socket accounting, bandwidth tracking, leak detection |
+| [**Agentic Tuneup Pro (ATP)**](https://github.com/zvirox/agentic-tuneup-pro) | System Cleaner | Rust, Tauri 2, React 19 | Package cache cleanup (pacman/apt/dnf), build artifact removal |
 
 ---
 
-## 3. Core Architectural Highlights
+## Installation
 
-### 3.1 Dual-Surface Interface
-- **The Cockpit (1200×800):** Primary mission control window. Features a 3-column workspace with a searchable session drawer, central streaming dialogue with interactive Task Sheet step cards, live App Topology drawer, and dedicated Model Control settings.
-- **The Floating HUD (520×76 resting, 520×240 expanded):** Translucent, always-on-top glass capsule toggleable via `Super + Shift + Space` (Wayland global shortcut portal via `ashpd`). Stays pinned above active applications for ambient prompting and automatically expands with spring physics when presenting human approval action cards.
+### Arch Linux (AUR)
 
-### 3.2 Dual Engine Model Control from Day One
-- **Local LLMs:** In-app Hugging Face browser and chunked resumable downloader. Executes GGUF models directly on workstation hardware (Vulkan/ROCm/CPU) via native `llama-cpp-2` bindings with streaming SHA-256 integrity validation and VRAM capacity probes.
-- **Cloud APIs:** Universal gateway supporting custom Base URLs, API keys, and model IDs for OpenAI, Anthropic Claude, Google Gemini, OpenRouter, and local OpenAI-compatible daemons (Ollama/vLLM).
+Install via your preferred AUR helper:
 
-### 3.3 Hybrid Control Plane
-- **Live GUI Mode (Unix Domain Sockets):** When a target app is open, Starship Control communicates over Unix domain sockets at `$XDG_RUNTIME_DIR/starship/bridges/<app-id>.sock`. Linux kernel `SO_PEERCRED` checks verify the calling UID matches the host user, enabling zero-copy real-time timeline updates.
-- **Headless Background Mode (stdio MCP):** When an app is closed, Starship Control spawns its headless CLI binary (e.g. `easy-edits-pro --mcp`, `alp-mcp`) as a background child process, completing batch tasks without opening windows.
+```bash
+yay -S starship-control-bin
+# or
+paru -S starship-control-bin
+```
 
-### 3.4 Tiered Safety & Human-in-the-Loop Gates
-Safety is enforced in the Rust core, not left to LLM prompt adherence:
-- **Tier 1 (Safe / Autonomous):** Read-only queries (reading timelines, checking network counters, inspecting media tags) execute automatically.
-- **Tier 2 (Mutating) & Tier 3 (Destructive):** Pauses the agent state machine, generates an interactive diff summary, and requires an explicit user signature token via `[Approve]` or `[Reject]` actions on the Cockpit or Floating HUD.
+Or build manually from the AUR PKGBUILD:
+
+```bash
+git clone https://aur.archlinux.org/starship-control-bin.git
+cd starship-control-bin
+makepkg -si
+```
+
+### Debian / Ubuntu (`.deb`)
+
+Download the latest `.deb` package from the [Releases page](https://github.com/zvirox/starship-control/releases):
+
+```bash
+wget https://github.com/zvirox/starship-control/releases/download/v0.1.0-alpha.1/starship-control_0.1.0_amd64.deb
+sudo apt install ./starship-control_0.1.0_amd64.deb
+```
+
+### Fedora / RHEL (`.rpm`)
+
+Download the `.rpm` package from the [Releases page](https://github.com/zvirox/starship-control/releases):
+
+```bash
+sudo dnf install https://github.com/zvirox/starship-control/releases/download/v0.1.0-alpha.1/starship-control-0.1.0-1.x86_64.rpm
+```
+
+### Generic Linux Tarball
+
+Download and unpack the portable archive:
+
+```bash
+wget https://github.com/zvirox/starship-control/releases/download/v0.1.0-alpha.1/starship-control-v0.1.0-x86_64-linux.tar.gz
+tar -xzf starship-control-v0.1.0-x86_64-linux.tar.gz
+cd starship-control-v0.1.0-x86_64-linux
+./bin/starship-control
+```
 
 ---
 
-## 4. Tech Stack
+## Building from Source
 
-| Layer | Choice | Rationale |
+### System Prerequisites
+
+Make sure your system has the standard build packages installed:
+
+**Arch Linux:**
+```bash
+sudo pacman -S --needed base-devel rustup nodejs npm webkit2gtk-4.1 gtk3 libayatana-appindicator openssl sqlite pipewire
+```
+
+**Ubuntu / Debian (22.04+):**
+```bash
+sudo apt update
+sudo apt install -y build-essential curl pkg-config libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev libssl-dev libsqlite3-dev libpipewire-0.3-dev nodejs npm
+```
+
+**Fedora / RHEL:**
+```bash
+sudo dnf groupinstall "Development Tools"
+sudo dnf install -y webkit2gtk4.1-devel gtk3-devel libayatana-appindicator-devel openssl-devel sqlite-devel pipewire-devel nodejs npm
+```
+
+### Build Commands
+
+```bash
+# 1. Clone repository
+git clone https://github.com/zvirox/starship-control.git
+cd starship-control
+
+# 2. Build frontend assets
+cd app
+npm ci
+npm run build
+cd ..
+
+# 3. Build Rust workspace
+cargo build --release -p starship-control
+
+# 4. Launch Starship Control
+./target/release/starship-control
+```
+
+---
+
+## Quickstart
+
+1. **Launch the Cockpit:** Run `starship-control` from your terminal or application launcher. The main 1200×800 window opens.
+2. **Select an engine:** Click the engine selector in the top bar. Choose a local GGUF model or enter your API key for Claude, OpenAI, or Gemini in Settings.
+3. **Open ecosystem tools:** Launch Easy Edits Pro, Audio Labs Pro, or ScreenStudio Pro. Their status indicators switch from Offline to Live GUI in the right-hand App Ecosystem drawer.
+4. **Issue your prompt:** Ask the agent to perform work across applications:
+   ```text
+   Record a 60-second tutorial demo with ScreenStudio Pro, clean up background noise in Audio Labs Pro, and import the clip into Easy Edits Pro.
+   ```
+5. **Approve actions:** When the planner reaches a mutating tool step, review the diff summary on the card and press `Enter` to authorize execution.
+6. **Toggle the Floating HUD:** Press `Super + Shift + Space` anywhere on your desktop to summon the glass bar over other running applications.
+
+---
+
+## Frequently Asked Questions (FAQs)
+
+### Do I need a dedicated GPU to run local models?
+No. While Vulkan and ROCm offloading provide faster token output on AMD, Intel, and NVIDIA cards, `llama-cpp-2` automatically falls back to multithreaded CPU inference with AVX2/AVX-512 instructions if no GPU is present.
+
+### How does Starship Control differ from general-purpose desktop agents?
+General desktop agents interact with applications by capturing screenshots and emulating mouse clicks. That approach breaks whenever a button moves or a window changes size. Starship Control talks directly to application cores using structured JSON-RPC 2.0 messages over Unix domain sockets. Timelines, audio tracks, and network states update cleanly with zero UI clicking latency.
+
+### Where are API keys and chat histories stored?
+All data stays on your machine. API keys, mission histories, and execution plans live in an encrypted SQLite database stored at `$XDG_DATA_HOME/starship-control/library.db` with restricted `0600` Linux file permissions.
+
+### Does the Floating HUD work on tiling Wayland compositors?
+Yes. The Floating HUD requests Wayland layer-shell and XDG top-level floating geometry with `alwaysOnTop` hints. It has been tested on GNOME Shell, KDE Plasma 6, Sway, and Hyprland.
+
+---
+
+## Common Troubleshooting
+
+### 1. Global shortcut `Super + Shift + Space` does not respond
+- **Cause:** Your Wayland compositor has not granted shortcut permissions, or `xdg-desktop-portal` is not active.
+- **Fix:** Ensure `xdg-desktop-portal` and your desktop implementation (e.g., `xdg-desktop-portal-gnome`, `xdg-desktop-portal-hyprland`, or `xdg-desktop-portal-wlr`) are running:
+  ```bash
+  systemctl --user status xdg-desktop-portal
+  ```
+  On the first launch, a system prompt will ask for permission to bind global shortcuts. Choose Allow.
+
+### 2. Sub-application shows as "Offline" in App Topology drawer
+- **Cause:** The sub-application was started under a different user account or its bridge socket was not created.
+- **Fix:** Check that the socket exists and has correct permissions:
+  ```bash
+  ls -la "$XDG_RUNTIME_DIR/starship/bridges/"
+  ```
+  Starship Control uses Linux `SO_PEERCRED` checks. Both processes must run under the same user ID.
+
+### 3. WebKit2GTK fails with a blank transparent window
+- **Cause:** Missing hardware acceleration drivers or Mesa Vulkan packages.
+- **Fix:** Launch with software rendering fallback:
+  ```bash
+  WEBKIT_DISABLE_COMPOSITING_MODE=1 starship-control
+  ```
+
+### 4. Local GGUF model fails to load with out-of-memory error
+- **Cause:** Model parameters exceed available unified system memory or VRAM.
+- **Fix:** Switch to a smaller quantization variant (such as `Q4_K_M` instead of `Q8_0`) in the Model Control panel, or reduce the context window size in model settings.
+
+---
+
+## Tech Stack Summary
+
+| Component | Choice | Purpose |
 |---|---|---|
-| **App Shell** | **Tauri 2** | Multi-window support (Cockpit + transparent Floating HUD), system tray, Wayland global shortcuts, tiny binary size. |
-| **Frontend Framework** | **React 19 + TypeScript + Vite** | Fast HMR dev loop, strict end-to-end typing mirroring Rust IPC payloads. |
-| **Styling & Design** | **Tailwind CSS v4** | Pure CSS `@theme` tokens matching DESIGN.md v1.0 (shared across EEP and SSP). |
-| **UI Components** | **Radix UI Primitives + Lucide Icons** | Accessible keyboard-operable primitives customized to frosted-glass tokens. |
-| **UI Behaviors & Agent Bridge** | **`@ui-sdk/react` + `@ui-sdk/core`** | 50+ headless interaction primitives (popups, roving focus, selection, createAgent) from `https://ui-sdk.dev/`. |
-| **Animations** | **framer-motion** | Physics-based spring animations for HUD expansion and approval card slide-ins. |
-| **Core Runtime** | **Rust 2024 + Tokio** | High-throughput asynchronous runtime managing concurrent MCP streams, child processes, and SSE. |
-| **Local LLM Engine** | **`llama-cpp-2`** | High-performance C++ bindings for GGUF execution with Vulkan, ROCm, and AVX2 acceleration. |
-| **Cloud Model Client**| **`reqwest` (HTTP/2 SSE)** | Streaming client for OpenAI, Anthropic, Gemini, and OpenRouter endpoints. |
-| **Protocol** | **Model Context Protocol (MCP)** | JSON-RPC 2.0 protocol for dynamic tool discovery, execution, and cancellation. |
-| **IPC Transport** | **Linux Unix Domain Sockets** | Peer-credential (`SO_PEERCRED`) authenticated local IPC. |
-| **Database** | **SQLite 3 (`rusqlite`)** | WAL mode, `PRAGMA foreign_keys = ON;`, `0600` permissions at `$XDG_DATA_HOME/starship-control/library.db`. |
+| **App Shell** | **Tauri 2** | Multi-window architecture, native Linux Wayland integration |
+| **Frontend** | **React 19 + TypeScript + Vite** | Fast typed interface mirroring Rust IPC schemas |
+| **Styling** | **Tailwind CSS v4** | Pure `@theme` tokens matching DESIGN.md frosted-glass rules |
+| **UI Primitives** | **Radix UI + Lucide** | Keyboard-accessible controls and semantic iconography |
+| **Backend Core** | **Rust 2024 + Tokio** | Async runtime managing child processes, sockets, and SSE |
+| **Inference Engine** | **`llama-cpp-2` + `reqwest`** | Local Vulkan/CPU GGUF runner and cloud streaming client |
+| **IPC Protocol** | **Model Context Protocol (MCP)** | JSON-RPC 2.0 tool discovery and execution |
+| **Transport** | **Unix Domain Sockets** | Local communication authenticated with `SO_PEERCRED` |
+| **Database** | **SQLite (WAL mode)** | Local mission storage with `0600` file permissions |
 
 ---
 
-## 5. Source-of-Truth Hierarchy
-
-All development in this repository strictly adheres to the following specification documents (lower-numbered files win every conflict):
-
-| Priority | Document | Governs |
-|---|---|---|
-| **1** | [**`PRD.md`**](PRD.md) | Scope, MVP vs. Later, user personas, functional requirements, and safety policies. |
-| **2** | [**`ARCHITECTURE.md`**](ARCHITECTURE.md) | Crate boundaries, system topology, IPC transports, and lifecycle contracts. |
-| **3** | [**`DESIGN.md`**](DESIGN.md) | Visual law: frosted-glass recipes, Electric Cyan tokens, typography, window layouts. |
-| **4** | [**`DATABASE.md`**](DATABASE.md) | SQLite schema, tables (`missions`, `plans`, `models`, `audit_log`), migrations, and retention. |
-| **5** | [**`API.md`**](API.md) | Typed Tauri commands, push events, and `starship-plugin` MCP wire protocol. |
-| **6** | [**`PLAN.md`**](PLAN.md) | Implementation roadmap, vertical slices, and verifiable acceptance criteria. |
-| **—** | [**`AGENTS.md`**](AGENTS.md) | Developer & AI Contributor Rules: coding rules, architecture invariants, and verification gates. |
-
----
-
-## 6. License
+## License
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
