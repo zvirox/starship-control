@@ -116,6 +116,10 @@ export interface MissionRecord {
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+  peak_cpu_pct: number;
+  peak_ram_bytes: number;
+  peak_temp_celsius: number;
+  governor_interventions: number;
 }
 
 /**
@@ -554,6 +558,10 @@ export interface MissionHistorySummary {
   activeModelId: string;
   createdAt: string;
   updatedAt: string;
+  peakCpuPct: number;
+  peakRamBytes: number;
+  peakTempCelsius: number;
+  governorInterventions: number;
 }
 
 export interface ReplayMissionPayload {

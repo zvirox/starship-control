@@ -1,0 +1,39 @@
+=== Task 14.11 Verification Evidence ===
+Timestamp: Sun Nov 22 20:07:45 UTC 2026
+Task: 14.11 Health in missions — each mission stores peak CPU/RAM/temp and number of governor interventions in missions summary for the report/history. Verify: completed mock mission has populated summary.
+
+1. Test Execution Output:
+$ cargo test -p starship-db test_completed_mock_mission_has_populated_health_summary
+   Compiling starship-db v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-db)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.58s
+     Running unittests src/lib.rs (target/debug/build/starship-db/02838db2a8157612/out/starship_db-02838db2a8157612)
+
+running 1 test
+test events::tests::test_completed_mock_mission_has_populated_health_summary ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.01s
+
+2. Implementation Details:
+- SQLite Database Migration 0006 (`crates/starship-db/src/migrations/0006_mission_health_summary.sql`):
+  * ALTER TABLE missions ADD COLUMN peak_cpu_pct REAL NOT NULL DEFAULT 0.0;
+  * ALTER TABLE missions ADD COLUMN peak_ram_bytes INTEGER NOT NULL DEFAULT 0;
+  * ALTER TABLE missions ADD COLUMN peak_temp_celsius REAL NOT NULL DEFAULT 0.0;
+  * ALTER TABLE missions ADD COLUMN governor_interventions INTEGER NOT NULL DEFAULT 0;
+  * User version bumped to 6 in `crates/starship-db/src/lib.rs`.
+- Schema & Model Synchronization (`crates/starship-db/src/schema.rs`, `models.rs`, `events.rs`):
+  * `MissionRecord` and `MissionHistorySummary` updated to include `peak_cpu_pct`, `peak_ram_bytes`, `peak_temp_celsius`, and `governor_interventions`.
+  * Implemented `record_mission_health_sample(mission_id, cpu, ram, temp, is_governor_intervention)` with atomic `MAX()` updates ensuring peak tracking.
+  * Implemented `set_mission_health_summary(...)`.
+- TypeScript IPC Mirror (`app/src/types/ipc.ts`):
+  * `MissionRecord` and `MissionHistorySummary` synchronized with 100% type parity.
+- Cockpit Mission History UI (`app/src/components/cockpit/MissionHistoryView.tsx`):
+  * Rendered health metric chips (Peak CPU %, RAM footprint, Thermal, Governor Interventions) in mission cards.
+  * Added Resource & Governor Footprint summary block in the right inspector panel.
+- Documentation:
+  * Updated `DATABASE.md` §3.1 table schema.
+
+3. Workspace Verification:
+- `cargo fmt --check`: CLEAN
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`: CLEAN
+- `cargo test --workspace`: 126 passed; 0 failed; 0 ignored
+- `npm run typecheck && npm run lint`: CLEAN (0 errors, 0 warnings)

@@ -47,6 +47,10 @@ pub struct MissionHistorySummary {
     pub active_model_id: String,
     pub created_at: String,
     pub updated_at: String,
+    pub peak_cpu_pct: f32,
+    pub peak_ram_bytes: u64,
+    pub peak_temp_celsius: f32,
+    pub governor_interventions: i64,
 }
 
 impl Database {
@@ -106,6 +110,10 @@ impl Database {
                 active_model_id: m.active_model_id,
                 created_at: m.created_at,
                 updated_at: m.updated_at,
+                peak_cpu_pct: m.peak_cpu_pct,
+                peak_ram_bytes: m.peak_ram_bytes,
+                peak_temp_celsius: m.peak_temp_celsius,
+                governor_interventions: m.governor_interventions,
             });
         }
 
@@ -412,5 +420,54 @@ mod tests {
         assert_eq!(summary.id, mission_id);
         assert_eq!(summary.duration_ms, 1000); // 2000 - 1000 = 1000ms
         assert_eq!(summary.fallback_count, 0);
+    }
+
+    #[test]
+    fn test_completed_mock_mission_has_populated_health_summary() {
+        // Verification for GAP-CLOSURE-PLAN.md §14.11:
+        // "Verify: completed mock mission has populated summary."
+        let db = Database::open_in_memory().expect("in-memory db");
+        let mission_id = db
+            .create_mission(
+                "ms-test-14-11",
+                "Health Summary Test Mission",
+                "Execute video transcode with load telemetry",
+                "qwen2.5-coder-7b-q4",
+                "local_gguf",
+            )
+            .expect("create mission");
+
+        // Record health samples across execution
+        db.record_mission_health_sample(mission_id, 45.0, 4 * 1024 * 1024 * 1024, 52.0, false)
+            .expect("record health sample 1");
+
+        // Peak load event with governor intervention
+        db.record_mission_health_sample(mission_id, 88.5, 9 * 1024 * 1024 * 1024, 76.2, true)
+            .expect("record health sample 2 (peak + governor intervention)");
+
+        // Later quiet sample (peaks should be retained by MAX)
+        db.record_mission_health_sample(mission_id, 30.0, 3 * 1024 * 1024 * 1024, 48.0, false)
+            .expect("record health sample 3");
+
+        // Fetch mission record directly
+        let mission = db
+            .get_mission(mission_id)
+            .expect("get mission")
+            .expect("mission exists");
+        assert_eq!(mission.peak_cpu_pct, 88.5);
+        assert_eq!(mission.peak_ram_bytes, 9 * 1024 * 1024 * 1024);
+        assert_eq!(mission.peak_temp_celsius, 76.2);
+        assert_eq!(mission.governor_interventions, 1);
+
+        // Fetch mission history summary
+        let history = db.list_mission_history().expect("list mission history");
+        let summary = history
+            .iter()
+            .find(|h| h.id == mission_id)
+            .expect("history record");
+        assert_eq!(summary.peak_cpu_pct, 88.5);
+        assert_eq!(summary.peak_ram_bytes, 9 * 1024 * 1024 * 1024);
+        assert_eq!(summary.peak_temp_celsius, 76.2);
+        assert_eq!(summary.governor_interventions, 1);
     }
 }

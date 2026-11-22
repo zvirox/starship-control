@@ -12,6 +12,9 @@ import {
   AlertTriangle,
   Cpu,
   Layers,
+  Flame,
+  Activity,
+  ShieldAlert,
 } from "lucide-react";
 import { GlassPanel } from "../common/GlassPanel";
 import type { MissionHistorySummary, ReplayMissionResponse } from "../../types/ipc";
@@ -231,6 +234,34 @@ export const MissionHistoryView: React.FC<MissionHistoryViewProps> = ({
                           <Cpu className="h-3 w-3" />
                           <span>{m.activeModelId}</span>
                         </span>
+
+                        {/* Health Summary Metrics (GAP-CLOSURE-PLAN.md §14.11) */}
+                        {m.peakCpuPct > 0 && (
+                          <span className="flex items-center gap-1 text-sky-300 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20">
+                            <Activity className="h-2.5 w-2.5 text-sky-400" />
+                            <span>{Math.round(m.peakCpuPct)}% CPU</span>
+                          </span>
+                        )}
+
+                        {m.peakRamBytes > 0 && (
+                          <span className="text-slate-500">
+                            {(m.peakRamBytes / 1024 / 1024).toFixed(0)} MB RAM
+                          </span>
+                        )}
+
+                        {m.peakTempCelsius > 0 && (
+                          <span className="flex items-center gap-1 text-rose-300 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                            <Flame className="h-2.5 w-2.5 text-rose-400" />
+                            <span>{Math.round(m.peakTempCelsius)}°C</span>
+                          </span>
+                        )}
+
+                        {m.governorInterventions > 0 && (
+                          <span className="flex items-center gap-1 text-amber-300 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-500/30">
+                            <ShieldAlert className="h-2.5 w-2.5 text-amber-400" />
+                            <span>{m.governorInterventions} governor action(s)</span>
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -301,6 +332,50 @@ export const MissionHistoryView: React.FC<MissionHistoryViewProps> = ({
                     <span>Fallback Recoveries:</span>
                     <span className="font-mono text-amber-300">
                       {selectedMission.fallbackCount}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Health & Governor Summary Box (GAP-CLOSURE-PLAN.md §14.11) */}
+                <div className="rounded-xl bg-black/30 border border-white/[0.06] p-3 space-y-2 text-xs">
+                  <div className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5 pb-1 border-b border-white/[0.04]">
+                    <Activity className="h-3.5 w-3.5 text-sky-400" />
+                    <span>Resource & Governor Footprint</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span>Peak CPU:</span>
+                    <span className="font-mono text-slate-200">
+                      {selectedMission.peakCpuPct > 0 ? `${selectedMission.peakCpuPct.toFixed(1)}%` : "0.0%"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span>Peak RAM:</span>
+                    <span className="font-mono text-slate-200">
+                      {selectedMission.peakRamBytes > 0
+                        ? `${(selectedMission.peakRamBytes / 1024 / 1024).toFixed(0)} MB`
+                        : "0 MB"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span>Peak Temperature:</span>
+                    <span className="font-mono text-slate-200">
+                      {selectedMission.peakTempCelsius > 0
+                        ? `${selectedMission.peakTempCelsius.toFixed(1)}°C`
+                        : "N/A"}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-slate-400">
+                    <span>Governor Interventions:</span>
+                    <span
+                      className={`font-mono font-semibold ${
+                        selectedMission.governorInterventions > 0 ? "text-amber-300" : "text-emerald-300"
+                      }`}
+                    >
+                      {selectedMission.governorInterventions}
                     </span>
                   </div>
                 </div>

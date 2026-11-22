@@ -148,11 +148,16 @@ impl Database {
         self.with_conn(|conn| {
             let mut stmt = conn.prepare(
                 "SELECT id, uuid, title, user_goal, active_model_id, provider_type, status,
-                        total_input_tokens, total_output_tokens, cost_usd, created_at, updated_at, archived_at
+                        total_input_tokens, total_output_tokens, cost_usd, created_at, updated_at, archived_at,
+                        peak_cpu_pct, peak_ram_bytes, peak_temp_celsius, governor_interventions
                  FROM missions WHERE id = ?1",
             )?;
 
             let mut rows = stmt.query_map(params![id], |row| {
+                let peak_cpu: f64 = row.get(13)?;
+                let peak_ram: i64 = row.get(14)?;
+                let peak_temp: f64 = row.get(15)?;
+                #[allow(clippy::cast_possible_truncation)]
                 Ok(MissionRecord {
                     id: row.get(0)?,
                     uuid: row.get(1)?,
@@ -167,6 +172,10 @@ impl Database {
                     created_at: row.get(10)?,
                     updated_at: row.get(11)?,
                     archived_at: row.get(12)?,
+                    peak_cpu_pct: peak_cpu as f32,
+                    peak_ram_bytes: peak_ram.max(0).cast_unsigned(),
+                    peak_temp_celsius: peak_temp as f32,
+                    governor_interventions: row.get(16)?,
                 })
             })?;
 
@@ -183,11 +192,16 @@ impl Database {
         self.with_conn(|conn| {
             let mut stmt = conn.prepare(
                 "SELECT id, uuid, title, user_goal, active_model_id, provider_type, status,
-                        total_input_tokens, total_output_tokens, cost_usd, created_at, updated_at, archived_at
+                        total_input_tokens, total_output_tokens, cost_usd, created_at, updated_at, archived_at,
+                        peak_cpu_pct, peak_ram_bytes, peak_temp_celsius, governor_interventions
                  FROM missions WHERE archived_at IS NULL ORDER BY updated_at DESC, id DESC",
             )?;
 
             let rows = stmt.query_map([], |row| {
+                let peak_cpu: f64 = row.get(13)?;
+                let peak_ram: i64 = row.get(14)?;
+                let peak_temp: f64 = row.get(15)?;
+                #[allow(clippy::cast_possible_truncation)]
                 Ok(MissionRecord {
                     id: row.get(0)?,
                     uuid: row.get(1)?,
@@ -202,6 +216,10 @@ impl Database {
                     created_at: row.get(10)?,
                     updated_at: row.get(11)?,
                     archived_at: row.get(12)?,
+                    peak_cpu_pct: peak_cpu as f32,
+                    peak_ram_bytes: peak_ram.max(0).cast_unsigned(),
+                    peak_temp_celsius: peak_temp as f32,
+                    governor_interventions: row.get(16)?,
                 })
             })?;
 
@@ -210,6 +228,69 @@ impl Database {
                 list.push(r?);
             }
             Ok(list)
+        })
+    }
+
+    /// Atomically records health metrics and increments governor interventions for a mission (GAP-CLOSURE-PLAN.md §14.11).
+    pub fn record_mission_health_sample(
+        &self,
+        mission_id: i64,
+        cpu_pct: f32,
+        ram_bytes: u64,
+        temp_celsius: f32,
+        is_governor_intervention: bool,
+    ) -> Result<(), CoreError> {
+        self.with_conn(|conn| {
+            let interventions = i64::from(is_governor_intervention);
+            #[allow(clippy::cast_possible_wrap)]
+            conn.execute(
+                "UPDATE missions SET
+                    peak_cpu_pct = MAX(peak_cpu_pct, ?1),
+                    peak_ram_bytes = MAX(peak_ram_bytes, ?2),
+                    peak_temp_celsius = MAX(peak_temp_celsius, ?3),
+                    governor_interventions = governor_interventions + ?4,
+                    updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?5",
+                params![
+                    f64::from(cpu_pct),
+                    ram_bytes as i64,
+                    f64::from(temp_celsius),
+                    interventions,
+                    mission_id
+                ],
+            )?;
+            Ok(())
+        })
+    }
+
+    /// Updates all health summary metrics for a mission directly (GAP-CLOSURE-PLAN.md §14.11).
+    pub fn set_mission_health_summary(
+        &self,
+        mission_id: i64,
+        peak_cpu_pct: f32,
+        peak_ram_bytes: u64,
+        peak_temp_celsius: f32,
+        governor_interventions: i64,
+    ) -> Result<(), CoreError> {
+        self.with_conn(|conn| {
+            #[allow(clippy::cast_possible_wrap)]
+            conn.execute(
+                "UPDATE missions SET
+                    peak_cpu_pct = ?1,
+                    peak_ram_bytes = ?2,
+                    peak_temp_celsius = ?3,
+                    governor_interventions = ?4,
+                    updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+                 WHERE id = ?5",
+                params![
+                    f64::from(peak_cpu_pct),
+                    peak_ram_bytes as i64,
+                    f64::from(peak_temp_celsius),
+                    governor_interventions,
+                    mission_id
+                ],
+            )?;
+            Ok(())
         })
     }
 

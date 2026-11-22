@@ -94,6 +94,10 @@ Represents an ongoing or completed user mission.
 | `created_at` | `TEXT` | `NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))` | ISO-8601 UTC timestamp. |
 | `updated_at` | `TEXT` | `NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))` | Last interaction timestamp. |
 | `archived_at` | `TEXT` | `NULL` | Non-null indicates mission is archived from active sidebar. |
+| `peak_cpu_pct` | `REAL` | `NOT NULL DEFAULT 0.0` | Peak CPU utilization % recorded during mission execution. |
+| `peak_ram_bytes` | `INTEGER` | `NOT NULL DEFAULT 0` | Peak RAM in bytes allocated during mission execution. |
+| `peak_temp_celsius`| `REAL` | `NOT NULL DEFAULT 0.0` | Peak hardware temperature in Celsius during mission execution. |
+| `governor_interventions`| `INTEGER` | `NOT NULL DEFAULT 0` | Total throttle or safe-pause actions triggered by the governor. |
 
 ---
 

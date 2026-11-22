@@ -303,7 +303,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* mock feed drives each state; screenshots in evidence; keyboard navigable.
 - [x] **14.10 HUD & tray integration** — HUD shows a small health dot (green/amber/red) and expands the plan view with a banner when the governor pauses a mission; tray state **Overloaded**.
   * *Verify:* injected Critical state shows banner within 2 s.
-- [ ] **14.11 Health in missions** — each mission stores peak CPU/RAM/temp and number of governor interventions in `missions` summary for the report/history.
+- [x] **14.11 Health in missions** — each mission stores peak CPU/RAM/temp and number of governor interventions in `missions` summary for the report/history.
   * *Verify:* completed mock mission has populated summary.
 
 **DoD (Phase 14):** The Systems tab shows live health, overload is detected without flapping, and the governor pauses/throttles missions and recovers automatically.

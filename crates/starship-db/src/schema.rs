@@ -15,6 +15,10 @@ pub struct MissionRecord {
     pub created_at: String,
     pub updated_at: String,
     pub archived_at: Option<String>,
+    pub peak_cpu_pct: f32,
+    pub peak_ram_bytes: u64,
+    pub peak_temp_celsius: f32,
+    pub governor_interventions: i64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
