@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::process::{Child, ChildStdin, ChildStdout, Command};
+use tokio::process::{Child, ChildStdin, ChildStdout};
 use tracing::debug;
 
 pub type ProgressHandler = Box<dyn FnMut(ProgressNotification) + Send + Sync>;
@@ -68,17 +68,34 @@ impl StdioTransportClient {
         binary_path: P,
         args: &[S],
     ) -> Result<Self, CoreError> {
+        Self::spawn_with_containment(
+            binary_path,
+            args,
+            &crate::containment::ContainmentConfig::default(),
+        )
+    }
+
+    /// Spawns a headless application binary with explicit process containment settings
+    /// (GAP-CLOSURE-PLAN.md §15.4).
+    pub fn spawn_with_containment<P: AsRef<Path>, S: AsRef<str>>(
+        binary_path: P,
+        args: &[S],
+        containment: &crate::containment::ContainmentConfig,
+    ) -> Result<Self, CoreError> {
         let bin = binary_path.as_ref().to_path_buf();
         let str_args: Vec<&str> = args.iter().map(AsRef::as_ref).collect();
 
+        let (mut cmd, contained) =
+            crate::containment::prepare_command(&bin, &str_args, containment);
+
         debug!(
-            "Spawning headless MCP process: {} with args: {:?}",
+            "Spawning headless MCP process: {} (contained: {}) with args: {:?}",
             bin.display(),
+            contained,
             str_args
         );
 
-        let mut child = Command::new(&bin)
-            .args(&str_args)
+        let mut child = cmd
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -91,6 +108,7 @@ impl StdioTransportClient {
                     Some(serde_json::json!({
                         "binaryPath": bin.to_string_lossy(),
                         "args": str_args,
+                        "contained": contained,
                     })),
                 )
             })?;

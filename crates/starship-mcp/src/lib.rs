@@ -1,5 +1,6 @@
 pub mod aggregator;
 pub mod client;
+pub mod containment;
 pub mod protocol;
 pub mod registry;
 pub mod router;
@@ -7,6 +8,7 @@ pub mod security;
 
 pub use aggregator::{AggregatedTool, ToolAggregator};
 pub use client::{McpRequest, McpResponse, UnixTransportClient};
+pub use containment::{ContainmentConfig, is_systemd_run_available, prepare_command};
 pub use protocol::{McpSession, McpTransport, StdioTransportClient};
 pub use registry::{
     get_known_ecosystem_apps, scan_and_sync_manifests, seed_default_manifests_if_needed,

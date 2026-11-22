@@ -1,0 +1,9 @@
+
+running 4 tests
+test containment::tests::test_containment_config_defaults ... ok
+test containment::tests::test_mock_runaway_app_killed_by_containment_scope_triggers_failed_final ... ok
+test containment::tests::test_prepare_command_respects_disabled_flag ... ok
+test containment::tests::test_prepare_command_with_containment_active ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 12 filtered out; finished in 0.00s
+
