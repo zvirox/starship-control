@@ -1,7 +1,7 @@
 # PLAN.md — Starship Control Implementation Roadmap
 
-**Version:** 1.0 · **Date:** 2026-11-17  
-**Authority chain:** `PRD.md` (scope) → `ARCHITECTURE.md` (structure) → `DESIGN.md` (UI law) → `DATABASE.md` (schema) → `API.md` (contracts) → **this file (order of work)**  
+**Version:** 1.1 · **Date:** 2026-11-22  
+**Authority chain:** `PRD.md` (scope) → `ARCHITECTURE.md` (structure) → `DESIGN.md` (UI law) → `DATABASE.md` (schema) → `API.md` (contracts) → **this file (Phases 0–8)** → [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) (Phases 9–16)  
 **Working rule:** Every phase ends with a **runnable application** (vertical slices — `cargo tauri dev` produces real, testable behavior at each phase boundary, never "backend first, UI later"). Tasks are sized $\le$ 1–2 hours. The rulebook for executing any task is [`AGENTS.md`](AGENTS.md).
 
 ---
@@ -210,3 +210,23 @@
   - *Verify:* Release pipeline generates installable `.deb`, `.rpm`, and `.tar.gz` packages.
 
 **Definition of Done (Phase 8):** ✅ Starship Control builds clean on CI and installs seamlessly across major Linux distributions.
+
+---
+
+## Phase 9–16 — Gap Filling, Missing Features & System Hardening
+
+> The roadmap continues in detail in [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md).  
+> Governed by `PRD.md` → `ARCHITECTURE.md` → `DESIGN.md` → `DATABASE.md` → `API.md` → `PLAN.md` → **`GAP-CLOSURE-PLAN.md`**.
+
+### Summary of Phases 9–16:
+- [ ] **Phase 9 — Truth, CI & Foundations**: Ground-truth audit (`docs/evidence/AUDIT.md`), working CI matrix (`ci.yml`), database encryption honesty & encrypted secret store (libsecret / SQLCipher), workspace warnings & `unsafe` audit.
+- [ ] **Phase 10 — Hardened Control Plane**: Enforced safety arbiter with manifest overrides, HMAC-SHA256 signed approval tokens bound to step args, socket security (`SO_PEERCRED` + binary hash pinning), tamper-evident hash-chained audit log with verify command.
+- [ ] **Phase 11 — Executor Engine, Checkpoints & Fallback Plan**: Full execution engine (state machine, retry with jitter, timeouts, cancel), dynamic fallback planner, cross-app checkpoint & rollback engine (EEP, ALP, ATP, SSP), lease & lock supervisor for concurrent missions.
+- [ ] **Phase 12 — Planner Reliability & Tool Routing**: Dynamic tool indexing & lexical tool routing, strict JSON schema validator with 2-attempt LLM repair loop, prompt injection defense (`<untrusted_context>` wrapping), end-to-end screencast test (`tests/screencast_flow.rs`).
+- [ ] **Phase 13 — Progress Tracking**: Mission progress state & ETA estimator, crash-safe mission state reconstruction, Cockpit & HUD progress rendering.
+- [ ] **Phase 14 — System Health & Overload Monitor + Dashboard**: Host metrics sampler (`sysinfo` CPU/RAM/swap + disk), GPU telemetry (`amdgpu` sysfs / `nvml`), overload detector & throttle policy, Cockpit system status drawer & HUD overload badge.
+- [ ] **Phase 15 — Resource-Aware Scheduling (Admission Control)**: Mission admission controller & priority queue, cancellation propagation & graceful drain, Cockpit queue & pause/resume UI.
+- [ ] **Phase 16 — Test Harness, Chaos & Release Readiness**: Mock app ecosystem (5 apps over UDS/stdio), chaos / fault-injection suite, Wayland/X11 HUD verification, packaging validation (deb/rpm/PKGBUILD clean build).
+
+*Refer to [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) for the authoritative task breakdown, individual task criteria, and non-negotiable verification commands.*
+

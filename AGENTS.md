@@ -25,7 +25,7 @@ When implementing features or fixing bugs, consult the governing specification f
 | **3** | [**`DESIGN.md`**](DESIGN.md) | Visual law: frosted glass recipes, color tokens, typography, window layouts. |
 | **4** | [**`DATABASE.md`**](DATABASE.md) | SQLite schema, tables, foreign keys, migrations, retention. |
 | **5** | [**`API.md`**](API.md) | Typed Tauri commands, push events, MCP JSON-RPC 2.0 wire protocol. |
-| **6** | [**`PLAN.md`**](PLAN.md) | Order of work, vertical slices, phase-by-phase acceptance criteria. |
+| **6** | [**`PLAN.md`**](PLAN.md) / [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) | Order of work (Phases 0–8 / Phases 9–16), vertical slices, phase-by-phase acceptance criteria. |
 
 *Contract Amendment Law:* Any behavioral change that alters an API, database schema, or design token must amend the corresponding specification file **in the same commit**.
 
