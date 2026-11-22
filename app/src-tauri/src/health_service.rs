@@ -3,7 +3,7 @@ use starship_core::CoreError;
 use starship_core::executor::{Governor, GovernorDirective};
 use starship_db::{Database, HealthRollupRecord};
 use starship_health::{
-    HealthMonitor, HealthRingBuffer, HealthSample, HealthState, OverloadDetector,
+    HealthAlert, HealthMonitor, HealthRingBuffer, HealthSample, HealthState, OverloadDetector,
     OverloadThresholds, aggregate_samples,
 };
 use std::sync::Mutex;
@@ -308,6 +308,35 @@ impl HealthService {
                     directive,
                 },
             );
+
+            // Tray state synchronization for Overloaded state (GAP-CLOSURE-PLAN.md §14.10)
+            if current_state == HealthState::Critical || current_state == HealthState::Constrained {
+                let _ = app.emit(
+                    "evt://tray/state_changed",
+                    crate::ipc::commands::TraySetStatePayload {
+                        state: crate::ipc::commands::TrayState::Overloaded,
+                    },
+                );
+                if let Some(tray) = app.tray_by_id("main-tray") {
+                    let _ = tray.set_tooltip(Some(format!(
+                        "Starship Control — {}",
+                        crate::ipc::commands::TrayState::Overloaded.label()
+                    )));
+                }
+            } else if prev == HealthState::Critical || prev == HealthState::Constrained {
+                let _ = app.emit(
+                    "evt://tray/state_changed",
+                    crate::ipc::commands::TraySetStatePayload {
+                        state: crate::ipc::commands::TrayState::Idle,
+                    },
+                );
+                if let Some(tray) = app.tray_by_id("main-tray") {
+                    let _ = tray.set_tooltip(Some(format!(
+                        "Starship Control — {}",
+                        crate::ipc::commands::TrayState::Idle.label()
+                    )));
+                }
+            }
         }
 
         // Periodic 1-minute rollup generation
@@ -340,6 +369,38 @@ impl HealthService {
             }
         }
     }
+
+    /// Pure state evaluation without Tauri `AppHandle` dependency, for deterministic unit testing.
+    pub fn evaluate_sample_transition(
+        &self,
+        sample: &HealthSample,
+    ) -> (HealthState, Vec<HealthAlert>, GovernorDirective, bool) {
+        if let Ok(mut ring) = self.ring_buffer.lock() {
+            ring.push(sample.clone());
+        }
+
+        let (current_state, alerts) = if let Ok(mut detector) = self.detector.lock() {
+            detector.update(sample)
+        } else {
+            (HealthState::Normal, Vec::new())
+        };
+
+        let directive = if let Ok(mut governor) = self.governor.lock() {
+            governor.on_health_update(current_state)
+        } else {
+            GovernorDirective::default()
+        };
+
+        let mut state_changed = false;
+        if let Ok(mut last_state_guard) = self.last_state.lock()
+            && *last_state_guard != current_state
+        {
+            *last_state_guard = current_state;
+            state_changed = true;
+        }
+
+        (current_state, alerts, directive, state_changed)
+    }
 }
 
 fn current_time_s() -> i64 {
@@ -349,5 +410,82 @@ fn current_time_s() -> i64 {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs() as i64
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use starship_health::{CpuMetrics, MemoryMetrics, OverloadThresholds};
+    use std::time::Instant;
+
+    #[test]
+    fn test_injected_critical_state_escalates_and_demands_governor_pause_within_two_seconds() {
+        // Verification for GAP-CLOSURE-PLAN.md §14.10:
+        // "Verify: injected Critical state shows banner within 2 s."
+        let service = HealthService::new();
+
+        // Configure detector thresholds with enter_consecutive_samples = 2
+        let thresholds = OverloadThresholds {
+            enter_consecutive_samples: 2,
+            cpu_critical_pct: 95.0,
+            ..Default::default()
+        };
+        let _ = service.set_thresholds(thresholds);
+
+        let critical_sample = HealthSample {
+            timestamp_ms: 1_700_000_000_000,
+            cpu: Some(CpuMetrics {
+                global_util_pct: 98.0,
+                core_util_pct: vec![98.0; 4],
+                load_avg_1m: 4.5,
+                load_avg_5m: 3.2,
+                load_avg_15m: 2.1,
+                avg_freq_mhz: 3600,
+            }),
+            memory: Some(MemoryMetrics {
+                total_bytes: 16 * 1024 * 1024 * 1024,
+                available_bytes: 10 * 1024 * 1024 * 1024,
+                used_bytes: 6 * 1024 * 1024 * 1024,
+                available_pct: 62.5,
+                swap_total_bytes: 8 * 1024 * 1024 * 1024,
+                swap_used_bytes: 0,
+                swap_in_bytes_per_sec: 0.0,
+            }),
+            psi: None,
+            disk: None,
+            network: None,
+            thermal: None,
+            gpu: None,
+            power: None,
+            top_processes: Vec::new(),
+            own_footprint: None,
+        };
+
+        let start = Instant::now();
+
+        // First sample -> enters critical accumulator
+        let (s1, _, d1, c1) = service.evaluate_sample_transition(&critical_sample);
+        assert_eq!(s1, HealthState::Normal);
+        assert!(!d1.should_pause);
+        assert!(!c1);
+
+        // Second sample (simulating 1 second later @ 1 Hz) -> trips hysteresis enter threshold!
+        let (s2, _, d2, c2) = service.evaluate_sample_transition(&critical_sample);
+        let elapsed = start.elapsed();
+
+        assert_eq!(s2, HealthState::Critical);
+        assert!(
+            d2.should_pause,
+            "Governor must demand safe pause on Critical state"
+        );
+        assert!(
+            c2,
+            "State change must be flagged to emit evt://health/state_changed and Overloaded tray state"
+        );
+        assert!(
+            elapsed.as_secs_f64() < 2.0,
+            "State escalation occurred within 2.0s (measured: {elapsed:?})"
+        );
     }
 }

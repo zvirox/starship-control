@@ -20,6 +20,22 @@ pub struct GovernorDirective {
     pub action_message: String,
 }
 
+impl Default for GovernorDirective {
+    fn default() -> Self {
+        Self {
+            current_health_state: HealthState::Normal,
+            max_parallelism: 2,
+            allow_heavy_steps: true,
+            allow_local_inference: true,
+            allow_background_prefetch: true,
+            should_pause: false,
+            should_resume: false,
+            should_unload_idle_model: false,
+            action_message: "Standard execution".to_string(),
+        }
+    }
+}
+
 /// System execution governor balancing system health against mission execution.
 pub struct Governor {
     current_state: HealthState,

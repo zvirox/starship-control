@@ -26,6 +26,9 @@ import type {
   TokenStreamEvent,
   TrayState,
   MissionProgressPayload,
+  HealthState,
+  HealthStateChangedEvent,
+  HealthSnapshotResponse,
 } from "../../types/ipc";
 
 const APP_NAMES: Record<string, string> = {
@@ -56,6 +59,11 @@ export const HudView: React.FC = () => {
   const [trayState, setTrayState] = useState<TrayState>("executing");
   const [isStalled, setIsStalled] = useState<boolean>(false);
 
+  // Health & governor state (GAP-CLOSURE-PLAN.md §14.10)
+  const [healthState, setHealthState] = useState<HealthState>("normal");
+  const [governorPaused, setGovernorPaused] = useState<boolean>(false);
+  const [governorMessage, setGovernorMessage] = useState<string>("");
+
   // Initialize models and system state
   useEffect(() => {
     async function initHud() {
@@ -66,6 +74,16 @@ export const HudView: React.FC = () => {
           const def =
             hello.available_models.find((m) => m.is_default) || hello.available_models[0];
           setActiveModel(def);
+        }
+
+        const snap = await invoke<HealthSnapshotResponse>("cmd_health_get_snapshot");
+        setHealthState(snap.state);
+        if (snap.governorDirective) {
+          setGovernorMessage(snap.governorDirective.actionMessage);
+          if (snap.governorDirective.shouldPause || snap.state === "critical") {
+            setGovernorPaused(true);
+            setTrayState("overloaded");
+          }
         }
       } catch (err) {
         console.warn("HUD init handshake failed:", err);
@@ -104,6 +122,7 @@ export const HudView: React.FC = () => {
     let unlistenTokens: (() => void) | undefined;
     let unlistenProgress: (() => void) | undefined;
     let unlistenTray: (() => void) | undefined;
+    let unlistenHealth: (() => void) | undefined;
 
     async function setupListeners() {
       unlistenApproval = await listen<ApprovalNeededEvent>(
@@ -149,6 +168,29 @@ export const HudView: React.FC = () => {
           setTrayState(event.payload.state);
         }
       );
+
+      unlistenHealth = await listen<HealthStateChangedEvent>(
+        "evt://health/state_changed",
+        async (event) => {
+          const currentState = event.payload.currentState;
+          setHealthState(currentState);
+          if (event.payload.directive) {
+            setGovernorMessage(event.payload.directive.actionMessage);
+            if (event.payload.directive.shouldPause || currentState === "critical") {
+              setGovernorPaused(true);
+              setTrayState("overloaded");
+              // Expand HUD with high-visibility banner within 2s of Critical injection
+              await setHudExpandedState(true);
+            } else if (
+              event.payload.directive.shouldResume ||
+              currentState === "normal" ||
+              currentState === "elevated"
+            ) {
+              setGovernorPaused(false);
+            }
+          }
+        }
+      );
     }
 
     setupListeners().catch(console.warn);
@@ -158,6 +200,7 @@ export const HudView: React.FC = () => {
       if (unlistenTokens) unlistenTokens();
       if (unlistenProgress) unlistenProgress();
       if (unlistenTray) unlistenTray();
+      if (unlistenHealth) unlistenHealth();
     };
   }, [setHudExpandedState]);
 
@@ -305,6 +348,24 @@ export const HudView: React.FC = () => {
               }`}
             >
               <img src="/logo.png" alt="Starship Control" className="h-5 w-5 object-contain" />
+            </div>
+
+            {/* Health Indicator Dot (GAP-CLOSURE-PLAN.md §14.10) */}
+            <div
+              className="flex items-center justify-center p-0.5 cursor-pointer"
+              title={`System Health: ${healthState.toUpperCase()}${governorMessage ? ` — ${governorMessage}` : ""}`}
+            >
+              <span
+                className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                  healthState === "normal"
+                    ? "bg-emerald-400"
+                    : healthState === "elevated"
+                    ? "bg-amber-400"
+                    : healthState === "constrained"
+                    ? "bg-orange-400"
+                    : "bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]"
+                }`}
+              />
             </div>
 
             {/* Model Chip Button */}
@@ -478,6 +539,26 @@ export const HudView: React.FC = () => {
         {/* Expanded View: Streamed Output or Action Approval Card */}
         {expanded && (
           <div className="mt-3 flex-1 flex flex-col justify-between border-t border-white/10 pt-2.5 overflow-hidden animate-in fade-in duration-200">
+            {/* Governor Safe-Pause Banner (GAP-CLOSURE-PLAN.md §14.10) */}
+            {governorPaused && (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-2 mb-2 flex items-center justify-between text-amber-200 text-xs shadow-[0_0_15px_rgba(245,158,11,0.15)] animate-in fade-in duration-200">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-amber-400 animate-pulse shrink-0" />
+                  <div>
+                    <span className="font-semibold text-amber-100 text-[11px]">
+                      MISSION SAFE-PAUSED BY RESOURCE GOVERNOR
+                    </span>
+                    <p className="text-[10px] text-amber-300/80 mt-0.5">
+                      {governorMessage || "Host machine resources constrained or critical. Execution will auto-resume safely."}
+                    </p>
+                  </div>
+                </div>
+                <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                  Auto-Resume
+                </span>
+              </div>
+            )}
+
             {approvalGate ? (
               /* Live Approval Gate Card */
               <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 space-y-2 shadow-[0_0_20px_rgba(244,63,94,0.2)]">

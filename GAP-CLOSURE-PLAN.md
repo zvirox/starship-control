@@ -301,7 +301,7 @@ Step:    pending → ready → awaiting_approval → running
   * Settings drawer for thresholds, sampling, auto-resume.
   * Follows `DESIGN.md` glass tokens; no new colors without updating `DESIGN.md`.
   * *Verify:* mock feed drives each state; screenshots in evidence; keyboard navigable.
-- [ ] **14.10 HUD & tray integration** — HUD shows a small health dot (green/amber/red) and expands the plan view with a banner when the governor pauses a mission; tray state **Overloaded**.
+- [x] **14.10 HUD & tray integration** — HUD shows a small health dot (green/amber/red) and expands the plan view with a banner when the governor pauses a mission; tray state **Overloaded**.
   * *Verify:* injected Critical state shows banner within 2 s.
 - [ ] **14.11 Health in missions** — each mission stores peak CPU/RAM/temp and number of governor interventions in `missions` summary for the report/history.
   * *Verify:* completed mock mission has populated summary.

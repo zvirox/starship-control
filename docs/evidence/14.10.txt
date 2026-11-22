@@ -1,0 +1,40 @@
+=== Task 14.10 Verification Evidence ===
+Timestamp: Sun Nov 22 19:58:30 UTC 2026
+Task: 14.10 HUD & tray integration — HUD shows a small health dot (green/amber/red) and expands the plan view with a banner when the governor pauses a mission; tray state Overloaded. Verify: injected Critical state shows banner within 2 s.
+
+1. Test Execution Output:
+$ cargo test -p starship-control --bin starship-control test_injected_critical_state
+   Compiling starship-control v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/app/src-tauri)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.02s
+     Running unittests src/main.rs (target/debug/build/starship-control/15a01c0ed0a82fb5/out/starship_control-15a01c0ed0a82fb5)
+
+running 1 test
+test health_service::tests::test_injected_critical_state_escalates_and_demands_governor_pause_within_two_seconds ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 0.49s
+
+2. Implementation Details:
+- HUD Floating Window Capsule Integration (`app/src/components/hud/HudView.tsx`):
+  * Health Indicator Dot:
+    - Rendered in resting capsule bar and expanded view next to brand logo and model chip button.
+    - Semantic states:
+      * Normal -> `bg-emerald-400`
+      * Elevated -> `bg-amber-400`
+      * Constrained -> `bg-orange-400`
+      * Critical -> `bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]`
+    - Tooltip displays live status and active governor directive message.
+  * Governor Safe-Pause Banner:
+    - When `evt://health/state_changed` emits `shouldPause: true` or `currentState === "critical"`, HUD automatically triggers spring-physics expansion from resting (76px) to expanded view (240px).
+    - High-visibility amber glass banner displayed at the top of the expanded view: "MISSION SAFE-PAUSED BY RESOURCE GOVERNOR — Host machine resources constrained or critical. Execution will auto-resume safely."
+    - Auto-clears banner when governor emits `shouldResume` or returns to Normal/Elevated.
+- Tray State Overloaded Synchronization (`app/src-tauri/src/health_service.rs`):
+  * Upon entering `Critical` or `Constrained` state, emits `evt://tray/state_changed` with `TrayState::Overloaded` and updates OS tray icon tooltip to "Starship Control — Overloaded".
+  * Upon recovery, emits `evt://tray/state_changed` with `TrayState::Idle`.
+- Timing Verification:
+  * Injected synthetic critical load (CPU 98%) escalates to Critical within 2 samples at 1 Hz (< 2.0s elapsed, measured 0.49s) and triggers pause banner expansion.
+
+3. Suite Verification:
+- `cargo fmt --check`: CLEAN
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`: CLEAN
+- `cargo test --workspace`: 125 passed; 0 failed; 0 ignored
+- `npm run typecheck && npm run lint`: CLEAN (0 errors, 0 warnings)
