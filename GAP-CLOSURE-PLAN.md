@@ -220,7 +220,7 @@ Step:    pending → ready → awaiting_approval → running
 
 - [x] **13.1 Progress protocol** — add `notifications/progress` handling to `starship-mcp/client.rs`; extend `starship-plugin` with a `ProgressReporter` helper; add `progressToken` to `tools/call`.
   * *Verify:* mock tool emits 10 progress events; host maps them to the right step.
-- [ ] **13.2 Progress aggregator** — `executor/progress.rs`: computes step/mission progress, ETA, stall flag; throttled to ≤ 4 Hz per mission.
+- [x] **13.2 Progress aggregator** — `executor/progress.rs`: computes step/mission progress, ETA, stall flag; throttled to ≤ 4 Hz per mission.
   * *Verify:* unit tests for weighting, ETA with/without history, throttling.
 - [ ] **13.3 `tool_stats` learner** — after each successful step update `{tool, n, ewma_ms, p50, p90}` (see Appendix B). Ignore failed/cancelled runs.
   * *Verify:* ETA error on a replayed history < 25 % after 10 runs (record result).

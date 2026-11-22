@@ -1,6 +1,7 @@
 pub mod failure;
 pub mod fallback;
 pub mod lease;
+pub mod progress;
 pub mod quarantine;
 pub mod recovery;
 pub mod report;
@@ -14,6 +15,10 @@ pub use fallback::{
     StepExecutionState,
 };
 pub use lease::{LeaseSupervisor, ResourceLease};
+pub use progress::{
+    EtaEstimate, MIN_SAMPLES_FOR_PRECISE_ETA, MissionProgressSnapshot, PROGRESS_THROTTLE_INTERVAL,
+    ProgressAggregator, StepProgressTracker, ToolDurationStats,
+};
 pub use quarantine::{QuarantineManager, QuarantineManifest, QuarantinedItem};
 pub use recovery::{CrashRecoveryCard, CrashRecoveryManager, InterruptedStepInfo, RecoveryAction};
 pub use report::{CompletedStepSummary, FailureReport, HandoffBundle, RollbackSummary};

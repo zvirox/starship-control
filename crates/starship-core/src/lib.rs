@@ -10,11 +10,13 @@ pub use context::{AppCapability, RouteableTool, TokenBudget, TwoStageToolRouter}
 pub use error::{CoreError, ErrorKind};
 pub use executor::{
     CompletedStepSummary, CrashRecoveryCard, CrashRecoveryManager, DagNode, DagScheduler,
-    FailureClass, FailureReport, FallbackDecision, FallbackLadderEngine, FallbackRung,
-    HandoffBundle, InterruptedStepInfo, LeaseSupervisor, MissionEvent, MissionFallbackContext,
-    MissionState, PauseReason, QuarantineManager, QuarantineManifest, QuarantinedItem,
+    EtaEstimate, FailureClass, FailureReport, FallbackDecision, FallbackLadderEngine, FallbackRung,
+    HandoffBundle, InterruptedStepInfo, LeaseSupervisor, MIN_SAMPLES_FOR_PRECISE_ETA, MissionEvent,
+    MissionFallbackContext, MissionProgressSnapshot, MissionState, PROGRESS_THROTTLE_INTERVAL,
+    PauseReason, ProgressAggregator, QuarantineManager, QuarantineManifest, QuarantinedItem,
     RecoveryAction, ResourceLease, RetryDecision, RetryPolicy, RollbackSummary, StepEvent,
-    StepExecutionState, StepState, classify_error, transition_mission, transition_step,
+    StepExecutionState, StepProgressTracker, StepState, ToolDurationStats, classify_error,
+    transition_mission, transition_step,
 };
 pub use pipeline::{
     CetEvent, CetHeader, CetTelemetry, CutInterval, DiagnosticsPipeline, ScreencastAssemblyRequest,

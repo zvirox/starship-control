@@ -1,0 +1,24 @@
+=== 13.2 Progress Aggregator Evidence ===
+Timestamp: 2026-11-22T18:21:19+05:30
+Requirement: `executor/progress.rs` computes step/mission progress, ETA, stall flag; throttled to <= 4 Hz per mission.
+Verification: Unit tests for weighting, ETA with/without history, throttling.
+
+$ cargo test -p starship-core --lib executor::progress
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.50s
+     Running unittests src/lib.rs (target/debug/build/starship-core/9fa1eac12a4f429a/out/starship_core-9fa1eac12a4f429a)
+
+running 4 tests
+test executor::progress::tests::test_eta_with_and_without_history ... ok
+test executor::progress::tests::test_progress_throttling_at_4hz ... ok
+test executor::progress::tests::test_stall_detection ... ok
+test executor::progress::tests::test_weighted_mission_progress ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 65 filtered out; finished in 0.00s
+
+Verification Details:
+- Weighted Progress: `Σ(step.weight * step.progress) / Σ weights` tested with asymmetric step weights (10.0 vs 90.0); verified incremental progression.
+- ETA Calculation:
+  * Known tools with >= 5 samples: yields exact bounded range [p50, p90] with is_approximate = false.
+  * Sparse tools (< 5 samples) and unknown tools: marked is_approximate = true (triggers UI `~` marker).
+- Throttling (<= 4 Hz): Consecutive calls within 250ms are suppressed (returns None); force flush overrides throttle for terminal steps.
+- Stall Detection: Inactivity beyond max(30s, 3 * expected_interval) triggers is_stalled = true; heartbeat clears stall state.
