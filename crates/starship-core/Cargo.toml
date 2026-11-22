@@ -16,3 +16,7 @@ thiserror.workspace = true
 sha2.workspace = true
 hex.workspace = true
 toml.workspace = true
+dirs.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

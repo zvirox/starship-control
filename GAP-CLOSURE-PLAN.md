@@ -128,7 +128,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* every code in `API.md §1.2` maps to exactly one class (test enumerates codes).
 - [x] **11.7 Checkpoint contract** — extend `starship-plugin` (v1.1): required tools `checkpoint.create(label)` / `checkpoint.restore(id)` / `checkpoint.drop(id)` for any app exposing Tier 2+ tools; host calls `create` before the first Tier 2 step touching a resource and records `checkpoint_id` on the step.
   * *Verify:* mock app: failure after mutation restores prior state.
-- [ ] **11.8 Quarantine instead of delete (ATP)** — Tier 3 file removal moves items to `$XDG_DATA_HOME/starship-control/quarantine/<mission>/` with a manifest and TTL (default 7 days); `restore` and `purge` are separate Tier 3 steps. Package-cache cleaners that can't be reversed are labeled **IRREVERSIBLE** on the approval card and require a typed confirmation.
+- [x] **11.8 Quarantine instead of delete (ATP)** — Tier 3 file removal moves items to `$XDG_DATA_HOME/starship-control/quarantine/<mission>/` with a manifest and TTL (default 7 days); `restore` and `purge` are separate Tier 3 steps. Package-cache cleaners that can't be reversed are labeled **IRREVERSIBLE** on the approval card and require a typed confirmation.
   * *Verify:* cleanup → restore round-trip restores byte-identical files; irreversible items show the warning.
 - [ ] **11.9 Crash recovery** — on startup, scan missions with `running` steps → mark `interrupted`, release stale leases, show a Resume / Restart-step / Abort card. Never auto-resume Tier 2/3 steps.
   * *Verify:* `kill -9` during a step, restart, card appears; resume re-requests approval.

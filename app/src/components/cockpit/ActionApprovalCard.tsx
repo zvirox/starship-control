@@ -43,9 +43,21 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
   const [rejecting, setRejecting] = useState<boolean>(false);
   const [rejectReason, setRejectReason] = useState<string>("User declined action modification");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [typedConfirmation, setTypedConfirmation] = useState<string>("");
 
   const appDisplayName = APP_NAMES[step.appId.toLowerCase()] || step.appId.toUpperCase();
   const isTier3 = step.riskTier === 3;
+  const isIrreversible =
+    step.toolName.toLowerCase().includes("purge_package_cache") ||
+    step.toolName.toLowerCase().includes("clean_cache") ||
+    step.toolName.toLowerCase().includes("format") ||
+    step.toolName.toLowerCase().includes("wipe");
+
+  const canApprove =
+    !isSubmitting &&
+    !isExecuting &&
+    Boolean(step.signatureToken) &&
+    (!isIrreversible || typedConfirmation.trim().toUpperCase() === "CONFIRM");
 
   const handleApprove = useCallback(async (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
     // GAP-CLOSURE-PLAN.md §10.4: Frontend approval handler requires event.isTrusted
@@ -54,6 +66,7 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
       return;
     }
     if (isSubmitting || isExecuting || !step.signatureToken) return;
+    if (isIrreversible && typedConfirmation.trim().toUpperCase() !== "CONFIRM") return;
     try {
       setIsSubmitting(true);
       await onApprove(step.stepId, step.signatureToken);
@@ -62,7 +75,7 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
     } finally {
       setIsSubmitting(false);
     }
-  }, [isSubmitting, isExecuting, onApprove, step.signatureToken, step.stepId]);
+  }, [isSubmitting, isExecuting, onApprove, step.signatureToken, step.stepId, isIrreversible, typedConfirmation]);
 
   const handleReject = useCallback(async (e?: React.MouseEvent | React.KeyboardEvent | KeyboardEvent) => {
     if (e && !e.isTrusted) {
@@ -144,16 +157,24 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
           </div>
         </div>
 
-        {/* Risk Tier Badge */}
-        <div
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold font-mono tracking-wider uppercase border shadow-sm ${
-            isTier3
-              ? "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-rose-500/20"
-              : "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/20"
-          }`}
-        >
-          <AlertTriangle className="h-3 w-3" />
-          <span>{isTier3 ? "TIER 3 (DESTRUCTIVE)" : "TIER 2 (MUTATING)"}</span>
+        {/* Risk Tier Badge & Irreversible Warning */}
+        <div className="flex items-center gap-2">
+          {isIrreversible && (
+            <div className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase border border-rose-500/60 bg-rose-950/60 text-rose-300">
+              <AlertTriangle className="h-3 w-3 text-rose-400" />
+              <span>IRREVERSIBLE</span>
+            </div>
+          )}
+          <div
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold font-mono tracking-wider uppercase border shadow-sm ${
+              isTier3
+                ? "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-rose-500/20"
+                : "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/20"
+            }`}
+          >
+            <AlertTriangle className="h-3 w-3" />
+            <span>{isTier3 ? "TIER 3 (DESTRUCTIVE)" : "TIER 2 (MUTATING)"}</span>
+          </div>
         </div>
       </div>
 
@@ -250,6 +271,26 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
         </div>
       )}
 
+      {/* Irreversible Confirmation Requirement (GAP-CLOSURE-PLAN.md §11.8) */}
+      {isIrreversible && !rejecting && (
+        <div className="mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3.5 space-y-2.5">
+          <div className="flex items-center gap-2 text-rose-300 text-xs font-semibold">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-400" />
+            <span>PERMANENT ACTION — CANNOT BE RESTORED FROM QUARANTINE</span>
+          </div>
+          <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
+            Package-cache cleanups cannot be rolled back. Type <strong className="text-rose-300 font-mono">CONFIRM</strong> below to enable authorization:
+          </p>
+          <input
+            type="text"
+            value={typedConfirmation}
+            onChange={(e) => setTypedConfirmation(e.target.value)}
+            placeholder="Type CONFIRM to authorize..."
+            className="w-full rounded-lg bg-black/60 border border-rose-500/40 px-3 py-1.5 font-mono text-xs text-rose-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-400"
+          />
+        </div>
+      )}
+
       {/* Action Buttons */}
       {!rejecting && (
         <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4">
@@ -282,8 +323,12 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
             <button
               type="button"
               onClick={handleApprove}
-              disabled={isSubmitting || isExecuting}
-              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-400 to-cyan-400 px-5 py-2 font-sans text-xs font-bold text-slate-950 shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:shadow-[0_0_28px_rgba(56,189,248,0.6)] hover:brightness-110 active:scale-98 focus-visible:ring-2 focus-visible:ring-sky-300 transition-all duration-150 cursor-pointer"
+              disabled={!canApprove}
+              className={`flex items-center gap-1.5 rounded-xl px-5 py-2 font-sans text-xs font-bold transition-all duration-150 ${
+                canApprove
+                  ? "bg-gradient-to-r from-sky-400 to-cyan-400 text-slate-950 shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:shadow-[0_0_28px_rgba(56,189,248,0.6)] hover:brightness-110 active:scale-98 focus-visible:ring-2 focus-visible:ring-sky-300 cursor-pointer"
+                  : "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
+              }`}
             >
               {isSubmitting || isExecuting ? (
                 <>

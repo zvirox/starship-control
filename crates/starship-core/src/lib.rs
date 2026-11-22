@@ -8,8 +8,8 @@ pub mod safety;
 pub use error::{CoreError, ErrorKind};
 pub use executor::{
     DagNode, DagScheduler, FailureClass, LeaseSupervisor, MissionEvent, MissionState, PauseReason,
-    ResourceLease, RetryDecision, RetryPolicy, StepEvent, StepState, classify_error,
-    transition_mission, transition_step,
+    QuarantineManager, QuarantineManifest, QuarantinedItem, ResourceLease, RetryDecision,
+    RetryPolicy, StepEvent, StepState, classify_error, transition_mission, transition_step,
 };
 pub use pipeline::{
     CetEvent, CetHeader, CetTelemetry, CutInterval, DiagnosticsPipeline, ScreencastAssemblyRequest,
