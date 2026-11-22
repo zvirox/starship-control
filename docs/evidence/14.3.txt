@@ -1,0 +1,35 @@
+=== Task 14.3 Verification Evidence ===
+Timestamp: Sun Nov 22 19:18:25 UTC 2026
+Task: 14.3 PSI + thermal samplers — parse PSI files (handle absence), hwmon scan with caching of sensor paths.
+
+1. Test Execution Output:
+$ cargo test -p starship-health -- --nocapture
+   Compiling starship-health v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-health)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.32s
+     Running unittests src/lib.rs (target/debug/build/starship-health/5d585d693784dd4d/out/starship_health-5d585d693784dd4d)
+
+running 6 tests
+test sampler::tests::test_container_with_no_gpu_or_hwmon_returns_sample_with_gpu_none ... ok
+test sampler::tests::test_missing_psi_handled_gracefully ... ok
+test sampler::tests::test_hwmon_millidegrees_parser ... ok
+test sampler::tests::test_psi_parser_with_real_linux_fixtures ... ok
+Average HealthMonitor sampling duration: 4.953316ms (4.9533 ms)
+Calculated sampling overhead at 1 Hz: 0.4953%
+test sampler::tests::test_system_sampler_overhead_under_one_percent_on_quiet_machine ... ok
+test sampler::tests::test_adaptive_sampling_rate_intervals ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.94s
+
+2. Implementation Details:
+- PsiSampler: Parses /proc/pressure/{cpu,memory,io} with support for both "some" and "full" stall pressure metrics (avg10, avg60).
+- Graceful handling: Correctly yields None if /proc/pressure is absent or unreadable.
+- ThermalSampler: Scans /sys/class/hwmon once at creation, caching sensor paths for temp*_input, temp*_max, temp*_crit, and fan*_input.
+- Slow ACPI/WMI filter: Excludes blocking ACPI methods (>15ms read time) during discovery to maintain 1 Hz sample time under 5ms (0.495% CPU overhead, well below 1.0% limit).
+- Millidegrees conversion: Converts Linux hwmon millidegrees (e.g. 69000 -> 69.0 C).
+- Computes overall critical temperature limit and delta_to_max.
+
+3. Static Analysis & Workspace Suite:
+- `cargo fmt --check`: CLEAN
+- `cargo clippy --workspace --all-targets -- -D warnings`: CLEAN
+- `cargo test --workspace`: 113 / 113 tests passed
+- `npm run typecheck && npm run lint`: CLEAN

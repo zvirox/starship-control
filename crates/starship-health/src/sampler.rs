@@ -342,33 +342,152 @@ impl Sampler for GpuSampler {
     }
 }
 
-/// Standalone Thermal & Fan metric sampler with graceful unavailable handling.
+/// Standalone Thermal & Fan metric sampler with sysfs path caching (GAP-CLOSURE-PLAN.md §14.3).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ThermalSensorTarget {
+    pub input_path: std::path::PathBuf,
+    pub max_celsius: Option<f32>,
+    pub crit_celsius: Option<f32>,
+}
+
 #[derive(Debug, Default)]
 pub struct ThermalSampler {
     hwmon_available: bool,
+    cached_sensors: Vec<ThermalSensorTarget>,
+    cached_fans: Vec<std::path::PathBuf>,
 }
 
 impl ThermalSampler {
     #[must_use]
     pub fn new() -> Self {
-        let hwmon_path = Path::new("/sys/class/hwmon");
-        Self {
-            hwmon_available: hwmon_path.exists(),
+        let hwmon_base = Path::new("/sys/class/hwmon");
+        let available = hwmon_base.exists();
+        let mut sampler = Self {
+            hwmon_available: available,
+            cached_sensors: Vec::new(),
+            cached_fans: Vec::new(),
+        };
+        if available {
+            sampler.rescan_sensors();
         }
+        sampler
     }
 
     pub fn set_available(&mut self, available: bool) {
         self.hwmon_available = available;
+        if !available {
+            self.cached_sensors.clear();
+            self.cached_fans.clear();
+        }
+    }
+
+    /// Scans `/sys/class/hwmon` and caches sensor file paths and thresholds (GAP-CLOSURE-PLAN.md §14.3).
+    pub fn rescan_sensors(&mut self) {
+        self.cached_sensors.clear();
+        self.cached_fans.clear();
+
+        let hwmon_base = Path::new("/sys/class/hwmon");
+        let Ok(entries) = std::fs::read_dir(hwmon_base) else {
+            return;
+        };
+
+        for entry in entries.flatten() {
+            let hwmon_dir = entry.path();
+            if !hwmon_dir.is_dir() {
+                continue;
+            }
+
+            let Ok(files) = std::fs::read_dir(&hwmon_dir) else {
+                continue;
+            };
+
+            for file in files.flatten() {
+                let file_name = file.file_name().to_string_lossy().to_string();
+                if file_name.starts_with("temp") && file_name.ends_with("_input") {
+                    let prefix = file_name.trim_end_matches("_input");
+                    let max_path = hwmon_dir.join(format!("{prefix}_max"));
+                    let crit_path = hwmon_dir.join(format!("{prefix}_crit"));
+
+                    let max_celsius = std::fs::read_to_string(&max_path)
+                        .ok()
+                        .and_then(|s| parse_hwmon_millidegrees(&s));
+                    let crit_celsius = std::fs::read_to_string(&crit_path)
+                        .ok()
+                        .and_then(|s| parse_hwmon_millidegrees(&s));
+
+                    self.cached_sensors.push(ThermalSensorTarget {
+                        input_path: file.path(),
+                        max_celsius,
+                        crit_celsius,
+                    });
+                } else if file_name.starts_with("fan") && file_name.ends_with("_input") {
+                    let fan_path = file.path();
+                    let t0 = Instant::now();
+                    if let Ok(content) = std::fs::read_to_string(&fan_path) {
+                        // Exclude slow blocking ACPI/WMI methods (e.g. hp-wmi taking ~200ms per read)
+                        if t0.elapsed() < Duration::from_millis(15)
+                            && content.trim().parse::<u32>().is_ok()
+                        {
+                            self.cached_fans.push(fan_path);
+                        } else {
+                            debug!(target: "starship_health", path = ?fan_path, "Excluding slow ACPI/WMI fan sensor (>15ms) from 1Hz polling");
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 impl Sampler for ThermalSampler {
     fn sample_into(&mut self, sample: &mut HealthSample) {
-        if !self.hwmon_available {
+        if !self.hwmon_available || self.cached_sensors.is_empty() {
             sample.thermal = None;
             return;
         }
-        sample.thermal = None;
+
+        let mut max_temp: f32 = 0.0;
+        let mut overall_crit: Option<f32> = None;
+        let mut overall_max_limit: Option<f32> = None;
+
+        for sensor in &self.cached_sensors {
+            if let Ok(content) = std::fs::read_to_string(&sensor.input_path)
+                && let Some(deg) = parse_hwmon_millidegrees(&content)
+                && deg > max_temp
+            {
+                max_temp = deg;
+            }
+
+            if let Some(crit) = sensor.crit_celsius {
+                overall_crit = Some(overall_crit.map_or(crit, |prev: f32| prev.min(crit)));
+            }
+            if let Some(mx) = sensor.max_celsius {
+                overall_max_limit = Some(overall_max_limit.map_or(mx, |prev: f32| prev.min(mx)));
+            }
+        }
+
+        if max_temp <= 0.0 {
+            sample.thermal = None;
+            return;
+        }
+
+        let delta_to_max = overall_max_limit.map_or(25.0, |limit| (limit - max_temp).max(0.0));
+
+        let mut fan_rpm: Option<u32> = None;
+        for fan_path in &self.cached_fans {
+            if let Ok(content) = std::fs::read_to_string(fan_path)
+                && let Ok(rpm) = content.trim().parse::<u32>()
+            {
+                fan_rpm = Some(fan_rpm.map_or(rpm, |prev| prev.max(rpm)));
+            }
+        }
+
+        sample.thermal = Some(crate::sample::ThermalMetrics {
+            max_temp_celsius: max_temp,
+            crit_temp_celsius: overall_crit,
+            delta_to_max,
+            fan_rpm,
+        });
     }
 
     fn name(&self) -> &'static str {
@@ -376,7 +495,7 @@ impl Sampler for ThermalSampler {
     }
 }
 
-/// Standalone Linux PSI (Pressure Stall Information) sampler.
+/// Standalone Linux PSI (Pressure Stall Information) sampler (GAP-CLOSURE-PLAN.md §14.3).
 #[derive(Debug, Default)]
 pub struct PsiSampler {
     psi_available: bool,
@@ -390,6 +509,10 @@ impl PsiSampler {
             psi_available: psi_cpu.exists(),
         }
     }
+
+    pub fn set_available(&mut self, available: bool) {
+        self.psi_available = available;
+    }
 }
 
 impl Sampler for PsiSampler {
@@ -398,12 +521,102 @@ impl Sampler for PsiSampler {
             sample.psi = None;
             return;
         }
-        sample.psi = None;
+
+        let cpu_str = std::fs::read_to_string("/proc/pressure/cpu").unwrap_or_default();
+        let mem_str = std::fs::read_to_string("/proc/pressure/memory").unwrap_or_default();
+        let io_str = std::fs::read_to_string("/proc/pressure/io").unwrap_or_default();
+
+        sample.psi = parse_psi_str(&cpu_str, &mem_str, &io_str);
     }
 
     fn name(&self) -> &'static str {
         "psi_sampler"
     }
+}
+
+/// Parse Linux millidegrees Celsius from sysfs string (e.g. "69000" -> 69.0).
+#[must_use]
+pub fn parse_hwmon_millidegrees(content: &str) -> Option<f32> {
+    let millis = content.trim().parse::<f32>().ok()?;
+    Some(millis / 1000.0)
+}
+
+/// Parse a single PSI line e.g. "some avg10=0.05 avg60=0.88 avg300=0.77 total=416104297".
+#[must_use]
+pub fn parse_psi_line(line: &str) -> Option<(f64, f64)> {
+    let mut avg10 = None;
+    let mut avg60 = None;
+
+    for token in line.split_whitespace() {
+        if let Some(val) = token.strip_prefix("avg10=") {
+            avg10 = val.parse::<f64>().ok();
+        } else if let Some(val) = token.strip_prefix("avg60=") {
+            avg60 = val.parse::<f64>().ok();
+        }
+    }
+
+    match (avg10, avg60) {
+        (Some(a10), Some(a60)) => Some((a10, a60)),
+        _ => None,
+    }
+}
+
+/// Parse full PSI metrics from contents of `/proc/pressure/{cpu,memory,io}`.
+#[must_use]
+pub fn parse_psi_str(cpu: &str, mem: &str, io: &str) -> Option<crate::sample::PsiMetrics> {
+    if cpu.is_empty() && mem.is_empty() && io.is_empty() {
+        return None;
+    }
+
+    let mut cpu_some = (0.0, 0.0);
+    for line in cpu.lines() {
+        if line.starts_with("some ")
+            && let Some(vals) = parse_psi_line(line)
+        {
+            cpu_some = vals;
+        }
+    }
+
+    let mut mem_some = (0.0, 0.0);
+    let mut mem_full = (0.0, 0.0);
+    for line in mem.lines() {
+        if line.starts_with("some ")
+            && let Some(vals) = parse_psi_line(line)
+        {
+            mem_some = vals;
+        } else if line.starts_with("full ")
+            && let Some(vals) = parse_psi_line(line)
+        {
+            mem_full = vals;
+        }
+    }
+
+    let mut io_some = (0.0, 0.0);
+    let mut io_full = (0.0, 0.0);
+    for line in io.lines() {
+        if line.starts_with("some ")
+            && let Some(vals) = parse_psi_line(line)
+        {
+            io_some = vals;
+        } else if line.starts_with("full ")
+            && let Some(vals) = parse_psi_line(line)
+        {
+            io_full = vals;
+        }
+    }
+
+    Some(crate::sample::PsiMetrics {
+        cpu_some_avg10: cpu_some.0,
+        cpu_some_avg60: cpu_some.1,
+        mem_some_avg10: mem_some.0,
+        mem_some_avg60: mem_some.1,
+        mem_full_avg10: mem_full.0,
+        mem_full_avg60: mem_full.1,
+        io_some_avg10: io_some.0,
+        io_some_avg60: io_some.1,
+        io_full_avg10: io_full.0,
+        io_full_avg60: io_full.1,
+    })
 }
 
 /// Composite System Health Monitor coordinating all active samplers.
@@ -603,5 +816,49 @@ mod tests {
         monitor.set_mode(SamplingMode::Idle);
         assert_eq!(monitor.mode(), SamplingMode::Idle);
         assert_eq!(monitor.mode().interval(), Duration::from_millis(5000));
+    }
+
+    #[test]
+    fn test_psi_parser_with_real_linux_fixtures() {
+        // Verification requirement for 14.3:
+        // "Verify: parser tests with real-format fixtures; missing PSI handled."
+        let cpu_fixture = "some avg10=0.05 avg60=0.88 avg300=0.77 total=416104297\n";
+        let mem_fixture = "some avg10=0.01 avg60=0.27 avg300=0.11 total=47238184\nfull avg10=0.02 avg60=0.19 avg300=0.07 total=36577695\n";
+        let io_fixture = "some avg10=0.24 avg60=1.14 avg300=0.68 total=205453001\nfull avg10=0.22 avg60=0.77 avg300=0.44 total=151221197\n";
+
+        let psi =
+            parse_psi_str(cpu_fixture, mem_fixture, io_fixture).expect("parse PSI real fixtures");
+
+        assert!((psi.cpu_some_avg10 - 0.05).abs() < 1e-4);
+        assert!((psi.cpu_some_avg60 - 0.88).abs() < 1e-4);
+
+        assert!((psi.mem_some_avg10 - 0.01).abs() < 1e-4);
+        assert!((psi.mem_some_avg60 - 0.27).abs() < 1e-4);
+        assert!((psi.mem_full_avg10 - 0.02).abs() < 1e-4);
+        assert!((psi.mem_full_avg60 - 0.19).abs() < 1e-4);
+
+        assert!((psi.io_some_avg10 - 0.24).abs() < 1e-4);
+        assert!((psi.io_some_avg60 - 1.14).abs() < 1e-4);
+        assert!((psi.io_full_avg10 - 0.22).abs() < 1e-4);
+        assert!((psi.io_full_avg60 - 0.77).abs() < 1e-4);
+    }
+
+    #[test]
+    fn test_missing_psi_handled_gracefully() {
+        let empty_psi = parse_psi_str("", "", "");
+        assert_eq!(empty_psi, None, "Empty PSI strings must return None");
+
+        let mut psi_sampler = PsiSampler::new();
+        psi_sampler.set_available(false); // Simulate container with no PSI
+        let mut sample = HealthSample::default();
+        psi_sampler.sample_into(&mut sample);
+        assert_eq!(sample.psi, None, "Unavailable PSI must gracefully set None");
+    }
+
+    #[test]
+    fn test_hwmon_millidegrees_parser() {
+        assert_eq!(parse_hwmon_millidegrees("69000\n"), Some(69.0));
+        assert_eq!(parse_hwmon_millidegrees("100000"), Some(100.0));
+        assert_eq!(parse_hwmon_millidegrees("invalid"), None);
     }
 }

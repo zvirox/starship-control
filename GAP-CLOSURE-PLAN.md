@@ -262,7 +262,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* on a container with no GPU/hwmon, sampler returns a sample with `gpu: None` and exits cleanly.
 - [x] **14.2 CPU/mem/disk/net samplers** using `sysinfo` + `/proc`; adaptive rate: **1 Hz** while dashboard/HUD visible, **0.2 Hz** otherwise, **1 Hz** while a mission runs.
   * *Verify:* sampler overhead (own CPU) < 1 % average on a quiet machine (measured, recorded).
-- [ ] **14.3 PSI + thermal samplers** — parse PSI files (handle absence), hwmon scan with caching of sensor paths.
+- [x] **14.3 PSI + thermal samplers** — parse PSI files (handle absence), hwmon scan with caching of sensor paths.
   * *Verify:* parser tests with real-format fixtures; missing PSI handled.
 - [ ] **14.4 GPU samplers (feature-gated)** — NVML and amdgpu sysfs; VRAM used/total, util, temp.
   * *Verify:* feature builds in CI (stub/mocked); manual evidence on real hardware attached when available.
