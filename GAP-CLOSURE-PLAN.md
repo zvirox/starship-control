@@ -193,7 +193,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* 15 invalid fixtures each rejected with a specific error.
 - [x] **12.2 Repair loop** — on validation failure, send errors back to the model (≤ 2 attempts), then escalate to F3 chain.
   * *Verify:* mock engine returns bad JSON twice then good → plan accepted; third failure → fallback.
-- [ ] **12.3 Constrained decoding for local models** — generate a GBNF grammar from the schema and use it with `llama-cpp-2` sampling; cloud providers use native tool/JSON modes.
+- [x] **12.3 Constrained decoding for local models** — generate a GBNF grammar from the schema and use it with `llama-cpp-2` sampling; cloud providers use native tool/JSON modes.
   * *Verify:* 20-prompt golden suite on a 7B Q4 model: ≥ 90 % schema-valid (record actual number; adjust target honestly).
 - [ ] **12.4 Two-stage tool routing** — stage 1: model picks apps from a one-line capability list; stage 2: inject only those apps' tools, ranked by embedding/BM25 over tool descriptions, capped by token budget (`context/budget.rs`).
   * *Verify:* with a mock app exposing 500 tools, prompt stays under budget and the correct tool is present in ≥ 95 % of golden cases.

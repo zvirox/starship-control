@@ -485,6 +485,7 @@ pub async fn cmd_mission_send_prompt(
             temperature: Some(0.2),
             max_tokens: Some(4096),
             tools,
+            grammar: None,
             stream: true,
         };
 

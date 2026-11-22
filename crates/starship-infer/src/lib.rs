@@ -24,6 +24,7 @@ mod tests {
             temperature: None,
             max_tokens: None,
             tools: vec![],
+            grammar: None,
             stream: true,
         };
 

@@ -1,10 +1,12 @@
 pub mod dag;
+pub mod gbnf;
 pub mod prompt;
 pub mod repair;
 pub mod tasksheet;
 pub mod validator;
 
 pub use dag::PlanDag;
+pub use gbnf::{GbnfGenerator, TASKSHEET_GBNF_GRAMMAR};
 pub use prompt::PlannerPromptBuilder;
 pub use repair::{DEFAULT_MAX_REPAIR_ATTEMPTS, PlanGenerator, PlannerRepairLoop, RepairResult};
 pub use tasksheet::{TASKSHEET_VERSION_1, TaskSheet, TaskSheetStep};
