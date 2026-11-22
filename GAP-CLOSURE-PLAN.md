@@ -118,7 +118,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* property test: no sequence of events reaches an illegal state.
 - [x] **11.2 Event-sourced run log** — append-only `mission_events` table (see Appendix B). Every transition, tool call, retry, fallback decision writes an event first, then acts.
   * *Verify:* rebuilding mission state from events equals live state in a test.
-- [ ] **11.3 DAG scheduler** — ready-set computation, bounded parallelism (default 2, governor-adjustable), cycle detection at load, per-step `timeoutMs` (default from `tool_stats` p95 × 3, min 10 s).
+- [x] **11.3 DAG scheduler** — ready-set computation, bounded parallelism (default 2, governor-adjustable), cycle detection at load, per-step `timeoutMs` (default from `tool_stats` p95 × 3, min 10 s).
   * *Verify:* diamond DAG runs in expected order; a step exceeding timeout is cancelled via `tools/cancel`.
 - [ ] **11.4 Lease & lock supervisor** (the missing module from README) — `executor/lease.rs`: per-resource locks keyed `app:project:track`; leases carry `leaseTimeoutMs`; heartbeat renewal while a step reports progress; on expiry → `tools/cancel` + `mcp.lease_expired`; deadlock-free ordering (sorted lock acquisition).
   * *Verify:* two missions targeting the same EEP project serialize; a crashed holder's lease expires and is released.

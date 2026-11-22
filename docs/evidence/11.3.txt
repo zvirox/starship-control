@@ -1,0 +1,29 @@
+Task 11.3 Evidence: DAG Scheduler with Bounded Parallelism & Cycle Detection
+Timestamp: 2026-11-22T17:24:30Z
+Commit/Phase: Phase 11 (11.3)
+
+=== Verification: Rust Unit Tests ===
+Command: cargo test -p starship-core scheduler -- --nocapture
+Output:
+   Compiling starship-core v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.85s
+     Running unittests src/lib.rs (target/debug/build/starship-core/1ae31b5ed3502068/out/starship_core-1ae31b5ed3502068)
+
+running 3 tests
+test executor::scheduler::tests::test_step_timeout_detection ... ok
+test executor::scheduler::tests::test_diamond_dag_execution_order_and_bounded_parallelism ... ok
+test executor::scheduler::tests::test_cycle_detection_in_dag ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 27 filtered out; finished in 0.00s
+
+=== Verified Capabilities ===
+1. Cycle Detection:
+   - Evaluated at plan load time using Kahn's topological sort.
+   - Any circular dependency (e.g. 1 -> 2 -> 3 -> 1) is immediately rejected with CoreError code 'ipc.cycle_detected'.
+2. Diamond DAG Order & Ready Set:
+   - Root (1) runs first alone.
+   - Upon completion, parallel branches (2 & 3) become ready simultaneously, bounded by the concurrency limit (default 2, dynamically adjustable by governor).
+   - Join step (4) waits until both dependencies (2 & 3) complete before entering the ready set.
+3. Timeout Enforcement:
+   - Configurable per-step timeout clamped to a minimum floor of 10,000 ms (10 s).
+   - `is_step_timed_out` accurately flags running steps exceeding their deadline.
