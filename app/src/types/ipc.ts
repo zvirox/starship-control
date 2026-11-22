@@ -537,5 +537,35 @@ export interface DispatchNotificationPayload {
   body: string;
 }
 
+/**
+ * Mission History & Replay (GAP-CLOSURE-PLAN.md §13.8).
+ */
+export interface MissionHistorySummary {
+  id: number;
+  uuid: string;
+  title: string;
+  userGoal: string;
+  status: string;
+  outcome: string;
+  durationMs: number;
+  fallbackCount: number;
+  totalSteps: number;
+  completedSteps: number;
+  activeModelId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReplayMissionPayload {
+  missionId: number;
+}
+
+export interface ReplayMissionResponse {
+  missionId: number;
+  missionState: string;
+  stepStates: Record<number, string>;
+  events: MissionTimelineEvent[];
+}
+
 
 

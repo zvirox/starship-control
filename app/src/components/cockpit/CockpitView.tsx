@@ -15,6 +15,7 @@ import {
   Workflow,
   AppWindow,
   Clock,
+  History,
   Trash2,
 } from "lucide-react";
 import { ChatCanvas } from "./ChatCanvas";
@@ -27,6 +28,7 @@ import { ActionApprovalCard } from "./ActionApprovalCard";
 import { AuditLogView } from "./AuditLogView";
 import { PipelineWorkflowView } from "./PipelineWorkflowView";
 import { MissionTimelineView } from "./MissionTimelineView";
+import { MissionHistoryView } from "./MissionHistoryView";
 import type {
   HelloResponse,
   ModelRecord,
@@ -40,7 +42,7 @@ import type {
 } from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
-  const [navTab, setNavTab] = useState<"chat" | "timeline" | "workflows" | "apps" | "tools" | "models" | "activity">("chat");
+  const [navTab, setNavTab] = useState<"chat" | "timeline" | "history" | "workflows" | "apps" | "tools" | "models" | "activity">("chat");
   const [prompt, setPrompt] = useState("");
   const [hudActive, setHudActive] = useState(false);
   const [systemInfo, setSystemInfo] = useState<HelloResponse | null>(null);
@@ -337,6 +339,7 @@ export const CockpitView: React.FC = () => {
           {[
             { id: "chat", label: "Chat", icon: MessageSquare },
             { id: "timeline", label: "Timeline", icon: Clock },
+            { id: "history", label: "Missions", icon: History },
             { id: "workflows", label: "Workflows", icon: Workflow },
             { id: "apps", label: "Connected Apps", icon: AppWindow },
             { id: "tools", label: "Tools", icon: Wrench },
@@ -376,6 +379,17 @@ export const CockpitView: React.FC = () => {
               missionTitle={activePlan?.title || missions.find((m) => m.id === activeMissionId)?.title}
               missionGoal={activePlan?.summary || missions.find((m) => m.id === activeMissionId)?.user_goal}
               activePlan={activePlan}
+            />
+          </div>
+        </div>
+      ) : navTab === "history" ? (
+        <div className="flex-1 overflow-y-auto p-6 bg-[#0B0D11]">
+          <div className="max-w-5xl mx-auto w-full">
+            <MissionHistoryView
+              onReplayMission={(mId) => {
+                setActiveMissionId(mId);
+                setNavTab("timeline");
+              }}
             />
           </div>
         </div>

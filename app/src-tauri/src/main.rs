@@ -138,6 +138,8 @@ fn main() {
             ipc::cmd_resize_hud,
             ipc::cmd_list_models,
             ipc::cmd_mission_list,
+            ipc::cmd_mission_list_history,
+            ipc::cmd_mission_replay,
             ipc::cmd_mission_create,
             ipc::cmd_mission_delete,
             ipc::cmd_mission_get_timeline,

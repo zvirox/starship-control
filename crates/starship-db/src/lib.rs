@@ -16,7 +16,7 @@ pub mod tool_stats;
 
 pub use apps::AppRecord;
 pub use audit::{AuditRecord, NewAuditEntry};
-pub use events::{MissionEventRecord, NewMissionEvent};
+pub use events::{MissionEventRecord, MissionHistorySummary, NewMissionEvent};
 pub use plans::{PlanRecord, PlanStepRecord};
 pub use tool_stats::ToolStatsRecord;
 

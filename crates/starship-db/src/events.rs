@@ -30,7 +30,87 @@ pub struct NewMissionEvent {
     pub payload_json: String,
 }
 
+/// Summary of a mission's history, duration, outcome, and fallbacks (GAP-CLOSURE-PLAN.md §13.8).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct MissionHistorySummary {
+    pub id: i64,
+    pub uuid: String,
+    pub title: String,
+    pub user_goal: String,
+    pub status: String,
+    pub outcome: String,
+    pub duration_ms: i64,
+    pub fallback_count: i64,
+    pub total_steps: i64,
+    pub completed_steps: i64,
+    pub active_model_id: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
 impl Database {
+    /// Lists all past and active missions with outcome, duration, and fallback count (GAP-CLOSURE-PLAN.md §13.8).
+    pub fn list_mission_history(&self) -> Result<Vec<MissionHistorySummary>, CoreError> {
+        let missions = self.list_missions()?;
+        let mut summaries = Vec::new();
+
+        for m in missions {
+            let events = self.list_mission_events(m.id, None)?;
+            let fallback_count =
+                i64::try_from(events.iter().filter(|e| e.kind == "fallback").count()).unwrap_or(0);
+
+            let duration_ms = if events.len() >= 2 {
+                let first_ts = events.first().map_or(0, |e| e.ts_ms);
+                let last_ts = events.last().map_or(0, |e| e.ts_ms);
+                (last_ts - first_ts).max(0)
+            } else {
+                0
+            };
+
+            let (total_steps, completed_steps) =
+                if let Ok(Some((_plan, steps))) = self.get_active_plan(m.id) {
+                    let total = i64::try_from(steps.len()).unwrap_or(0);
+                    let completed = i64::try_from(
+                        steps
+                            .iter()
+                            .filter(|s| s.execution_status == "success")
+                            .count(),
+                    )
+                    .unwrap_or(0);
+                    (total, completed)
+                } else {
+                    (0, 0)
+                };
+
+            let outcome = match m.status.as_str() {
+                "completed" | "completed_final" => {
+                    format!("Completed ({completed_steps}/{total_steps} steps)")
+                }
+                "failed" | "failed_final" => "Failed".to_string(),
+                "executing" => format!("Running ({completed_steps}/{total_steps} steps)"),
+                other => other.to_string(),
+            };
+
+            summaries.push(MissionHistorySummary {
+                id: m.id,
+                uuid: m.uuid,
+                title: m.title,
+                user_goal: m.user_goal,
+                status: m.status,
+                outcome,
+                duration_ms,
+                fallback_count,
+                total_steps,
+                completed_steps,
+                active_model_id: m.active_model_id,
+                created_at: m.created_at,
+                updated_at: m.updated_at,
+            });
+        }
+
+        Ok(summaries)
+    }
     /// Appends an event to the append-only `mission_events` table before acting (GAP-CLOSURE-PLAN.md §11.2).
     pub fn record_mission_event(&self, event: &NewMissionEvent) -> Result<i64, CoreError> {
         self.with_conn(|conn| {
@@ -218,5 +298,119 @@ mod tests {
             let expected_id = (idx + 1) as i64;
             assert_eq!(evt.id, expected_id);
         }
+    }
+
+    #[test]
+    fn test_replay_of_finished_mission_reproduces_final_state_exactly() {
+        let db = Database::open_in_memory().expect("open in-memory db");
+        let mission_id = db
+            .create_mission(
+                "333e4567-e89b-12d3-a456-426614174333",
+                "Replay Test Mission",
+                "Executing record, denoise, and cut",
+                "qwen2.5-coder-7b-q4",
+                "local_gguf",
+            )
+            .expect("create mission");
+
+        // 1. Mission generates plan and starts execution
+        db.record_mission_event(&NewMissionEvent {
+            mission_id,
+            step_id: None,
+            ts_ms: 1000,
+            kind: "mission_transition".to_string(),
+            payload_json: serde_json::to_string(&MissionEvent::PlanGenerated).unwrap(),
+        })
+        .expect("record plan generated");
+
+        db.record_mission_event(&NewMissionEvent {
+            mission_id,
+            step_id: None,
+            ts_ms: 1050,
+            kind: "mission_transition".to_string(),
+            payload_json: serde_json::to_string(&MissionEvent::Start).unwrap(),
+        })
+        .expect("record mission start");
+
+        // 2. Step 1 (Safe Tier 1): Scheduled -> Running -> Succeeded
+        let step_1_events = [
+            StepEvent::Schedule,
+            StepEvent::DispatchDirect,
+            StepEvent::Succeed,
+        ];
+        for (i, ev) in step_1_events.iter().enumerate() {
+            #[allow(clippy::cast_possible_wrap)]
+            let ts_ms = 1100 + (i as i64 * 50);
+            db.record_mission_event(&NewMissionEvent {
+                mission_id,
+                step_id: Some(1),
+                ts_ms,
+                kind: "step_transition".to_string(),
+                payload_json: serde_json::to_string(ev).unwrap(),
+            })
+            .expect("record step 1 event");
+        }
+
+        // 3. Step 2 (Mutating Tier 2): Scheduled -> RequireApproval -> ApproveAndDispatch -> Succeed
+        let step_2_events = [
+            StepEvent::Schedule,
+            StepEvent::RequireApproval,
+            StepEvent::ApproveAndDispatch,
+            StepEvent::Succeed,
+        ];
+        for (i, ev) in step_2_events.iter().enumerate() {
+            #[allow(clippy::cast_possible_wrap)]
+            let ts_ms = 1400 + (i as i64 * 50);
+            db.record_mission_event(&NewMissionEvent {
+                mission_id,
+                step_id: Some(2),
+                ts_ms,
+                kind: "step_transition".to_string(),
+                payload_json: serde_json::to_string(ev).unwrap(),
+            })
+            .expect("record step 2 event");
+        }
+
+        // 4. Mission finishes with all steps succeeded
+        db.record_mission_event(&NewMissionEvent {
+            mission_id,
+            step_id: None,
+            ts_ms: 2000,
+            kind: "mission_transition".to_string(),
+            payload_json: serde_json::to_string(&MissionEvent::CompleteAllSucceeded).unwrap(),
+        })
+        .expect("record mission completed");
+
+        // GAP-CLOSURE-PLAN.md §13.8 Requirement:
+        // "Verify: replay of a finished mission reproduces final state exactly."
+        let (replayed_mission_state, replayed_step_states) = db
+            .rebuild_mission_state(mission_id)
+            .expect("rebuild mission state from event log");
+
+        assert_eq!(
+            replayed_mission_state,
+            MissionState::Succeeded,
+            "Replayed mission state must match Succeeded exactly"
+        );
+
+        assert_eq!(
+            replayed_step_states.get(&1),
+            Some(&StepState::Succeeded),
+            "Step 1 replayed state must be Succeeded"
+        );
+
+        assert_eq!(
+            replayed_step_states.get(&2),
+            Some(&StepState::Succeeded),
+            "Step 2 replayed state must be Succeeded"
+        );
+
+        // Verify history listing
+        let history = db.list_mission_history().expect("list mission history");
+        assert_eq!(history.len(), 1);
+        let summary = &history[0];
+        assert_eq!(summary.id, mission_id);
+        assert_eq!(summary.duration_ms, 1000); // 2000 - 1000 = 1000ms
+        assert_eq!(summary.fallback_count, 0);
     }
 }

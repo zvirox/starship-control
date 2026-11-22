@@ -390,6 +390,43 @@ pub async fn cmd_mission_list(
 }
 
 #[tauri::command]
+pub async fn cmd_mission_list_history(
+    state: tauri::State<'_, Database>,
+) -> Result<Vec<starship_db::MissionHistorySummary>, CoreError> {
+    state.list_mission_history()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReplayMissionPayload {
+    pub mission_id: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReplayMissionResponse {
+    pub mission_id: i64,
+    pub mission_state: starship_core::executor::MissionState,
+    pub step_states: std::collections::HashMap<i64, starship_core::executor::StepState>,
+    pub events: Vec<starship_db::MissionEventRecord>,
+}
+
+#[tauri::command]
+pub async fn cmd_mission_replay(
+    state: tauri::State<'_, Database>,
+    payload: ReplayMissionPayload,
+) -> Result<ReplayMissionResponse, CoreError> {
+    let (mission_state, step_states) = state.rebuild_mission_state(payload.mission_id)?;
+    let events = state.list_mission_events(payload.mission_id, None)?;
+    Ok(ReplayMissionResponse {
+        mission_id: payload.mission_id,
+        mission_state,
+        step_states,
+        events,
+    })
+}
+
+#[tauri::command]
 pub async fn cmd_mission_delete(
     state: tauri::State<'_, Database>,
     payload: DeleteMissionPayload,

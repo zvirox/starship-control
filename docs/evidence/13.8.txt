@@ -1,0 +1,43 @@
+=== EVIDENCE: TASK 13.8 HISTORY & REPLAY ===
+Date: 2026-11-22
+Task: 13.8 History & replay
+Requirement: Cockpit "Missions" list with status, duration, outcome, fallback count; open any past mission's timeline from `mission_events` (read-only replay). Verify: replay of a finished mission reproduces final state exactly.
+
+1. Backend Implementation:
+- `crates/starship-db/src/events.rs`:
+  - Added `MissionHistorySummary` struct `{ id, uuid, title, user_goal, status, outcome, duration_ms, fallback_count, total_steps, completed_steps, active_model_id, created_at, updated_at }`.
+  - Added `Database::list_mission_history(&self) -> Result<Vec<MissionHistorySummary>, CoreError>` computing event duration (first ts to last ts), fallback count (`kind = 'fallback'`), total/completed steps, and human-readable outcome.
+  - `Database::rebuild_mission_state(&self, mission_id) -> Result<(MissionState, HashMap<i64, StepState>), CoreError>` sequentially replays append-only `mission_events`.
+- `app/src-tauri/src/ipc/commands.rs`:
+  - Added `cmd_mission_list_history` returning `Vec<MissionHistorySummary>`.
+  - Added `cmd_mission_replay` returning `{ missionId, missionState, stepStates, events }`.
+  - Registered commands in `main.rs`.
+- `app/src/types/ipc.ts`:
+  - Added TypeScript type definitions `MissionHistorySummary`, `ReplayMissionPayload`, and `ReplayMissionResponse`.
+
+2. Frontend Cockpit Integration:
+- Created `app/src/components/cockpit/MissionHistoryView.tsx`:
+  - Dedicated "Missions" history view displaying:
+    - Search and status filter (All, Completed, Failed).
+    - Mission card with status chip (Completed, Failed, Running), outcome badge, duration, fallback counter, model name, and timestamps.
+    - Deterministic Replay Inspector sidebar showing rebuilt state, event log depth, duration, and fallbacks.
+    - "Replay Timeline" / "Open Full DAG Timeline" action button navigating seamlessly into `MissionTimelineView`.
+- Wired into `app/src/components/cockpit/CockpitView.tsx` with navigation tab "Missions" (History icon).
+
+3. Verification:
+- Added automated test in `crates/starship-db/src/events.rs`:
+  - `test_replay_of_finished_mission_reproduces_final_state_exactly`:
+    1. Simulates mission execution start, Tier 1 step transitions (Schedule -> DispatchDirect -> Succeed), Tier 2 step transitions (Schedule -> RequireApproval -> ApproveAndDispatch -> Succeed), and mission complete (`CompleteAllSucceeded`).
+    2. Calls `rebuild_mission_state(mission_id)`.
+    3. Asserts replayed mission state reproduces `MissionState::Succeeded` exactly.
+    4. Asserts replayed step states reproduce `StepState::Succeeded` for all steps exactly.
+    5. Verifies `list_mission_history()` reports accurate duration, 0 fallbacks, and expected metadata.
+- All 107 workspace tests passed:
+  - `test ipc::commands::tests::test_tray_state_all_variants_and_labels ... ok`
+  - `test notification::tests::test_completing_mock_mission_raises_exactly_one_notification ... ok`
+  - `test notification::tests::test_stalled_notification_requires_120_seconds_and_dedupes ... ok`
+  - `test notification::tests::test_approval_needed_and_failure_deduplication ... ok`
+  - `test events::tests::test_replay_of_finished_mission_reproduces_final_state_exactly ... ok`
+  - `test events::tests::test_frontend_reconnect_replays_missed_events_with_no_gaps ... ok`
+- Frontend typecheck & production build: 0 errors.
+- Clippy `-D warnings` & `cargo fmt --check`: 0 warnings, cleanly formatted.
