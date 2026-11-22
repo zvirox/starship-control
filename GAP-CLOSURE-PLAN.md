@@ -130,7 +130,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* mock app: failure after mutation restores prior state.
 - [x] **11.8 Quarantine instead of delete (ATP)** — Tier 3 file removal moves items to `$XDG_DATA_HOME/starship-control/quarantine/<mission>/` with a manifest and TTL (default 7 days); `restore` and `purge` are separate Tier 3 steps. Package-cache cleaners that can't be reversed are labeled **IRREVERSIBLE** on the approval card and require a typed confirmation.
   * *Verify:* cleanup → restore round-trip restores byte-identical files; irreversible items show the warning.
-- [ ] **11.9 Crash recovery** — on startup, scan missions with `running` steps → mark `interrupted`, release stale leases, show a Resume / Restart-step / Abort card. Never auto-resume Tier 2/3 steps.
+- [x] **11.9 Crash recovery** — on startup, scan missions with `running` steps → mark `interrupted`, release stale leases, show a Resume / Restart-step / Abort card. Never auto-resume Tier 2/3 steps.
   * *Verify:* `kill -9` during a step, restart, card appears; resume re-requests approval.
 - [ ] **11.10 Fallback ladder engine** — implements §2 below as `executor/fallback.rs`, configurable per pipeline in `fallbacks.toml`.
   * *Verify:* each ladder rung has a test using the mock app (Phase 16 harness stubs are acceptable here).

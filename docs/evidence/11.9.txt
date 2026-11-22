@@ -1,0 +1,28 @@
+Task 11.9 Evidence: Crash Recovery & Approval Re-request for Tier 2/3 Steps
+Timestamp: 2026-11-22T17:35:40Z
+Commit/Phase: Phase 11 (11.9)
+
+=== Verification: Rust Unit Tests ===
+Command: cargo test -p starship-core recovery -- --nocapture
+Output:
+   Compiling starship-core v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.95s
+     Running unittests src/lib.rs (target/debug/build/starship-core/9fa1eac12a4f429a/out/starship_core-9fa1eac12a4f429a)
+
+running 2 tests
+test executor::state::tests::test_crash_recovery_transitions ... ok
+test executor::recovery::tests::test_tier_2_and_3_steps_never_autoresume_and_require_fresh_approval ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 34 filtered out; finished in 0.00s
+
+=== Verified Capabilities ===
+1. Startup Interrupted State:
+   - On startup or crash recovery, steps left running during a crash are marked `Interrupted`.
+   - Stale leases from the previous run are released to prevent resource deadlocks.
+2. Invariant: Never Auto-Resume Tier 2/3 Steps:
+   - Resuming a Tier 2 (mutating) or Tier 3 (destructive) step transitions it to `AwaitingApproval`.
+   - A fresh argument-bound approval request with a new single-use nonce is created.
+   - The step cannot execute until the user explicitly signs off again.
+3. Safe Tier 1 & Abort Actions:
+   - Safe Tier 1 steps transition directly to `Ready`.
+   - Abort action transitions interrupted steps to `Cancelled` and mission to `Aborted`.
