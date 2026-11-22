@@ -1,0 +1,53 @@
+=== Task 14.5 Verification Evidence ===
+Timestamp: Sun Nov 22 19:28:50 UTC 2026
+Task: 14.5 Storage — in-memory ring buffer (15 min @ 1 Hz); SQLite rollups: 1-min averages/max kept 7 days, 1-hour kept 90 days (tables in Appendix B). Prune job daily.
+
+1. Test Execution Output:
+$ cargo test -p starship-db health
+   Compiling starship-db v0.1.0 (/home/zvirox/Projects/Mother Ship/Starship Control/crates/starship-db)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.52s
+     Running unittests src/lib.rs (target/debug/build/starship-db/84a6c89133bb79db/out/starship_db-84a6c89133bb79db)
+
+running 2 tests
+test health::tests::test_health_rollups_storage_and_prune_lifecycle ... ok
+test health::tests::test_24h_simulated_feed_produces_expected_row_counts ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+$ cargo test -p starship-health
+     Running unittests src/lib.rs (target/debug/build/starship-health/6995ce33555a9f84/out/starship_health-6995ce33555a9f84)
+
+running 10 tests
+test ring::tests::test_ring_buffer_capacity_eviction_and_queries ... ok
+test rollup::tests::test_aggregate_samples_computes_expected_averages_and_extrema ... ok
+...
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.08s
+
+2. Implementation Details:
+- In-Memory Ring Buffer (`crates/starship-health/src/ring.rs`):
+  * Bounded FIFO circular buffer with standard capacity = 900 (15 minutes at 1 Hz).
+  * Automatically evicts oldest samples when capacity is reached.
+  * Provides zero-allocation lookup methods: `latest()`, `samples_since(ts_ms)`, `last_n_minutes(m)`.
+- Sample Aggregation Helper (`crates/starship-health/src/rollup.rs`):
+  * Computes `cpu_avg`, `cpu_max`, `mem_avail_pct_min`, `swap_in_max`, `disk_free_pct_min`, `temp_max`, `gpu_util_max`, `vram_pct_max`, `psi_cpu_max`, `psi_mem_max`, `psi_io_max`.
+- SQLite Storage Migration (`crates/starship-db/src/migrations/0005_health_rollups.sql`):
+  * `health_rollup_1m`: 1-minute aggregates with index on `ts`.
+  * `health_rollup_1h`: 1-hour aggregates with index on `ts`.
+  * `health_alerts`: Audit trail for tripped signals and governor actions.
+  * Versioned migration up to `PRAGMA user_version = 5`.
+- Database Operations & Pruning (`crates/starship-db/src/health.rs`):
+  * `insert_health_rollup_1m` & `insert_health_rollup_1h`.
+  * `get_health_rollups_1m` & `get_health_rollups_1h`.
+  * `record_health_alert`.
+  * `prune_health_rollups`: Prunes 1m rollups older than 7 days and 1h rollups older than 90 days.
+- 24-Hour Simulated Feed Verification:
+  * Simulated 24 hours of 1-second samples into 1-minute intervals -> Produced exactly 1,440 rows in `health_rollup_1m`.
+  * Simulated 24 hours of 1-hour intervals -> Produced exactly 24 rows in `health_rollup_1h`.
+  * Pruning verified: rows exceeding 7 days and 90 days were deleted while recent data remained intact.
+
+3. Static Analysis & Workspace Suite:
+- `cargo fmt --check`: CLEAN
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`: CLEAN
+- `cargo test --workspace --all-features`: 119 / 119 tests passed
+- `npm run typecheck && npm run lint`: CLEAN
+- `DATABASE.md`: Updated with schema for §3.9 (`health_rollup_1m`), §3.10 (`health_rollup_1h`), and §3.11 (`health_alerts`).

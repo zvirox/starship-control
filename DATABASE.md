@@ -228,6 +228,63 @@ An append-only log recording every tool invocation, security decision, and user 
 
 ---
 
+### 3.9 `health_rollup_1m` — 1-Minute System Health Aggregates
+High-resolution 1-minute rollup records for live Cockpit dashboards and sparklines. Retained for 7 days.
+
+| Column | SQLite Type | Constraints | Description |
+|---|---|---|---|
+| `ts` | `INTEGER` | `PRIMARY KEY` | Window start Unix epoch timestamp (seconds). |
+| `cpu_avg` | `REAL` | `NOT NULL` | Average CPU utilization % across the minute. |
+| `cpu_max` | `REAL` | `NOT NULL` | Peak CPU utilization % observed in the minute. |
+| `mem_avail_pct_min` | `REAL` | `NOT NULL` | Lowest `MemAvailable` percentage observed. |
+| `swap_in_max` | `REAL` | `NOT NULL` | Peak swap-in throughput (`pswpin` bytes/sec). |
+| `disk_free_pct_min`| `REAL` | `NOT NULL` | Lowest primary partition free space %. |
+| `temp_max` | `REAL` | `NOT NULL` | Maximum thermal sensor reading (Celsius). |
+| `gpu_util_max` | `REAL` | `NULL` | Peak GPU compute utilization %. |
+| `vram_pct_max` | `REAL` | `NULL` | Peak VRAM used percentage. |
+| `psi_cpu_max` | `REAL` | `NULL` | Peak Linux PSI CPU stall 10s average. |
+| `psi_mem_max` | `REAL` | `NULL` | Peak Linux PSI Memory stall 10s average. |
+| `psi_io_max` | `REAL` | `NULL` | Peak Linux PSI I/O stall 10s average. |
+| `state` | `TEXT` | `NOT NULL` | Worst governor state (`'Normal'`, `'Elevated'`, `'Constrained'`, `'Critical'`). |
+
+---
+
+### 3.10 `health_rollup_1h` — 1-Hour Long-Term System Health Aggregates
+Long-term historical 1-hour rollup records. Retained for 90 days.
+
+| Column | SQLite Type | Constraints | Description |
+|---|---|---|---|
+| `ts` | `INTEGER` | `PRIMARY KEY` | Window start Unix epoch timestamp (seconds). |
+| `cpu_avg` | `REAL` | `NOT NULL` | Average CPU utilization % across the hour. |
+| `cpu_max` | `REAL` | `NOT NULL` | Peak CPU utilization % observed in the hour. |
+| `mem_avail_pct_min` | `REAL` | `NOT NULL` | Lowest `MemAvailable` percentage observed. |
+| `swap_in_max` | `REAL` | `NOT NULL` | Peak swap-in throughput (`pswpin` bytes/sec). |
+| `disk_free_pct_min`| `REAL` | `NOT NULL` | Lowest primary partition free space %. |
+| `temp_max` | `REAL` | `NOT NULL` | Maximum thermal sensor reading (Celsius). |
+| `gpu_util_max` | `REAL` | `NULL` | Peak GPU compute utilization %. |
+| `vram_pct_max` | `REAL` | `NULL` | Peak VRAM used percentage. |
+| `psi_cpu_max` | `REAL` | `NULL` | Peak Linux PSI CPU stall 10s average. |
+| `psi_mem_max` | `REAL` | `NULL` | Peak Linux PSI Memory stall 10s average. |
+| `psi_io_max` | `REAL` | `NULL` | Peak Linux PSI I/O stall 10s average. |
+| `state` | `TEXT` | `NOT NULL` | Worst governor state across the hour. |
+
+---
+
+### 3.11 `health_alerts` — Governor & System Overload Event Trail
+Records every trip into Elevated, Constrained, or Critical health states and the resulting governor action.
+
+| Column | SQLite Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Alert event identifier. |
+| `ts` | `INTEGER` | `NOT NULL` | Alert trigger Unix epoch timestamp (seconds). |
+| `signal` | `TEXT` | `NOT NULL` | Tripped signal (`'cpu'`, `'memory'`, `'thermal'`, `'disk'`, `'psi'`). |
+| `level` | `TEXT` | `NOT NULL` | Severity level (`'Elevated'`, `'Constrained'`, `'Critical'`). |
+| `value` | `REAL` | `NOT NULL` | Measured sensor value that triggered the alert. |
+| `action` | `TEXT` | `NOT NULL` | Governor intervention (`'warn'`, `'throttle'`, `'safe_pause'`). |
+| `mission_id` | `INTEGER` | `NULL REFERENCES missions(id)` | Mission impacted by governor action if any. |
+
+---
+
 ## 4. Performance Indexes
 
 The following indexes guarantee sub-millisecond query response times across high-volume missions:
