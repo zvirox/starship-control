@@ -6,7 +6,10 @@ use starship_db::schema::{MissionMessageRecord, ModelRecord};
 use starship_infer::dispatcher::InferDispatcher;
 use starship_infer::hf::{DownloadProgress, HfModelMetadata, download_hf_file, search_models};
 use starship_infer::types::{ChatRequest, Message};
-use starship_mcp::{UnixTransportClient, scan_and_sync_manifests};
+use starship_mcp::{
+    AggregatedTool, HybridExecutionRouter, ToolAggregator, UnixTransportClient,
+    scan_and_sync_manifests,
+};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, Size};
 use tracing::{error, info};
 use uuid::Uuid;
@@ -435,15 +438,17 @@ pub async fn cmd_mission_send_prompt(
 
     // Spawn async background streaming task
     tokio::spawn(async move {
+        let aggregator = ToolAggregator::new();
+        let system_prompt = aggregator.build_system_context();
+        let tools = aggregator.to_llm_definitions();
+
         let chat_req = ChatRequest {
             model: model.id.clone(),
             messages: vec![Message::user(prompt_text)],
-            system_prompt: Some(
-                "You are the Starship Control autonomous orchestrator.".to_string(),
-            ),
+            system_prompt: Some(system_prompt),
             temperature: Some(0.2),
             max_tokens: Some(4096),
-            tools: vec![],
+            tools,
             stream: true,
         };
 
@@ -724,6 +729,39 @@ pub async fn cmd_topology_ping_app(
     let ping = client.ping().await?;
     let _ = db.update_app_gui_status(&payload.app_id, true, Some(&sock_path_str));
     Ok(ping)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CallToolPayload {
+    pub app_id: String,
+    pub tool_name: String,
+    pub arguments: serde_json::Value,
+    pub lease_timeout_ms: Option<u64>,
+}
+
+#[tauri::command]
+pub async fn cmd_mcp_list_tools() -> Result<Vec<AggregatedTool>, CoreError> {
+    let aggregator = ToolAggregator::new();
+    Ok(aggregator.get_all_tools())
+}
+
+#[tauri::command]
+pub async fn cmd_mcp_call_tool(
+    state: tauri::State<'_, Database>,
+    payload: CallToolPayload,
+) -> Result<serde_json::Value, CoreError> {
+    let db = state.inner().clone();
+    let router = HybridExecutionRouter::new(db);
+    let timeout = payload.lease_timeout_ms.unwrap_or(10_000);
+    router
+        .route_and_call(
+            &payload.app_id,
+            &payload.tool_name,
+            payload.arguments,
+            timeout,
+        )
+        .await
 }
 
 fn chrono_now_iso() -> String {

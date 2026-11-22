@@ -242,3 +242,23 @@ export interface TopologyAppStateEvent {
   socketPath?: string | null;
 }
 
+/**
+ * Aggregated MCP Tool Representation (API.md §4).
+ */
+export interface AggregatedTool {
+  appId: string;
+  appName: string;
+  name: string;
+  description: string;
+  riskTier: 1 | 2 | 3;
+  parameters: Record<string, unknown>;
+}
+
+export interface CallToolPayload {
+  appId: string;
+  toolName: string;
+  arguments: Record<string, unknown>;
+  leaseTimeoutMs?: number;
+}
+
+

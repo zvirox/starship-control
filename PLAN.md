@@ -118,15 +118,15 @@
 
 > **Goal:** Bidirectional MCP JSON-RPC 2.0 communication over live GUI Unix sockets and headless CLI stdio pipes.
 
-- [ ] **4.1 Async MCP JSON-RPC 2.0 Client (`starship-mcp`)**
+- [x] **4.1 Async MCP JSON-RPC 2.0 Client (`starship-mcp`)**
   - Implement MCP client protocol supporting `initialize`, `tools/list`, `tools/call`, and `tools/cancel`.
   - Implement handshake negotiation (`starship/hello`) exchanging version and risk-tier metadata.
   - *Verify:* Automated unit test executes mock tool calls with round-trip latency < 1ms.
-- [ ] **4.2 Hybrid Execution Router (GUI Socket vs. Stdio Spawner)**
+- [x] **4.2 Hybrid Execution Router (GUI Socket vs. Stdio Spawner)**
   - Implement router: if active socket exists, dispatch over Unix socket; if absent and headless-compatible, spawn `<binaryPath> --mcp` and communicate over child stdin/stdout.
   - Implement process supervisor handling child process crashes, timeouts, and cleanup.
   - *Verify:* Headless command executes tool via stdio without opening a desktop GUI window.
-- [ ] **4.3 Tool Definition Aggregator & Context Injector**
+- [x] **4.3 Tool Definition Aggregator & Context Injector**
   - Dynamically query tools from all connected sub-apps and format them into standard LLM tool schemas.
   - Cache tool schemas in memory, invalidating when an app disconnects or updates.
   - *Verify:* LLM receives updated function-calling definitions matching currently available apps.

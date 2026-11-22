@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
-  Sparkles,
   Layers,
   Cpu,
   FileText,
@@ -15,6 +14,7 @@ import {
   ShieldCheck,
   Settings,
   ChevronDown,
+  Wrench,
 } from "lucide-react";
 import { GlassPanel } from "../common/GlassPanel";
 import { DesignVerification } from "../common/DesignVerification";
@@ -23,10 +23,11 @@ import { ModelSettingsModal } from "./ModelSettingsModal";
 import { ModelControlView } from "./ModelControlView";
 import { AppTopologyView } from "./AppTopologyView";
 import { AppTopologyDrawer } from "./AppTopologyDrawer";
+import { McpToolInspector } from "./McpToolInspector";
 import type { HelloResponse, ModelRecord, CreateMissionResponse, SendPromptResponse } from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
-  const [navTab, setNavTab] = useState<"missions" | "topology" | "models" | "audit" | "design">("missions");
+  const [navTab, setNavTab] = useState<"missions" | "topology" | "tools" | "models" | "audit" | "design">("missions");
   const [prompt, setPrompt] = useState("");
   const [hudActive, setHudActive] = useState(false);
   const [systemInfo, setSystemInfo] = useState<HelloResponse | null>(null);
@@ -106,17 +107,17 @@ export const CockpitView: React.FC = () => {
         className="flex h-[52px] items-center justify-between border-b border-white/10 px-4 bg-[#0E131B]/80 backdrop-blur-md select-none"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-400/40 shadow-[0_0_16px_rgba(56,189,248,0.35)]">
-            <Sparkles className="h-4 w-4" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 border border-orange-400/30 overflow-hidden shadow-[0_0_16px_rgba(249,115,22,0.25)]">
+            <img src="/logo.png" alt="Starship Control" className="h-7 w-7 object-contain" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm tracking-wide text-slate-100">STARSHIP CONTROL</span>
               <span className="rounded-full bg-cyan-400/10 px-2 py-0.5 text-[10px] font-mono font-medium text-cyan-300 border border-cyan-400/20">
-                Phase 1 Live
+                v0.1.0 · Autonomous
               </span>
             </div>
-            <p className="text-[10px] text-slate-400">Dual Inference Engine Matrix</p>
+            <p className="text-[10px] text-slate-400">Multi-App Agent Orchestrator</p>
           </div>
         </div>
 
@@ -273,6 +274,7 @@ export const CockpitView: React.FC = () => {
           {[
             { id: "missions", label: "Missions & Chat Stream", icon: Layers },
             { id: "topology", label: "App Ecosystem", icon: Activity },
+            { id: "tools", label: "MCP Tools", icon: Wrench },
             { id: "models", label: "Model Control", icon: Cpu },
             { id: "audit", label: "Audit Log", icon: FileText },
             { id: "design", label: "Design Law Verification", icon: ShieldCheck },
@@ -322,6 +324,8 @@ export const CockpitView: React.FC = () => {
         />
       ) : navTab === "topology" ? (
         <AppTopologyView />
+      ) : navTab === "tools" ? (
+        <McpToolInspector />
       ) : (
         <div className="flex flex-1 overflow-hidden">
           {/* Left Mission Drawer (280px) */}

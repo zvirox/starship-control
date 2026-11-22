@@ -1,4 +1,5 @@
 <p align="center">
+  <img src="assets/logo.png" width="180" alt="Starship Control Logo" />
   <h1 align="center">Starship Control</h1>
 </p>
 

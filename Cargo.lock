@@ -3879,11 +3879,13 @@ dependencies = [
 name = "starship-mcp"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "rustix",
  "serde",
  "serde_json",
  "starship-core",
  "starship-db",
+ "starship-infer",
  "starship-plugin",
  "thiserror 2.0.21",
  "tokio",

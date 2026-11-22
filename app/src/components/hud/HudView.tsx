@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { Sparkles, Mic, Send, ChevronUp, ChevronDown, ShieldAlert, Check, X } from "lucide-react";
+import { Mic, Send, ChevronUp, ChevronDown, ShieldAlert, Check, X } from "lucide-react";
 import { GlassPanel } from "../common/GlassPanel";
 
 export const HudView: React.FC = () => {
@@ -34,8 +34,8 @@ export const HudView: React.FC = () => {
         >
           {/* Brand Glyph & Model Chip */}
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-400/40 shadow-[0_0_12px_rgba(56,189,248,0.3)]">
-              <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500/10 border border-orange-400/30 overflow-hidden shadow-[0_0_12px_rgba(249,115,22,0.25)]">
+              <img src="/logo.png" alt="Starship Control" className="h-5 w-5 object-contain" />
             </div>
             <div className="flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-0.5 border border-white/10 text-[11px] font-mono text-slate-300">
               <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
