@@ -1,0 +1,14 @@
+Package: starship-control
+Version: 0.1.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Starship Control Team <team@starshipcontrol.dev>
+Depends: libwebkit2gtk-4.1-0, libgtk-3-0, libayatana-appindicator3-1, libssl3, libsqlite3-0, libpipewire-0.3-0
+Description: Native Linux AI Agent Orchestrator & Command Center
+ Starship Control is a local-first, native Linux AI agent orchestrator and
+ unified command center for desktop applications (Easy Edits Pro, ScreenStudio Pro,
+ Audio Labs Pro, Net Watch Pro, and Agentic Tuneup Pro).
+ .
+ Features dual-engine support for local GGUF weights (Vulkan/ROCm) and cloud APIs,
+ dual-surface Cockpit + Floating HUD interfaces, and multi-tier cryptographic safety gating.

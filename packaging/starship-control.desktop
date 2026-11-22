@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Starship Control
+GenericName=AI Agent Orchestrator
+Comment=Native Linux AI Agent Orchestrator & Command Center for Desktop Applications
+Exec=starship-control %u
+Icon=starship-control
+Terminal=false
+Type=Application
+Categories=Utility;AudioVideo;Development;System;
+StartupNotify=true
+StartupWMClass=starship-control
+MimeType=x-scheme-handler/starship;
+Keywords=ai;agent;orchestrator;screenstudio;easyedits;audiolabs;netwatch;tuneup;

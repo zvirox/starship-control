@@ -1,0 +1,59 @@
+# Maintainer: Starship Control Team <team@starshipcontrol.dev>
+pkgname=starship-control-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Native Linux AI agent orchestrator and unified command center for desktop applications"
+arch=('x86_64')
+url="https://github.com/zvirox/starship-control"
+license=('Apache-2.0')
+depends=(
+    'webkit2gtk-4.1'
+    'gtk3'
+    'libayatana-appindicator'
+    'openssl'
+    'sqlite'
+    'libpipewire'
+)
+makedepends=(
+    'cargo'
+    'nodejs'
+    'npm'
+    'git'
+)
+provides=('starship-control')
+conflicts=('starship-control')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/zvirox/starship-control/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+prepare() {
+    cd "starship-control-${pkgver}/app"
+    npm ci
+}
+
+build() {
+    cd "starship-control-${pkgver}/app"
+    npm run build
+
+    cd ".."
+    cargo build --release --locked -p starship-control
+}
+
+package() {
+    cd "starship-control-${pkgver}"
+
+    # Install main binary
+    install -Dm755 "target/release/starship-control" "${pkgdir}/usr/bin/starship-control"
+
+    # Install desktop launcher
+    install -Dm644 "packaging/starship-control.desktop" "${pkgdir}/usr/share/applications/starship-control.desktop"
+
+    # Install hicolor application icons
+    for size in 32x32 128x128 256x256 512x512; do
+        install -Dm644 "packaging/icons/hicolor/${size}/apps/starship-control.png" \
+            "${pkgdir}/usr/share/icons/hicolor/${size}/apps/starship-control.png"
+    done
+
+    # Install license and documentation
+    install -Dm644 "LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE" 2>/dev/null || true
+    install -Dm644 "README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}
