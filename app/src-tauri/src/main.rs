@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod ipc;
+mod shortcut;
 
 use starship_db::Database;
 use tracing::info;
@@ -32,6 +33,10 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            shortcut::register_wayland_global_shortcut(app.handle().clone());
+            Ok(())
+        })
         .manage(db)
         .invoke_handler(tauri::generate_handler![
             ipc::ipc_hello,

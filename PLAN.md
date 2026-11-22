@@ -162,15 +162,15 @@
 
 > **Goal:** Ambient, always-on-top glass capsule toggleable via `Super + Shift + Space` over active desktop applications.
 
-- [ ] **6.1 Floating HUD Geometry & Window Behavior**
+- [x] **6.1 Floating HUD Geometry & Window Behavior**
   - Configure Tauri HUD window: borderless, transparent, `alwaysOnTop: true`, `skipTaskbar: true`.
   - Implement resting capsule geometry (520×76) and drag handle with screen corner snapping.
   - *Verify:* HUD floats smoothly over full-screen apps without losing focus or stealing compositor inputs.
-- [ ] **6.2 Wayland Global Shortcut Portal (`ashpd`)**
+- [x] **6.2 Wayland Global Shortcut Portal (`ashpd`)**
   - Register `Super + Shift + Space` via `ashpd` GlobalShortcuts portal on Wayland (with X11 keybinding fallback).
   - Handle portal permission dialog gracefully with educational first-run notice.
   - *Verify:* Pressing shortcut toggles HUD visibility anywhere on desktop.
-- [ ] **6.3 HUD Prompting & Streamlined Approval Expansion**
+- [x] **6.3 HUD Prompting & Streamlined Approval Expansion**
   - Build HUD input bar with active model chip, text prompt field, and send button.
   - Implement spring-physics expansion (520×76 $\to$ 520×240) when a Tier 2/3 approval gate triggers.
   - *Verify:* User working in EEP can approve an edit directly on the floating HUD without switching windows.

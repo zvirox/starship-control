@@ -22,6 +22,7 @@ starship-db = { path = "../../crates/starship-db" }
 starship-infer = { path = "../../crates/starship-infer" }
 starship-mcp = { path = "../../crates/starship-mcp" }
 starship-plugin = { path = "../../crates/starship-plugin" }
+ashpd = { version = "0.14", default-features = false, features = ["tokio", "global_shortcuts"] }
 futures.workspace = true
 uuid.workspace = true
 dirs.workspace = true
