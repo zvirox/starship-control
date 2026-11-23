@@ -1,6 +1,7 @@
 pub mod checkpoint;
 pub mod progress;
 pub mod resource;
+pub mod server;
 
 pub use checkpoint::{
     CheckpointCreateResult, CheckpointHandler, CheckpointRestoreResult, MockCheckpointStore,
@@ -9,6 +10,7 @@ pub use checkpoint::{
 };
 pub use progress::{ProgressNotification, ProgressReporter};
 pub use resource::{CpuLevel, DiskIoLevel, ResourceProfile};
+pub use server::{CheckpointCallbacks, PluginBridge};
 
 use serde::{Deserialize, Serialize};
 use std::fs;
