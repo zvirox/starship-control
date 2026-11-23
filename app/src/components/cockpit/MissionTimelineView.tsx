@@ -236,7 +236,7 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
       riskTier: s.riskTier as 1 | 2 | 3,
       state: s.executionStatus as TimelineStepItem["state"],
       progress: s.executionStatus === "success" ? 1.0 : 0.0,
-      message: s.executionStatus === "running" ? "Executing..." : undefined,
+      message: s.executionStatus === "running" ? "Executing" : undefined,
     }));
   }, [isMockMode, activePlan, mockSteps]);
 
@@ -258,17 +258,17 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* 1. Header & Overall Mission Progress Bar */}
-      <GlassPanel recipe="pane" className="p-5 rounded-2xl border border-white/10">
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-white/[0.06]">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+      <GlassPanel recipe="pane" className="p-5 rounded-2xl border border-border-subtle">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border-subtle">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-accent-muted text-accent border border-border-subtle">
               <Layers className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="font-sans text-sm font-semibold text-slate-100 tracking-tight">
+              <h3 className="font-sans text-sm font-medium text-text-primary">
                 {missionTitle}
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{missionGoal}</p>
+              <p className="text-xs text-text-secondary mt-1 line-clamp-1">{missionGoal}</p>
             </div>
           </div>
 
@@ -276,30 +276,30 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMockMode((prev) => !prev)}
-              className={`text-xs px-2.5 py-1 rounded-lg border transition-colors cursor-pointer ${
+              className={`text-xs px-2 py-1 rounded-lg border transition-colors cursor-pointer ${
                 isMockMode
-                  ? "bg-amber-500/15 text-amber-300 border-amber-500/30"
-                  : "bg-white/[0.04] text-slate-400 border-white/[0.08] hover:text-slate-200"
+                  ? "bg-signal-thinking-bg text-signal-thinking border-signal-thinking/30"
+                  : "bg-white/[0.03] text-text-secondary border-border-subtle hover:text-text-primary"
               }`}
               title="Toggle mock mission demonstrating retry, fallback, and skipped steps"
             >
-              {isMockMode ? "Mock Mode Active" : "Load Sample DAG"}
+              {isMockMode ? "Mock mode active" : "Load sample DAG"}
             </button>
 
             {isStalled && (
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium animate-pulse">
+              <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-signal-thinking-bg border border-signal-thinking/30 text-signal-thinking text-xs font-medium">
                 <AlertTriangle className="h-3.5 w-3.5" />
                 <span>Stalled (no heartbeat)</span>
               </span>
             )}
 
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.05] border border-white/10 text-xs text-slate-300 font-mono">
-              <Clock className="h-3.5 w-3.5 text-slate-400" />
+            <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.03] border border-border-subtle text-xs text-text-secondary font-mono">
+              <Clock className="h-3.5 w-3.5" />
               <span>{formatTime(elapsedSecs)} elapsed</span>
             </span>
 
-            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/10 border border-sky-500/20 text-xs text-sky-300 font-mono">
-              <Activity className="h-3.5 w-3.5 text-sky-400" />
+            <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-accent-muted border border-border-subtle text-xs text-accent font-mono">
+              <Activity className="h-3.5 w-3.5" />
               <span>ETA: {etaText}</span>
             </span>
           </div>
@@ -307,15 +307,15 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
 
         {/* Overall Mission Progress Gauge */}
         <div className="mt-4">
-          <div className="flex justify-between items-center text-xs mb-1.5">
-            <span className="text-slate-300 font-medium">Mission Execution Progress</span>
-            <span className="font-mono text-sky-400 font-semibold">
+          <div className="flex justify-between items-center text-xs mb-2">
+            <span className="text-text-secondary font-medium">Mission execution progress</span>
+            <span className="font-mono text-accent font-medium tabular">
               {Math.round(missionProgress * 100)}%
             </span>
           </div>
-          <div className="w-full h-2 rounded-full bg-slate-800/80 overflow-hidden p-0.5 border border-white/[0.05]">
+          <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden p-0.5 border border-border-subtle">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-sky-500 to-teal-400 transition-all duration-300"
+              className="h-full rounded-full bg-accent transition-colors"
               style={{ width: `${Math.min(100, Math.max(0, missionProgress * 100))}%` }}
             />
           </div>
@@ -323,12 +323,12 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
       </GlassPanel>
 
       {/* 2. DAG Timeline Steps View */}
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
-          <h4 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-            Execution Stages & Timeline
+          <h4 className="text-xs font-medium text-text-secondary">
+            Execution stages and timeline
           </h4>
-          <span className="text-[11px] text-slate-400">
+          <span className="text-[11px] text-text-disabled">
             {steps.filter((s) => s.state === "success").length} of {steps.length} stages completed
           </span>
         </div>
@@ -342,40 +342,37 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
             const isApproval = step.state === "paused_approval";
             const isQueued = step.state === "queued";
 
+            // Hairline surface steps — no colored glows or specular rims.
+            const stepSurface = isRunning
+              ? "bg-accent-muted"
+              : isQueued || isApproval
+              ? "bg-signal-thinking-bg"
+              : isFailed
+              ? "bg-signal-gate-bg"
+              : isSkipped
+              ? "bg-white/[0.01] opacity-70"
+              : "bg-white/[0.02]";
+
+            const indexTone = isCompleted
+              ? "bg-signal-success-bg text-signal-success"
+              : isRunning
+              ? "bg-accent-muted text-accent"
+              : isQueued
+              ? "bg-signal-thinking-bg text-signal-thinking"
+              : "bg-white/[0.03] text-text-disabled";
+
             return (
               <GlassPanel
                 key={step.stepIndex}
                 recipe="pane"
-                className={`p-3.5 rounded-xl border transition-all ${
-                  isRunning
-                    ? "border-sky-500/40 bg-sky-950/20 shadow-[0_0_16px_rgba(56,189,248,0.12)]"
-                    : isQueued
-                    ? "border-amber-500/40 bg-amber-950/20 shadow-[0_0_16px_rgba(245,158,11,0.12)]"
-                    : isApproval
-                    ? "border-amber-500/40 bg-amber-950/20"
-                    : isCompleted
-                    ? "border-white/[0.08] bg-white/[0.02]"
-                    : isSkipped
-                    ? "border-white/[0.04] bg-white/[0.01] opacity-70"
-                    : "border-white/[0.05] bg-white/[0.02]"
-                }`}
+                className={`p-4 rounded-xl transition-colors ${stepSurface}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   {/* Left: Step Identification & Title */}
                   <div className="flex items-center gap-3">
                     {/* Index Chip */}
                     <div
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-bold ${
-                        isCompleted
-                          ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                          : isRunning
-                          ? "bg-sky-500/20 text-sky-300 border border-sky-400/50 animate-pulse"
-                          : isQueued
-                          ? "bg-amber-500/20 text-amber-300 border border-amber-400/50"
-                          : isSkipped
-                          ? "bg-slate-800/60 text-slate-500 border border-slate-700/50"
-                          : "bg-slate-800 text-slate-400 border border-slate-700"
-                      }`}
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-medium ${indexTone}`}
                     >
                       {step.stepIndex + 1}
                     </div>
@@ -383,14 +380,14 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         {/* App Badge */}
-                        <span className="font-mono text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-white/[0.06] text-slate-300 border border-white/10">
+                        <span className="font-mono text-[11px] font-medium px-2 py-0.5 rounded-lg bg-white/[0.03] text-text-secondary border border-border-subtle">
                           {step.appId}
                         </span>
-                        <span className="font-mono text-xs font-semibold text-slate-100">
+                        <span className="font-mono text-xs font-medium text-text-primary">
                           {step.toolName}
                         </span>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">{step.description}</p>
+                      <p className="text-xs text-text-secondary mt-1">{step.description}</p>
                     </div>
                   </div>
 
@@ -398,22 +395,22 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Risk Tier Badge */}
                     <span
-                      className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                      className={`flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg border ${
                         step.riskTier === 1
-                          ? "bg-slate-800/80 text-slate-300 border-slate-700"
+                          ? "bg-white/[0.03] text-text-secondary border-border-subtle"
                           : step.riskTier === 2
-                          ? "bg-amber-500/10 text-amber-300 border-amber-500/30"
-                          : "bg-rose-500/15 text-rose-300 border-rose-500/30"
+                          ? "bg-signal-thinking-bg text-signal-thinking border-signal-thinking/30"
+                          : "bg-signal-gate-bg text-signal-gate border-signal-gate/30"
                       }`}
                     >
-                      <Shield className="h-3 w-3" />
+                      <Shield className="h-3.5 w-3.5" />
                       <span>Tier {step.riskTier}</span>
                     </span>
 
                     {/* Retry Marker */}
                     {step.retryCount && step.retryCount > 0 ? (
-                      <span className="flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                        <RotateCcw className="h-3 w-3" />
+                      <span className="flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-lg bg-signal-thinking-bg text-signal-thinking border border-signal-thinking/30">
+                        <RotateCcw className="h-3.5 w-3.5" />
                         <span>Retry #{step.retryCount}</span>
                       </span>
                     ) : null}
@@ -421,50 +418,50 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                     {/* Fallback Marker & "Why" link */}
                     {step.fallbackRung && (
                       <div className="flex items-center gap-1.5">
-                        <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                          <FastForward className="h-3 w-3" />
+                        <span className="flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-lg bg-white/[0.03] text-text-secondary border border-border-subtle">
+                          <FastForward className="h-3.5 w-3.5" />
                           <span>{step.fallbackRung}</span>
                         </span>
                         <button
                           onClick={() => handleWhyFallback(step.fallbackEventId)}
-                          className="flex items-center gap-1 text-[11px] text-sky-400 hover:text-sky-300 underline cursor-pointer"
+                          className="flex items-center gap-1 text-[11px] text-accent hover:text-accent-hover underline cursor-pointer"
                           title={step.fallbackReason}
                         >
-                          <HelpCircle className="h-3 w-3" />
+                          <HelpCircle className="h-3.5 w-3.5" />
                           <span>Why did this fallback happen?</span>
                         </button>
                       </div>
                     )}
 
                     {/* Step State Chip */}
-                    <div className="flex items-center gap-1.5 pl-2 border-l border-white/[0.06]">
+                    <div className="flex items-center gap-1.5 pl-2 border-l border-border-subtle">
                       {isCompleted ? (
-                        <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                        <span className="flex items-center gap-1 text-xs text-signal-success font-medium">
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           <span>Completed</span>
                         </span>
                       ) : isQueued ? (
-                        <span className="flex items-center gap-1.5 text-xs text-amber-400 font-medium">
+                        <span className="flex items-center gap-1.5 text-xs text-signal-thinking font-medium">
                           <Clock className="h-3.5 w-3.5" />
                           <span>Waiting for resources</span>
                         </span>
                       ) : isRunning ? (
-                        <span className="flex items-center gap-1.5 text-xs text-sky-400 font-medium">
-                          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                        <span className="flex items-center gap-1.5 text-xs text-accent font-medium">
+                          <RefreshCw className="h-3.5 w-3.5" />
                           <span>Running</span>
                         </span>
                       ) : isSkipped ? (
-                        <span className="flex items-center gap-1 text-xs text-slate-500 font-medium">
+                        <span className="flex items-center gap-1 text-xs text-text-disabled font-medium">
                           <FastForward className="h-3.5 w-3.5" />
                           <span>Skipped</span>
                         </span>
                       ) : isFailed ? (
-                        <span className="flex items-center gap-1 text-xs text-rose-400 font-medium">
+                        <span className="flex items-center gap-1 text-xs text-signal-gate font-medium">
                           <XCircle className="h-3.5 w-3.5" />
                           <span>Failed</span>
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-500">Pending</span>
+                        <span className="text-xs text-text-disabled">Pending</span>
                       )}
                     </div>
                   </div>
@@ -472,26 +469,26 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
 
                 {/* Queued / Waiting for Resources Banner */}
                 {isQueued && (
-                  <div className="mt-3 pt-2.5 border-t border-white/[0.05] flex items-center gap-2 text-xs text-amber-300 font-mono">
-                    <Clock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                    <span>{step.message || "Waiting for resources..."}</span>
+                  <div className="mt-3 pt-3 border-t border-border-subtle flex items-center gap-2 text-xs text-signal-thinking font-mono">
+                    <Clock className="h-3.5 w-3.5 shrink-0" />
+                    <span>{step.message || "Waiting for resources"}</span>
                   </div>
                 )}
 
                 {/* Running Stage Progress Bar */}
                 {isRunning && (
-                  <div className="mt-3 pt-2.5 border-t border-white/[0.05]">
+                  <div className="mt-3 pt-3 border-t border-border-subtle">
                     <div className="flex justify-between items-center text-xs mb-1">
-                      <span className="text-slate-300 font-mono text-[11px]">
-                        {step.message || "Working..."}
+                      <span className="text-text-secondary font-mono text-[11px]">
+                        {step.message || "Working"}
                       </span>
-                      <span className="font-mono text-sky-400 font-semibold text-[11px]">
+                      <span className="font-mono text-accent font-medium text-[11px] tabular">
                         {Math.round(step.progress * 100)}%
                       </span>
                     </div>
-                    <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                    <div className="w-full h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-sky-400 transition-all duration-300"
+                        className="h-full rounded-full bg-accent transition-colors"
                         style={{ width: `${Math.round(step.progress * 100)}%` }}
                       />
                     </div>
@@ -504,15 +501,15 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
       </div>
 
       {/* 3. Collapsible Live Event Log Drawer */}
-      <GlassPanel recipe="pane" className="rounded-2xl border border-white/10 overflow-hidden">
+      <GlassPanel recipe="pane" className="rounded-2xl border border-border-subtle overflow-hidden">
         <button
           onClick={() => setIsLogDrawerOpen((prev) => !prev)}
-          className="w-full flex items-center justify-between p-4 text-xs font-semibold text-slate-300 hover:text-slate-100 transition-colors cursor-pointer bg-white/[0.02]"
+          className="w-full flex items-center justify-between p-4 text-xs font-medium text-text-secondary hover:text-text-primary transition-colors cursor-pointer bg-white/[0.02]"
         >
           <div className="flex items-center gap-2">
-            <Terminal className="h-4 w-4 text-sky-400" />
-            <span>Mission Timeline Event Log</span>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-800 text-slate-400">
+            <Terminal className="h-4 w-4" />
+            <span>Mission timeline event log</span>
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-lg bg-white/[0.03] text-text-disabled border border-border-subtle">
               {events.length > 0 ? `${events.length} events` : "Live telemetry"}
             </span>
           </div>
@@ -520,10 +517,10 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
         </button>
 
         {isLogDrawerOpen && (
-          <div className="p-4 border-t border-white/[0.06] bg-[#07090C]/90 max-h-64 overflow-y-auto font-mono text-xs space-y-1.5">
+          <div className="p-4 border-t border-border-subtle bg-black/30 max-h-64 overflow-y-auto font-mono text-xs space-y-2">
             {events.length === 0 ? (
-              <div className="text-slate-500 py-2 text-center">
-                Listening for real-time mission timeline events...
+              <div className="text-text-disabled py-2 text-center">
+                Listening for real-time mission timeline events
               </div>
             ) : (
               events.map((ev) => {
@@ -531,17 +528,17 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                 return (
                   <div
                     key={ev.id}
-                    className={`p-2 rounded-lg border transition-all ${
+                    className={`p-2 rounded-lg border transition-colors ${
                       isSelected
-                        ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
-                        : "border-white/[0.03] bg-white/[0.01] text-slate-300"
+                        ? "border-signal-thinking/30 bg-signal-thinking-bg text-text-primary"
+                        : "border-border-subtle bg-white/[0.02] text-text-secondary"
                     }`}
                   >
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span className="text-sky-400 font-semibold">{ev.kind}</span>
-                      <span>#{ev.id} • {new Date(ev.tsMs).toLocaleTimeString()}</span>
+                    <div className="flex items-center justify-between text-[11px] text-text-disabled">
+                      <span className="text-accent font-medium">{ev.kind}</span>
+                      <span>#{ev.id} · {new Date(ev.tsMs).toLocaleTimeString()}</span>
                     </div>
-                    <div className="text-slate-200 mt-1 break-all">
+                    <div className="text-text-primary mt-1 break-all">
                       {JSON.stringify(ev.payload)}
                     </div>
                   </div>
@@ -551,35 +548,35 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
 
             {/* Mock events if in mock mode */}
             {isMockMode && events.length === 0 && (
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div
-                  className={`p-2 rounded-lg border transition-all ${
+                  className={`p-2 rounded-lg border transition-colors ${
                     selectedEventId === 104
-                      ? "border-purple-500/50 bg-purple-500/10 text-purple-200"
-                      : "border-white/[0.03] bg-white/[0.01] text-slate-300"
+                      ? "border-signal-thinking/30 bg-signal-thinking-bg text-text-primary"
+                      : "border-border-subtle bg-white/[0.02] text-text-secondary"
                   }`}
                 >
-                  <div className="flex items-center justify-between text-[11px] text-slate-400">
-                    <span className="text-purple-400 font-semibold">fallback_engaged</span>
-                    <span>#104 • Event ID 104</span>
+                  <div className="flex items-center justify-between text-[11px] text-text-disabled">
+                    <span className="text-signal-thinking font-medium">fallback_engaged</span>
+                    <span>#104 · Event ID 104</span>
                   </div>
-                  <div className="text-slate-200 mt-1">
+                  <div className="text-text-primary mt-1">
                     Ladder F2 engaged: Resource lock contested on EEP timeline cut interval. Switched to alternative tool eep.track.slice_clips.
                   </div>
                 </div>
 
                 <div
-                  className={`p-2 rounded-lg border transition-all ${
+                  className={`p-2 rounded-lg border transition-colors ${
                     selectedEventId === 105
-                      ? "border-amber-500/50 bg-amber-500/10 text-amber-200"
-                      : "border-white/[0.03] bg-white/[0.01] text-slate-300"
+                      ? "border-signal-thinking/30 bg-signal-thinking-bg text-text-primary"
+                      : "border-border-subtle bg-white/[0.02] text-text-secondary"
                   }`}
                 >
-                  <div className="flex items-center justify-between text-[11px] text-slate-400">
-                    <span className="text-amber-400 font-semibold">step_skipped</span>
-                    <span>#105 • Event ID 105</span>
+                  <div className="flex items-center justify-between text-[11px] text-text-disabled">
+                    <span className="text-signal-thinking font-medium">step_skipped</span>
+                    <span>#105 · Event ID 105</span>
                   </div>
-                  <div className="text-slate-200 mt-1">
+                  <div className="text-text-primary mt-1">
                     Ladder F4 degrade applied: Non-critical visual filter skipped due to memory pressure threshold.
                   </div>
                 </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import {
-  Sparkles,
+  Workflow,
   User,
   ChevronDown,
   ChevronRight,
@@ -193,32 +193,30 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
   ];
 
   return (
-    <div className="flex-1 space-y-4 overflow-y-auto px-4 py-3 font-sans">
-      {/* Empty State / Welcome */}
+    <div className="min-w-0 flex-1 space-y-4 overflow-y-auto px-4 py-3 font-sans">
       {messages.length === 0 && !isStreaming && (
-        <div className="flex flex-col items-center justify-center py-16 text-center max-w-xl mx-auto">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.04] border border-white/[0.08] text-sky-400 mb-4 shadow-sm">
-            <Sparkles className="h-6 w-6" />
+        <div className="mx-auto flex max-w-xl flex-col items-center justify-center py-16 text-center">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-border-subtle bg-white/[0.03] text-text-secondary">
+            <Workflow className="h-6 w-6" strokeWidth={1.5} />
           </div>
-          <h3 className="text-base font-semibold text-slate-100">How can Starship Control help you?</h3>
-          <p className="text-xs text-slate-400 max-w-md mt-1.5 leading-relaxed">
-            Your local AI command center. Coordinate ScreenStudio, Audio Labs, Easy Edits, Net Watch, and Agentic Tuneup directly from this chat.
+          <h3 className="text-base font-medium text-text-primary">New mission</h3>
+          <p className="mt-2 max-w-md text-xs leading-relaxed text-text-secondary">
+            Coordinate ScreenStudio, Audio Labs, Easy Edits, Net Watch and Agentic Tuneup from one local command center
           </p>
 
-          {/* Quick Suggestions */}
-          <div className="grid grid-cols-2 gap-2.5 w-full mt-6">
+          <div className="mt-6 grid w-full grid-cols-2 gap-2">
             {suggestions.map((item, idx) => {
               const Icon = item.icon;
               return (
                 <button
                   key={idx}
                   onClick={() => onSelectSuggestion?.(item.prompt)}
-                  className="flex items-start gap-2.5 p-3 text-left rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.12] transition-colors group cursor-pointer"
+                  className="flex items-start gap-3 rounded-xl border border-border-subtle bg-white/[0.03] p-3 text-left transition-colors duration-150 hover:bg-white/[0.05] focus-ring cursor-pointer"
                 >
-                  <Icon className="h-4 w-4 text-slate-400 group-hover:text-sky-400 transition-colors shrink-0 mt-0.5" />
-                  <div>
-                    <span className="text-xs font-medium text-slate-200 block">{item.title}</span>
-                    <span className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{item.prompt}</span>
+                  <Icon className="h-4 w-4 shrink-0 text-text-secondary" strokeWidth={1.5} />
+                  <div className="min-w-0">
+                    <span className="block text-xs font-medium text-text-primary">{item.title}</span>
+                    <span className="mt-1 block truncate text-[11px] text-text-disabled">{item.prompt}</span>
                   </div>
                 </button>
               );
@@ -227,7 +225,6 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
         </div>
       )}
 
-      {/* Render Conversation Messages */}
       {messages.map((msg) => (
         <div
           key={msg.id}
@@ -236,41 +233,39 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
           }`}
         >
           {msg.role !== "user" && (
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-slate-300 border border-white/[0.08]">
-              <Sparkles className="h-3.5 w-3.5 text-sky-400" />
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border-subtle bg-white/[0.05] text-text-secondary">
+              <Workflow className="h-4 w-4" strokeWidth={1.5} />
             </div>
           )}
 
           <div className="max-w-2xl space-y-2">
-            {/* Thought Accordion if present */}
             {msg.thought && (
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5">
+              <div className="rounded-xl border border-border-subtle bg-white/[0.03] p-3">
                 <button
                   onClick={() => toggleThought(msg.id)}
-                  className="flex items-center gap-1.5 text-[11px] text-slate-400 hover:text-slate-200 transition-colors w-full text-left cursor-pointer"
+                  className="flex w-full items-center gap-2 text-left text-[11px] text-text-secondary transition-colors duration-150 hover:text-text-primary focus-ring cursor-pointer"
                 >
-                  <Brain className="h-3 w-3 text-slate-400" />
+                  <Brain className="h-3.5 w-3.5" strokeWidth={1.5} />
                   <span className="font-medium">Reasoning process</span>
                   {expandedThoughts[msg.id] ? (
-                    <ChevronDown className="h-3 w-3 ml-auto text-slate-500" />
+                    <ChevronDown className="ml-auto h-3.5 w-3.5 text-text-disabled" strokeWidth={1.5} />
                   ) : (
-                    <ChevronRight className="h-3 w-3 ml-auto text-slate-500" />
+                    <ChevronRight className="ml-auto h-3.5 w-3.5 text-text-disabled" strokeWidth={1.5} />
                   )}
                 </button>
                 {expandedThoughts[msg.id] && (
-                  <div className="mt-2 text-[11px] text-slate-300 border-t border-white/[0.06] pt-2 leading-relaxed whitespace-pre-wrap font-mono">
+                  <div className="mt-2 border-t border-border-subtle pt-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-text-secondary">
                     {msg.thought}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Message Body */}
             <div
-              className={`rounded-2xl p-3.5 text-xs ${
+              className={`rounded-2xl p-3 text-xs ${
                 msg.role === "user"
-                  ? "bg-[#1E232E] text-slate-100 border border-white/[0.08] rounded-tr-sm ml-auto"
-                  : "bg-[#12151B] text-slate-200 border border-white/[0.06] rounded-tl-sm shadow-sm"
+                  ? "ml-auto rounded-tr-sm border border-border-subtle bg-surface-solid text-text-primary"
+                  : "rounded-tl-sm border border-border-subtle bg-raised text-text-primary"
               }`}
             >
               <SanitizedMarkdown content={msg.content} />
@@ -278,57 +273,54 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
           </div>
 
           {msg.role === "user" && (
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-slate-300 border border-white/[0.08]">
-              <User className="h-3.5 w-3.5" />
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border-subtle bg-surface-solid text-text-secondary">
+              <User className="h-4 w-4" strokeWidth={1.5} />
             </div>
           )}
         </div>
       ))}
 
-      {/* Live Active Streaming Bubble */}
       {isStreaming && (
-        <div className="flex gap-3 text-xs leading-relaxed justify-start">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-white/[0.05] text-sky-400 border border-white/[0.08]">
-            <Sparkles className="h-3.5 w-3.5 animate-pulse" />
+        <div className="flex justify-start gap-3 text-xs leading-relaxed">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border-subtle bg-white/[0.05] text-text-secondary">
+            <Workflow className="h-4 w-4" strokeWidth={1.5} />
           </div>
 
-          <div className="max-w-2xl space-y-2 flex-1">
-            {/* Live Thought Trace */}
+          <div className="min-w-0 max-w-2xl flex-1 space-y-2">
             {liveThought && (
-              <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-2.5">
+              <div className="rounded-xl border border-border-glass bg-white/[0.03] p-3">
                 <button
                   type="button"
                   onClick={() => setShowLiveThought(!showLiveThought)}
-                  className="flex items-center justify-between text-[11px] text-slate-300 w-full text-left cursor-pointer"
+                  className="flex w-full items-center justify-between text-left text-[11px] text-text-secondary focus-ring cursor-pointer"
                 >
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-sky-400 animate-pulse" />
-                    <span className="font-medium text-slate-300">Thinking...</span>
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-signal-thinking" />
+                    <span className="font-medium text-text-primary">Thinking</span>
                   </div>
-                  <div className="flex items-center gap-1 text-slate-500 text-[10px]">
-                    <Clock className="h-3 w-3" />
-                    <span>{elapsedSeconds}s</span>
+                  <div className="flex items-center gap-1 text-text-disabled">
+                    <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    <span className="tabular">{elapsedSeconds}s</span>
                   </div>
                 </button>
                 {showLiveThought && (
-                  <pre className="mt-2 whitespace-pre-wrap font-mono text-[11px] text-slate-400 leading-relaxed max-h-36 overflow-y-auto">
+                  <pre className="mt-2 max-h-36 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-text-secondary">
                     {liveThought}
                   </pre>
                 )}
               </div>
             )}
 
-            {/* Live Content Stream */}
-            <div className="rounded-2xl rounded-tl-sm bg-[#12151B] p-3.5 text-slate-200 border border-white/[0.06] shadow-sm">
+            <div className="rounded-2xl rounded-tl-sm border border-border-subtle bg-raised p-3 text-text-primary">
               {liveContent ? (
                 <div className="font-sans">
                   <SanitizedMarkdown content={liveContent} />
-                  <span className="inline-block w-1.5 h-3.5 bg-sky-400 ml-1 animate-pulse align-middle" />
+                  <span className="ml-1 inline-block h-3.5 w-1.5 animate-pulse bg-accent align-middle" />
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-slate-400 text-xs">
-                  <span className="h-2 w-2 rounded-full bg-sky-400 animate-ping" />
-                  <span>Generating response...</span>
+                <div className="flex items-center gap-2 text-xs text-text-secondary">
+                  <span className="h-1.5 w-1.5 rounded-full bg-signal-thinking" />
+                  <span>Generating response</span>
                 </div>
               )}
             </div>
@@ -336,20 +328,19 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
         </div>
       )}
 
-      {/* Stream Error Notice */}
       {errorMessage && (
-        <div className="flex items-start gap-2.5 p-3 rounded-xl border border-rose-500/20 bg-rose-500/5 text-rose-300 text-xs max-w-2xl">
-          <AlertCircle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
+        <div className="flex max-w-2xl items-start gap-3 rounded-xl border border-signal-gate/30 bg-signal-gate-bg p-3 text-xs text-signal-gate">
+          <AlertCircle className="h-4 w-4 shrink-0" strokeWidth={1.5} />
           <div className="flex-1">
-            <span className="font-medium block">Inference Error</span>
-            <span className="text-[11px] text-rose-400/80 block mt-0.5">{errorMessage}</span>
+            <span className="block font-medium">Inference error</span>
+            <span className="mt-1 block text-[11px] text-text-secondary">{errorMessage}</span>
           </div>
           {onNavigateTab && (
             <button
               onClick={() => onNavigateTab("models")}
-              className="text-[11px] underline hover:text-rose-200 cursor-pointer"
+              className="text-[11px] text-text-secondary underline hover:text-text-primary focus-ring cursor-pointer"
             >
-              Open Models
+              Open models
             </button>
           )}
         </div>

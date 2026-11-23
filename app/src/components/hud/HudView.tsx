@@ -314,24 +314,24 @@ export const HudView: React.FC = () => {
     : "Easy Edits Pro";
 
   const trayStates: { id: TrayState; label: string; dotColor: string }[] = [
-    { id: "idle", label: "Idle", dotColor: "bg-slate-400" },
-    { id: "thinking", label: "Thinking", dotColor: "bg-sky-400" },
-    { id: "executing", label: "Executing", dotColor: "bg-emerald-400" },
-    { id: "waiting_approval", label: "Approval", dotColor: "bg-amber-400" },
-    { id: "stalled", label: "Stalled", dotColor: "bg-yellow-400" },
-    { id: "overloaded", label: "Overloaded", dotColor: "bg-orange-400" },
-    { id: "failed", label: "Failed", dotColor: "bg-rose-400" },
+    { id: "idle", label: "Idle", dotColor: "bg-text-disabled" },
+    { id: "thinking", label: "Thinking", dotColor: "bg-signal-thinking" },
+    { id: "executing", label: "Executing", dotColor: "bg-signal-success" },
+    { id: "waiting_approval", label: "Approval", dotColor: "bg-signal-gate" },
+    { id: "stalled", label: "Stalled", dotColor: "bg-signal-thinking" },
+    { id: "overloaded", label: "Overloaded", dotColor: "bg-signal-thinking" },
+    { id: "failed", label: "Failed", dotColor: "bg-signal-gate" },
   ];
 
   return (
     <div className="h-screen w-screen flex flex-col items-center justify-center bg-transparent p-2 font-sans select-none overflow-hidden">
       <GlassPanel
         recipe="float"
-        className={`w-full max-w-[504px] transition-all duration-300 ${
-          approvalGate ? "border-rose-500/50" : "border-white/[0.08]"
+        className={`w-full max-w-[504px] transition-colors duration-150 ${
+          approvalGate ? "border-signal-gate/40" : "border-border-subtle"
         } ${
           expanded
-            ? "h-[224px] p-3.5 flex flex-col justify-between"
+            ? "h-[240px] p-3 flex flex-col justify-between"
             : "h-[64px] px-3 flex items-center justify-between"
         }`}
       >
@@ -342,28 +342,24 @@ export const HudView: React.FC = () => {
         >
           {/* Brand Emblem & Model Selection Dropdown */}
           <div className="relative flex items-center gap-2 shrink-0">
-            <div
-              className={`flex h-7 w-7 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08] overflow-hidden ${
-                isStreaming ? "animate-pulse" : ""
-              }`}
-            >
+            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-white/[0.05] border border-border-subtle overflow-hidden">
               <img src="/logo.png" alt="Starship Control" className="h-5 w-5 object-contain" />
             </div>
 
             {/* Health Indicator Dot (GAP-CLOSURE-PLAN.md §14.10) */}
             <div
               className="flex items-center justify-center p-0.5 cursor-pointer"
-              title={`System Health: ${healthState.toUpperCase()}${governorMessage ? ` — ${governorMessage}` : ""}`}
+              title={`System health: ${healthState}${governorMessage ? ` — ${governorMessage}` : ""}`}
             >
               <span
-                className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                className={`h-2 w-2 rounded-full transition-colors duration-150 ${
                   healthState === "normal"
-                    ? "bg-emerald-400"
+                    ? "bg-signal-success"
                     : healthState === "elevated"
-                    ? "bg-amber-400"
+                    ? "bg-signal-thinking"
                     : healthState === "constrained"
-                    ? "bg-orange-400"
-                    : "bg-rose-500 animate-pulse shadow-[0_0_8px_rgba(244,63,94,0.8)]"
+                    ? "bg-signal-thinking"
+                    : "bg-signal-gate animate-pulse"
                 }`}
               />
             </div>
@@ -372,22 +368,22 @@ export const HudView: React.FC = () => {
             <button
               type="button"
               onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-              className="flex items-center gap-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] px-2 py-1 border border-white/[0.06] text-xs text-slate-300 transition-colors cursor-pointer"
+              className="flex items-center gap-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.05] px-2 py-1 border border-border-subtle text-xs text-text-secondary transition-colors cursor-pointer"
             >
               <span
                 className={`h-1.5 w-1.5 rounded-full ${
-                  activeModel?.provider_type === "local_gguf" ? "bg-purple-400" : "bg-sky-400"
+                  activeModel?.provider_type === "local_gguf" ? "bg-signal-local-model" : "bg-accent"
                 }`}
               />
-              <span className="font-medium text-slate-200">
+              <span className="font-medium text-text-primary">
                 {activeModel ? activeModel.name.split(" ")[0] : "Qwen2.5"}
               </span>
-              <ChevronDown className="h-2.5 w-2.5 text-slate-400" />
+              <ChevronDown className="h-3.5 w-3.5 text-text-secondary" />
             </button>
 
             {/* Model Dropdown Menu */}
             {modelDropdownOpen && (
-              <div className="absolute left-0 top-9 w-52 rounded-xl border border-white/[0.1] bg-[#14171E] p-1 shadow-2xl z-50 text-xs">
+              <div className="absolute left-0 top-9 w-52 rounded-xl border border-border-subtle bg-raised p-1 z-50 text-xs">
                 {models.map((m) => (
                   <button
                     key={m.id}
@@ -396,12 +392,12 @@ export const HudView: React.FC = () => {
                       setActiveModel(m);
                       setModelDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between cursor-pointer ${
-                      activeModel?.id === m.id ? "bg-sky-500/15 text-sky-300 font-medium" : "text-slate-300 hover:bg-white/[0.05]"
+                    className={`w-full text-left px-2 py-1 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
+                      activeModel?.id === m.id ? "bg-accent-muted text-accent font-medium" : "text-text-secondary hover:bg-white/[0.05]"
                     }`}
                   >
                     <span className="truncate">{m.name}</span>
-                    <span className="text-[9px] text-slate-500 capitalize">
+                    <span className="text-[11px] text-text-disabled">
                       {m.provider_type === "local_gguf" ? "Local" : "Cloud"}
                     </span>
                   </button>
@@ -414,8 +410,8 @@ export const HudView: React.FC = () => {
           {!expanded && (
             <div
               onClick={toggleExpand}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] cursor-pointer transition-colors max-w-[150px] shrink-0"
-              title={`Mission Progress: ${Math.round(missionProgress * 100)}% — ${activeStepMessage}`}
+              className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.05] border border-border-subtle cursor-pointer transition-colors max-w-[150px] shrink-0"
+              title={`Mission progress: ${Math.round(missionProgress * 100)}% — ${activeStepMessage}`}
             >
               <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
                 <svg className="w-5 h-5 -rotate-90" viewBox="0 0 24 24">
@@ -430,12 +426,12 @@ export const HudView: React.FC = () => {
                     cx="12"
                     cy="12"
                     r="8.5"
-                    className={`fill-none transition-all duration-300 ${
+                    className={`fill-none transition-colors duration-150 ${
                       isStalled
-                        ? "stroke-amber-400"
+                        ? "stroke-signal-thinking"
                         : trayState === "failed"
-                        ? "stroke-rose-400"
-                        : "stroke-sky-400"
+                        ? "stroke-signal-gate"
+                        : "stroke-accent"
                     }`}
                     strokeWidth="2.5"
                     strokeDasharray={2 * Math.PI * 8.5}
@@ -443,15 +439,15 @@ export const HudView: React.FC = () => {
                     strokeLinecap="round"
                   />
                 </svg>
-                <span className="absolute text-[7px] font-mono font-medium text-slate-300">
+                <span className="absolute text-[11px] font-mono font-medium text-text-primary tabular">
                   {Math.round(missionProgress * 100)}
                 </span>
               </div>
               <div className="flex flex-col overflow-hidden text-left min-w-0">
-                <span className="text-[9px] font-medium text-slate-200 truncate">
+                <span className="text-[11px] font-medium text-text-primary truncate">
                   Step {activeStepIndex ?? 1}
                 </span>
-                <span className="text-[8px] text-slate-400 truncate">
+                <span className="text-[11px] text-text-secondary truncate">
                   {isStalled ? "Stalled" : activeStepMessage}
                 </span>
               </div>
@@ -466,12 +462,8 @@ export const HudView: React.FC = () => {
                 value={prompt}
                 disabled={isStreaming}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={
-                  isStreaming
-                    ? "Processing..."
-                    : "Ask or instruct..."
-                }
-                className="w-full bg-black/20 border border-white/[0.08] rounded-xl px-2.5 py-1 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-white/[0.2] transition-colors disabled:opacity-50"
+                placeholder={isStreaming ? "Working" : "Ask or instruct"}
+                className="w-full bg-black/20 border border-border-subtle rounded-xl px-2 py-1 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && prompt.trim()) {
                     handleSendPrompt();
@@ -486,12 +478,12 @@ export const HudView: React.FC = () => {
             {/* Microphone Toggle (ALP Audio Labs Voice Input) */}
             <button
               type="button"
-              title={micActive ? "Mute Microphone" : "Voice Transcription"}
+              title={micActive ? "Mute microphone" : "Voice transcription"}
               onClick={() => setMicActive(!micActive)}
               className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors cursor-pointer ${
                 micActive
-                  ? "bg-rose-500/20 text-rose-300 border border-rose-500/40"
-                  : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300"
+                  ? "bg-accent-muted text-accent border border-accent/40"
+                  : "bg-white/[0.03] hover:bg-white/[0.05] text-text-secondary"
               }`}
             >
               <Mic className="h-3.5 w-3.5" />
@@ -501,15 +493,15 @@ export const HudView: React.FC = () => {
             {!expanded && (
               <button
                 type="button"
-                title="Send Prompt"
+                title="Send prompt"
                 disabled={isStreaming || !prompt.trim()}
                 onClick={handleSendPrompt}
-                className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-slate-100 transition-colors disabled:opacity-40 cursor-pointer"
+                className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-accent-text hover:bg-accent/90 text-xs transition-colors active:scale-[0.98] disabled:opacity-40 cursor-pointer"
               >
                 {isStreaming ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-400" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
-                  <Send className="h-3.5 w-3.5 text-sky-400" />
+                  <Send className="h-3.5 w-3.5" />
                 )}
               </button>
             )}
@@ -519,7 +511,7 @@ export const HudView: React.FC = () => {
               type="button"
               title={expanded ? "Collapse HUD" : "Expand HUD"}
               onClick={toggleExpand}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.03] hover:bg-white/[0.05] text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
             >
               {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
             </button>
@@ -529,76 +521,77 @@ export const HudView: React.FC = () => {
               type="button"
               title="Hide HUD"
               onClick={() => invoke("cmd_toggle_hud")}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.03] hover:bg-white/[0.05] text-text-disabled hover:text-text-primary transition-colors cursor-pointer"
             >
-              <Minus className="h-3 w-3" />
+              <Minus className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
 
         {/* Expanded View: Streamed Output or Action Approval Card */}
         {expanded && (
-          <div className="mt-3 flex-1 flex flex-col justify-between border-t border-white/10 pt-2.5 overflow-hidden animate-in fade-in duration-200">
+          <div className="mt-3 flex-1 flex flex-col justify-between border-t border-border-subtle pt-2 overflow-hidden transition-[opacity,transform] duration-200">
             {/* Governor Safe-Pause Banner (GAP-CLOSURE-PLAN.md §14.10) */}
             {governorPaused && (
-              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-2 mb-2 flex items-center justify-between text-amber-200 text-xs shadow-[0_0_15px_rgba(245,158,11,0.15)] animate-in fade-in duration-200">
+              <div className="rounded-xl border border-signal-thinking/40 bg-signal-thinking-bg p-2 mb-2 flex items-center justify-between text-signal-thinking text-xs transition-[opacity,transform] duration-200">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-400 animate-pulse shrink-0" />
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
                   <div>
-                    <span className="font-semibold text-amber-100 text-[11px]">
-                      MISSION SAFE-PAUSED BY RESOURCE GOVERNOR
+                    <span className="font-medium text-text-primary text-[11px]">
+                      Mission safe-paused by resource governor
                     </span>
-                    <p className="text-[10px] text-amber-300/80 mt-0.5">
+                    <p className="text-[11px] text-text-secondary mt-1">
                       {governorMessage || "Host machine resources constrained or critical. Execution will auto-resume safely."}
                     </p>
                   </div>
                 </div>
-                <span className="font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-                  Auto-Resume
+                <span className="font-mono text-[11px] text-text-secondary px-2 py-1 rounded-lg bg-white/[0.05] border border-border-subtle shrink-0">
+                  Auto-resume
                 </span>
               </div>
             )}
 
             {approvalGate ? (
               /* Live Approval Gate Card */
-              <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3 space-y-2 shadow-[0_0_20px_rgba(244,63,94,0.2)]">
+              <div className="rounded-xl border border-signal-gate/40 bg-signal-gate-bg p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-rose-300 font-semibold text-xs">
-                    <ShieldAlert className="h-4 w-4 text-rose-400 animate-pulse" />
-                    <span>HUMAN APPROVAL REQUIRED — {appDisplayName}</span>
+                  <div className="flex items-center gap-2 text-signal-gate font-medium text-xs">
+                    <ShieldAlert className="h-4 w-4" />
+                    <span>Approval required — {appDisplayName}</span>
                   </div>
-                  <span className="font-mono text-[10px] font-bold bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded border border-rose-500/40 uppercase">
+                  <span className="font-mono text-[11px] text-signal-gate px-2 py-1 rounded-lg bg-white/[0.05] border border-signal-gate/40">
                     Tier {approvalGate.riskTier}
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-200 leading-relaxed font-sans">
+                <p className="text-xs text-text-primary leading-relaxed font-sans">
                   {approvalGate.diffSummary || approvalGate.actionTitle}
                 </p>
 
-                <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between pt-1 border-t border-rose-500/20">
-                  <span className="flex items-center gap-1 text-emerald-300">
-                    <KeyRound className="h-3 w-3" />
-                    <span>Signature: {approvalGate.signatureToken.slice(0, 14)}...</span>
+                <div className="text-[11px] font-mono text-text-secondary flex items-center justify-between pt-2 border-t border-signal-gate/30">
+                  <span className="flex items-center gap-1 text-signal-success">
+                    <KeyRound className="h-3.5 w-3.5" />
+                    <span>Signed token: {approvalGate.signatureToken.slice(0, 14)}...</span>
                   </span>
-                  <span>Checkpoint: <strong className="text-slate-200">#bk-04 (Auto-save)</strong></span>
+                  <span>Checkpoint: <strong className="font-medium text-text-primary">#bk-04 (Auto-save)</strong></span>
                 </div>
               </div>
             ) : streamedText || isStreaming ? (
               /* Active Stream Output View */
-              <div className="flex-1 overflow-y-auto rounded-xl bg-black/40 border border-white/5 p-2.5 font-sans text-xs text-slate-200 leading-relaxed">
-                <div className="flex items-center gap-1.5 text-cyan-400 font-mono text-[10px] uppercase mb-1">
-                  <Cpu className="h-3 w-3 animate-spin" />
-                  <span>Agent Stream Output</span>
+              <div className="flex-1 overflow-y-auto rounded-xl bg-black/40 border border-border-subtle p-2 font-sans text-xs text-text-primary leading-relaxed">
+                <div className="flex items-center gap-2 text-text-secondary font-mono text-[11px] mb-1">
+                  <Cpu className="h-3.5 w-3.5" />
+                  <span>Agent stream output</span>
+                  <span className="ml-1 inline-block h-3 w-0.5 animate-pulse bg-accent" aria-hidden="true" />
                 </div>
-                <div className="whitespace-pre-wrap">{streamedText || "Synthesizing plan..."}</div>
+                <div className="whitespace-pre-wrap">{streamedText || "Synthesizing plan"}</div>
               </div>
             ) : (
               /* Idle Expanded Input View with Progress & Tray State Bar */
               <div className="space-y-2">
                 {/* Mission Progress & Step Status Bar */}
-                <div className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-white/[0.06] p-2 text-xs">
-                  <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-border-subtle p-2 text-xs">
+                  <div className="flex items-center gap-2 min-w-0">
                     <div className="relative flex items-center justify-center w-7 h-7 shrink-0">
                       <svg className="w-7 h-7 -rotate-90" viewBox="0 0 28 28">
                         <circle
@@ -612,12 +605,12 @@ export const HudView: React.FC = () => {
                           cx="14"
                           cy="14"
                           r="11"
-                          className={`fill-none transition-all duration-300 ${
+                          className={`fill-none transition-colors duration-150 ${
                             isStalled
-                              ? "stroke-amber-400"
+                              ? "stroke-signal-thinking"
                               : trayState === "failed"
-                              ? "stroke-rose-400"
-                              : "stroke-sky-400"
+                              ? "stroke-signal-gate"
+                              : "stroke-accent"
                           }`}
                           strokeWidth="2.5"
                           strokeDasharray={2 * Math.PI * 11}
@@ -625,37 +618,37 @@ export const HudView: React.FC = () => {
                           strokeLinecap="round"
                         />
                       </svg>
-                      <span className="absolute text-[8px] font-mono font-semibold text-slate-200">
+                      <span className="absolute text-[11px] font-mono font-medium text-text-primary tabular">
                         {Math.round(missionProgress * 100)}%
                       </span>
                     </div>
 
                     <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-medium text-slate-200 truncate">
+                      <div className="flex items-center gap-1">
+                        <span className="text-[11px] font-medium text-text-primary truncate">
                           Step {activeStepIndex ?? 1}: {activeStepMessage}
                         </span>
                         {isStalled && (
-                          <span className="flex items-center gap-0.5 text-[9px] font-medium text-amber-300 bg-amber-500/15 px-1 py-0.5 rounded border border-amber-500/30 shrink-0">
-                            <AlertTriangle className="h-2.5 w-2.5 text-amber-400" />
+                          <span className="flex items-center gap-1 text-[11px] font-medium text-signal-thinking bg-signal-thinking-bg px-2 py-1 rounded-lg border border-signal-thinking/40 shrink-0">
+                            <AlertTriangle className="h-3.5 w-3.5" />
                             Stalled
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] font-mono text-slate-400 truncate">
+                      <span className="text-[11px] font-mono text-text-secondary truncate">
                         {activeStepTool}
                       </span>
                     </div>
                   </div>
 
-                  <span className="text-[10px] font-mono text-slate-400 shrink-0 pl-2">
-                    {Math.round(missionProgress * 100)}% Complete
+                  <span className="text-[11px] font-mono text-text-secondary shrink-0 pl-2 tabular">
+                    {Math.round(missionProgress * 100)}% complete
                   </span>
                 </div>
 
                 {/* Tray State Selector (GAP-CLOSURE-PLAN.md §13.6) */}
-                <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
-                  <span className="text-[9px] font-mono text-slate-400 shrink-0 mr-1">Tray:</span>
+                <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                  <span className="text-[11px] font-mono text-text-secondary shrink-0 mr-1">Tray:</span>
                   {trayStates.map((ts) => {
                     const isActive = trayState === ts.id;
                     return (
@@ -663,13 +656,13 @@ export const HudView: React.FC = () => {
                         key={ts.id}
                         type="button"
                         onClick={() => updateTrayState(ts.id)}
-                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] border transition-colors cursor-pointer shrink-0 ${
+                        className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] border transition-colors cursor-pointer shrink-0 ${
                           isActive
-                            ? "bg-sky-500/20 text-sky-200 border-sky-400/40 font-medium"
-                            : "bg-white/[0.02] hover:bg-white/[0.06] text-slate-400 border-white/[0.06]"
+                            ? "bg-accent-muted text-accent border-accent/40 font-medium"
+                            : "bg-white/[0.03] hover:bg-white/[0.05] text-text-secondary border-border-subtle"
                         }`}
                       >
-                        <span className={`h-1.5 w-1.5 rounded-full ${ts.dotColor}`} />
+                        <span className={`h-2 w-2 rounded-full ${ts.dotColor}`} />
                         <span>{ts.label}</span>
                       </button>
                     );
@@ -681,8 +674,8 @@ export const HudView: React.FC = () => {
                   type="text"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Enter strategic command (e.g. 'Ripple cut silence in EEP')..."
-                  className="w-full rounded-xl bg-black/40 border border-white/10 px-3 py-1.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
+                  placeholder="Enter a strategic command"
+                  className="w-full rounded-xl bg-black/40 border border-border-subtle px-3 py-2 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent transition-colors"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && prompt.trim()) {
@@ -694,19 +687,17 @@ export const HudView: React.FC = () => {
             )}
 
             {/* Bottom Approval / Action Controls */}
-            <div className="flex items-center justify-between pt-2 border-t border-white/10">
-              <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400">
+            <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
+              <div className="flex items-center gap-2 text-[11px] font-mono text-text-secondary">
                 {approvalGate ? (
                   <>
-                    <kbd className="flex items-center gap-1 rounded bg-slate-800 px-1 py-0.5 text-slate-300 border border-slate-700">
+                    <kbd className="keycap gap-1">
                       Enter
-                      <CornerDownLeft className="h-2 w-2" />
+                      <CornerDownLeft className="h-3.5 w-3.5" />
                     </kbd>
-                    <span>Approve</span>
-                    <kbd className="rounded bg-slate-800 px-1 py-0.5 text-slate-300 border border-slate-700">
-                      Esc
-                    </kbd>
-                    <span>Reject</span>
+                    <span className="text-text-disabled">Approve</span>
+                    <kbd className="keycap">Esc</kbd>
+                    <span className="text-text-disabled">Reject</span>
                   </>
                 ) : (
                   <span>Ready · Esc to collapse</span>
@@ -720,21 +711,21 @@ export const HudView: React.FC = () => {
                       type="button"
                       onClick={handleReject}
                       disabled={isSubmitting}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] hover:bg-rose-500/10 hover:text-rose-300 text-xs text-slate-300 transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg border border-border-subtle bg-raised hover:bg-white/[0.05] text-xs text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
                     >
-                      <X className="h-3 w-3 text-rose-400" />
+                      <X className="h-3.5 w-3.5" />
                       <span>Reject</span>
                     </button>
                     <button
                       type="button"
                       onClick={handleApprove}
                       disabled={isSubmitting}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/30 text-xs font-medium transition-colors cursor-pointer"
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent text-accent-text hover:bg-accent/90 border border-accent text-xs font-medium transition-colors active:scale-[0.98] cursor-pointer"
                     >
                       {isSubmitting ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : (
-                        <Check className="h-3 w-3 stroke-[2.5]" />
+                        <Check className="h-3.5 w-3.5" />
                       )}
                       <span>Approve</span>
                     </button>
@@ -749,9 +740,9 @@ export const HudView: React.FC = () => {
                         setHudExpandedState(false);
                       }
                     }}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-slate-100 text-xs font-medium transition-colors cursor-pointer"
+                    className="flex items-center gap-1 px-3 py-2 rounded-lg bg-accent text-accent-text hover:bg-accent/90 text-xs font-medium transition-colors active:scale-[0.98] cursor-pointer"
                   >
-                    <Send className="h-3 w-3 text-sky-400" />
+                    <Send className="h-3.5 w-3.5" />
                     <span>Send</span>
                   </button>
                 )}

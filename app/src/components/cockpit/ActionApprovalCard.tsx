@@ -131,80 +131,77 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
       role="alertdialog"
       aria-modal="true"
       aria-labelledby={`approval-title-${step.stepId}`}
-      className="relative my-4 overflow-hidden rounded-2xl border-2 border-rose-500/80 bg-[#0E131B]/95 p-5 shadow-[0_0_32px_rgba(244,63,94,0.30)] backdrop-blur-2xl transition-all duration-300 animate-in fade-in zoom-in-95"
+      className="relative my-4 overflow-hidden rounded-2xl border border-signal-gate/50 bg-surface-solid p-5 transition-colors duration-150"
     >
-      {/* Specular highlight border overlay */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-rose-500/5" />
-
-      {/* Pulsating Rose Gate Banner */}
-      <div className="mb-4 flex items-center justify-between border-b border-rose-500/30 pb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.4)]">
-            <ShieldAlert className="h-4 w-4 animate-pulse" />
+      {/* Gate Banner */}
+      <div className="mb-4 flex items-center justify-between border-b border-signal-gate/30 pb-3">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-signal-gate-bg text-signal-gate border border-signal-gate/40">
+            <ShieldAlert className="h-4 w-4" />
           </div>
           <div>
             <h3
               id={`approval-title-${step.stepId}`}
-              className="font-sans text-sm font-bold tracking-tight text-slate-100 flex items-center gap-2"
+              className="font-sans text-sm font-medium text-text-primary flex items-center gap-2"
             >
-              <span>HUMAN APPROVAL REQUIRED</span>
-              <span className="text-slate-400">·</span>
-              <span className="text-sky-400">{appDisplayName}</span>
+              <span>Approval required</span>
+              <span className="text-text-disabled">·</span>
+              <span className="text-text-secondary">{appDisplayName}</span>
             </h3>
             {planTitle && (
-              <p className="font-sans text-xs text-slate-400">Mission Plan: {planTitle}</p>
+              <p className="font-sans text-xs text-text-secondary">Mission plan: {planTitle}</p>
             )}
           </div>
         </div>
 
-        {/* Risk Tier Badge & Irreversible Warning */}
+        {/* Risk Tier & Irreversible Chips */}
         <div className="flex items-center gap-2">
           {isIrreversible && (
-            <div className="flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold font-mono tracking-wider uppercase border border-rose-500/60 bg-rose-950/60 text-rose-300">
-              <AlertTriangle className="h-3 w-3 text-rose-400" />
-              <span>IRREVERSIBLE</span>
-            </div>
+            <span className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-mono border border-signal-gate/40 bg-signal-gate-bg text-signal-gate">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              <span>Irreversible</span>
+            </span>
           )}
-          <div
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-bold font-mono tracking-wider uppercase border shadow-sm ${
+          <span
+            className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-mono border ${
               isTier3
-                ? "bg-rose-500/20 text-rose-300 border-rose-500/40 shadow-rose-500/20"
-                : "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/20"
+                ? "bg-signal-gate-bg text-signal-gate border-signal-gate/40"
+                : "bg-signal-thinking-bg text-signal-thinking border-signal-thinking/40"
             }`}
           >
-            <AlertTriangle className="h-3 w-3" />
-            <span>{isTier3 ? "TIER 3 (DESTRUCTIVE)" : "TIER 2 (MUTATING)"}</span>
-          </div>
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span>{isTier3 ? "Tier 3 · destructive" : "Tier 2 · mutating"}</span>
+          </span>
         </div>
       </div>
 
       {/* Impact & Action Description */}
-      <div className="space-y-3 font-sans text-xs leading-relaxed text-slate-200">
+      <div className="space-y-3 font-sans text-xs leading-relaxed text-text-primary">
         <div className="flex items-start gap-2">
-          <span className="font-semibold text-slate-400 min-w-[70px]">Action:</span>
-          <span className="font-medium text-slate-100">
+          <span className="font-medium text-text-secondary min-w-[70px]">Action:</span>
+          <span className="font-medium text-text-primary">
             {step.diffSummary || `Execute tool: ${step.toolName}`}
           </span>
         </div>
 
         <div className="flex items-start gap-2">
-          <span className="font-semibold text-slate-400 min-w-[70px]">Tool:</span>
-          <span className="font-mono text-[11px] text-cyan-300 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-500/20">
+          <span className="font-medium text-text-secondary min-w-[70px]">Tool:</span>
+          <span className="font-mono text-[11px] text-text-primary bg-white/[0.05] px-2 py-1 rounded-lg border border-border-subtle">
             {step.toolName}
           </span>
-          <span className="text-slate-500 ml-1">(Step #{step.stepIndex + 1})</span>
+          <span className="text-text-disabled ml-1">(Step #{step.stepIndex + 1})</span>
         </div>
 
-        <div className="flex items-center gap-3 pt-1 text-[11px] text-slate-400 border-t border-white/5">
+        <div className="flex items-center gap-3 pt-2 text-[11px] text-text-secondary border-t border-border-subtle">
           <span className="flex items-center gap-1">
-            <KeyRound className="h-3 w-3 text-emerald-400" />
-            <span>Pre-signed Kernel Signature:</span>
-            <code className="font-mono text-emerald-300 bg-emerald-950/40 px-1.5 py-0.5 rounded text-[10px]">
+            <KeyRound className="h-3.5 w-3.5 text-signal-success" />
+            <span>Signed token:</span>
+            <code className="font-mono text-signal-success bg-signal-success-bg px-2 py-1 rounded-lg text-[11px]">
               {step.signatureToken ? `${step.signatureToken.slice(0, 16)}...` : "None"}
             </code>
           </span>
           <span>·</span>
-          <span>Checkpoint: <strong className="text-slate-200">#bk-01 (Auto-save)</strong></span>
+          <span>Checkpoint: <strong className="font-medium text-text-primary">#bk-01 (Auto-save)</strong></span>
         </div>
       </div>
 
@@ -213,22 +210,22 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
         <button
           type="button"
           onClick={() => setShowDiff((prev) => !prev)}
-          className="flex items-center gap-1.5 font-mono text-[11px] text-slate-400 hover:text-slate-200 transition-colors py-1 focus-visible:outline-none focus-visible:text-sky-400"
+          className="flex items-center gap-2 font-mono text-[11px] text-text-secondary hover:text-text-primary transition-colors py-1 focus-visible:outline-none focus-visible:text-accent"
         >
           {showDiff ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           <span className="flex items-center gap-1">
-            <FileCode className="h-3.5 w-3.5 text-cyan-400" />
-            {showDiff ? "Hide Detailed Parameters & Diff" : "View Diff & Tool Parameters"}
+            <FileCode className="h-3.5 w-3.5" />
+            {showDiff ? "Hide parameters and diff" : "View parameters and diff"}
           </span>
         </button>
 
         {showDiff && (
           <GlassPanel
             recipe="pane"
-            className="mt-2 p-3 font-mono text-[11px] text-slate-300 bg-black/60 border border-white/10 rounded-xl max-h-48 overflow-y-auto"
+            className="mt-2 p-3 font-mono text-[11px] text-text-secondary bg-black/40 border border-border-subtle rounded-xl max-h-48 overflow-y-auto"
           >
-            <div className="text-slate-500 mb-1">// Parameters to be passed to {step.toolName}:</div>
-            <pre className="whitespace-pre-wrap text-cyan-200">
+            <div className="text-text-disabled mb-1">// Parameters for {step.toolName}</div>
+            <pre className="whitespace-pre-wrap text-text-primary">
               {JSON.stringify(step.arguments, null, 2)}
             </pre>
           </GlassPanel>
@@ -237,24 +234,24 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
 
       {/* Rejection Reason Sub-form */}
       {rejecting && (
-        <div className="mt-4 p-3 rounded-xl border border-rose-500/30 bg-rose-500/10 space-y-2">
-          <label htmlFor={`reject-reason-${step.stepId}`} className="block text-[11px] font-semibold text-rose-300">
-            Rejection Reason / Guidance for Planner:
+        <div className="mt-4 p-3 rounded-xl border border-signal-gate/30 bg-signal-gate-bg space-y-2">
+          <label htmlFor={`reject-reason-${step.stepId}`} className="block text-[11px] font-medium text-signal-gate">
+            Rejection reason or guidance for planner
           </label>
           <input
             id={`reject-reason-${step.stepId}`}
             type="text"
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="e.g. Do not modify timeline cuts yet"
-            className="w-full rounded-lg bg-black/50 border border-rose-500/40 px-3 py-1.5 font-sans text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-400"
+            placeholder="Reason for rejection"
+            className="w-full rounded-xl bg-black/40 border border-border-subtle px-3 py-2 font-sans text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent transition-colors"
             autoFocus
           />
           <div className="flex justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={() => setRejecting(false)}
-              className="px-3 py-1 rounded-lg text-xs text-slate-300 hover:bg-white/10 transition-colors"
+              className="px-3 py-2 rounded-lg text-xs text-text-secondary hover:bg-white/[0.05] transition-colors"
             >
               Cancel
             </button>
@@ -262,10 +259,10 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
               type="button"
               onClick={handleReject}
               disabled={isSubmitting}
-              className="flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold bg-rose-600 text-white hover:bg-rose-500 transition-colors"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg border border-border-subtle bg-raised text-xs font-medium text-text-primary hover:bg-white/[0.05] transition-colors"
             >
-              <X className="h-3 w-3" />
-              Confirm Rejection
+              <X className="h-3.5 w-3.5" />
+              Confirm rejection
             </button>
           </div>
         </div>
@@ -273,38 +270,36 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
 
       {/* Irreversible Confirmation Requirement (GAP-CLOSURE-PLAN.md §11.8) */}
       {isIrreversible && !rejecting && (
-        <div className="mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3.5 space-y-2.5">
-          <div className="flex items-center gap-2 text-rose-300 text-xs font-semibold">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-400" />
-            <span>PERMANENT ACTION — CANNOT BE RESTORED FROM QUARANTINE</span>
+        <div className="mt-4 rounded-xl border border-signal-gate/40 bg-signal-gate-bg p-3 space-y-2">
+          <div className="flex items-center gap-2 text-signal-gate text-xs font-medium">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>Permanent action — cannot be restored from quarantine</span>
           </div>
-          <p className="text-[11px] text-slate-300 leading-relaxed font-sans">
-            Package-cache cleanups cannot be rolled back. Type <strong className="text-rose-300 font-mono">CONFIRM</strong> below to enable authorization:
+          <p className="text-[11px] text-text-secondary leading-relaxed font-sans">
+            Package cache cleanup cannot be rolled back. Type <strong className="text-signal-gate font-mono">CONFIRM</strong> to authorize.
           </p>
           <input
             type="text"
             value={typedConfirmation}
             onChange={(e) => setTypedConfirmation(e.target.value)}
-            placeholder="Type CONFIRM to authorize..."
-            className="w-full rounded-lg bg-black/60 border border-rose-500/40 px-3 py-1.5 font-mono text-xs text-rose-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-rose-400"
+            placeholder="Type CONFIRM"
+            className="w-full rounded-xl bg-black/40 border border-signal-gate/40 px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent transition-colors"
           />
         </div>
       )}
 
       {/* Action Buttons */}
       {!rejecting && (
-        <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4">
-          <div className="flex items-center gap-2 text-[11px] text-slate-400 font-sans">
-            <span className="hidden sm:inline">Shortcuts:</span>
-            <kbd className="flex items-center gap-1 rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-300 border border-slate-700">
+        <div className="mt-5 flex items-center justify-between border-t border-border-subtle pt-4">
+          <div className="flex items-center gap-2 text-[11px] text-text-secondary font-sans">
+            <span className="hidden sm:inline">Shortcuts</span>
+            <kbd className="keycap gap-1">
               <span>Enter</span>
-              <CornerDownLeft className="h-2.5 w-2.5" />
+              <CornerDownLeft className="h-3.5 w-3.5" />
             </kbd>
-            <span className="text-slate-500">Approve</span>
-            <kbd className="rounded bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-300 border border-slate-700">
-              Esc
-            </kbd>
-            <span className="text-slate-500">Reject</span>
+            <span className="text-text-disabled">Approve</span>
+            <kbd className="keycap">Esc</kbd>
+            <span className="text-text-disabled">Reject</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -313,10 +308,10 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
               type="button"
               onClick={() => setRejecting(true)}
               disabled={isSubmitting || isExecuting}
-              className="flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-4 py-2 font-sans text-xs font-medium text-slate-300 hover:border-rose-500/40 hover:bg-rose-500/10 hover:text-rose-300 focus-visible:ring-2 focus-visible:ring-rose-400 transition-all duration-150 cursor-pointer"
+              className="flex items-center gap-2 rounded-xl border border-border-subtle bg-raised px-4 py-2 font-sans text-xs font-medium text-text-secondary hover:bg-white/[0.05] hover:text-text-primary transition-colors duration-150 cursor-pointer"
             >
-              <X className="h-3.5 w-3.5 text-rose-400" />
-              <span>Reject / Modify</span>
+              <X className="h-3.5 w-3.5" />
+              <span>Reject or modify</span>
             </button>
 
             {/* Approve Button */}
@@ -324,21 +319,21 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
               type="button"
               onClick={handleApprove}
               disabled={!canApprove}
-              className={`flex items-center gap-1.5 rounded-xl px-5 py-2 font-sans text-xs font-bold transition-all duration-150 ${
+              className={`flex items-center gap-2 rounded-xl px-5 py-2 font-sans text-xs font-medium transition-colors duration-150 ${
                 canApprove
-                  ? "bg-gradient-to-r from-sky-400 to-cyan-400 text-slate-950 shadow-[0_0_20px_rgba(56,189,248,0.4)] hover:shadow-[0_0_28px_rgba(56,189,248,0.6)] hover:brightness-110 active:scale-98 focus-visible:ring-2 focus-visible:ring-sky-300 cursor-pointer"
-                  : "bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5"
+                  ? "bg-accent text-accent-text hover:bg-accent/90 active:scale-[0.98] cursor-pointer"
+                  : "bg-raised text-text-disabled cursor-not-allowed border border-border-subtle"
               }`}
             >
               {isSubmitting || isExecuting ? (
                 <>
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  <span>Dispatching...</span>
+                  <span>Dispatching</span>
                 </>
               ) : (
                 <>
-                  <Check className="h-3.5 w-3.5 stroke-[2.5]" />
-                  <span>Approve Action</span>
+                  <Check className="h-3.5 w-3.5" />
+                  <span>Approve action</span>
                 </>
               )}
             </button>

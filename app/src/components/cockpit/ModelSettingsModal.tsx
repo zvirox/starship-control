@@ -59,25 +59,26 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
     }
   };
 
+  const isStatusError = statusMsg?.startsWith("Failed") ?? false;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 font-sans select-none">
-      <GlassPanel recipe="modal" className="w-full max-w-lg p-5 space-y-4">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm font-sans select-none">
+      <GlassPanel recipe="modal" className="w-full max-w-lg space-y-4 p-5">
+        <div className="flex items-center justify-between border-b border-border-subtle pb-3">
           <div className="flex items-center gap-2">
-            <Cloud className="h-5 w-5 text-cyan-400" />
-            <h3 className="font-bold text-sm text-slate-100">Cloud Provider & API Key Manager</h3>
+            <Cloud className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />
+            <h3 className="text-sm font-medium text-text-primary">Cloud providers and API keys</h3>
           </div>
           <button
             onClick={onClose}
-            className="flex h-6 w-6 items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-100"
+            title="Close"
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-text-secondary transition-colors duration-150 hover:bg-white/[0.05] hover:text-text-primary focus-ring"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-4 w-4" strokeWidth={1.5} />
           </button>
         </div>
 
-        {/* Provider Tabs */}
-        <div className="grid grid-cols-4 gap-1.5 rounded-xl bg-black/40 p-1 border border-white/10 text-xs">
+        <div className="grid grid-cols-4 gap-1 rounded-xl border border-border-subtle bg-black/20 p-1">
           {[
             { id: "anthropic", label: "Anthropic" },
             { id: "openai", label: "OpenAI" },
@@ -87,10 +88,10 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
             <button
               key={tab.id}
               onClick={() => handleProviderChange(tab.id as typeof provider)}
-              className={`rounded-lg py-1.5 font-medium transition-colors ${
+              className={`rounded-lg py-1.5 text-xs transition-colors duration-150 focus-ring ${
                 provider === tab.id
-                  ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shadow-[0_0_12px_rgba(56,189,248,0.2)]"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "border border-border-glass bg-surface-solid text-text-primary font-medium"
+                  : "border border-transparent text-text-secondary hover:text-text-primary"
               }`}
             >
               {tab.label}
@@ -98,65 +99,69 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
           ))}
         </div>
 
-        {/* Input Fields */}
         <div className="space-y-3 text-xs">
           <div>
-            <label className="block text-slate-400 mb-1 font-medium">Base Endpoint URL</label>
+            <label className="mb-1 block text-text-secondary">Base endpoint URL</label>
             <input
               type="text"
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
-              className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 font-mono text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
+              className="w-full rounded-xl border border-border-subtle bg-black/20 px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-disabled focus-ring focus:border-border-glass"
             />
           </div>
 
           <div>
-            <label className="block text-slate-400 mb-1 font-medium flex items-center justify-between">
-              <span>API Key</span>
-              <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                <Shield className="h-3 w-3 text-emerald-400" />
+            <label className="mb-1 flex items-center justify-between text-text-secondary">
+              <span>API key</span>
+              <span className="flex items-center gap-1 text-[11px] text-text-disabled">
+                <Shield className="h-3.5 w-3.5 text-signal-success" strokeWidth={1.5} />
                 <span>Protected (0600 SQLite)</span>
               </span>
             </label>
             <div className="relative">
-              <Key className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
+              <Key className="absolute left-3 top-2 h-3.5 w-3.5 text-text-disabled" strokeWidth={1.5} />
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Paste API Key (sk-...)"
-                className="w-full rounded-lg border border-white/10 bg-black/20 pl-9 pr-3 py-2 font-mono text-xs text-slate-200 focus:outline-none focus:border-cyan-400 placeholder:text-slate-600"
+                placeholder="Paste API key"
+                className="w-full rounded-xl border border-border-subtle bg-black/20 py-2 pl-9 pr-3 font-mono text-xs text-text-primary placeholder:text-text-disabled focus-ring focus:border-border-glass"
               />
             </div>
           </div>
         </div>
 
         {statusMsg && (
-          <div className="rounded-lg bg-cyan-500/10 border border-cyan-400/30 p-2.5 text-xs text-cyan-300 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0" />
+          <div
+            className={`flex items-center gap-2 rounded-xl border p-3 text-xs ${
+              isStatusError
+                ? "border-signal-gate/30 bg-signal-gate-bg text-signal-gate"
+                : "border-border-subtle bg-white/[0.03] text-text-secondary"
+            }`}
+          >
+            <AlertCircle className="h-4 w-4 shrink-0" strokeWidth={1.5} />
             <span>{statusMsg}</span>
           </div>
         )}
 
-        {/* Footer */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/10">
-          <span className="text-[10px] font-mono text-slate-500">
+        <div className="flex items-center justify-between border-t border-border-subtle pt-3">
+          <span className="font-mono text-[11px] text-text-disabled">
             Encrypted storage via provider_configs
           </span>
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-3 py-1.5 rounded-lg border border-white/10 text-xs text-slate-400 hover:text-slate-200"
+              className="rounded-xl border border-border-subtle px-3 py-1.5 text-xs text-text-secondary transition-colors duration-150 hover:bg-white/[0.05] hover:text-text-primary focus-ring"
             >
               Cancel
             </button>
             <button
               disabled={saving}
               onClick={handleSave}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-semibold text-xs shadow-[0_0_12px_rgba(56,189,248,0.3)] transition-transform active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl bg-accent px-4 py-1.5 text-xs font-medium text-accent-text transition-[opacity,transform] duration-150 hover:bg-accent-hover active:scale-[0.98] focus-ring disabled:opacity-50"
             >
-              <Check className="h-3.5 w-3.5" />
-              <span>{saving ? "Saving..." : "Save Configuration"}</span>
+              <Check className="h-3.5 w-3.5" strokeWidth={1.5} />
+              <span>{saving ? "Saving" : "Save configuration"}</span>
             </button>
           </div>
         </div>

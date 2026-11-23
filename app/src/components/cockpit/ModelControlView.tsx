@@ -10,7 +10,6 @@ import {
   Check,
   AlertCircle,
   Clock,
-  Sparkles,
 } from "lucide-react";
 import { GlassPanel } from "../common/GlassPanel";
 import type {
@@ -139,19 +138,19 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
     <div className="flex-1 space-y-5 overflow-y-auto p-5 font-sans">
       {/* Top Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-            <Cpu className="h-5 w-5 text-cyan-400" />
-            <span>Model Control & Hugging Face Hub</span>
+        <div className="space-y-1">
+          <h2 className="text-base font-medium text-text-primary flex items-center gap-2">
+            <Cpu className="h-4 w-4 text-accent" strokeWidth={1.5} />
+            <span>Model control and Hugging Face Hub</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Discover, download, and verify local GGUF quantizations directly on your hardware.
+          <p className="text-xs text-text-secondary">
+            Discover, download, and verify local GGUF quantizations directly on your hardware
           </p>
         </div>
 
         {statusMessage && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-cyan-400/40 bg-cyan-500/10 px-3 py-1.5 text-xs text-cyan-300">
-            <AlertCircle className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-1.5 rounded-lg border border-border-subtle bg-white/[0.03] px-3 py-2 text-xs text-text-secondary">
+            <AlertCircle className="h-3.5 w-3.5 text-accent" strokeWidth={1.5} />
             <span>{statusMessage}</span>
           </div>
         )}
@@ -159,9 +158,9 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
 
       {/* Installed Models Section */}
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold tracking-wider uppercase text-slate-400 flex items-center gap-2">
-          <HardDrive className="h-3.5 w-3.5 text-purple-400" />
-          <span>Installed & Registered Models ({installedModels.length})</span>
+        <h3 className="text-xs font-medium text-text-secondary flex items-center gap-2">
+          <HardDrive className="h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
+          <span>Installed and registered models ({installedModels.length})</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -171,48 +170,59 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
               <GlassPanel
                 key={m.id}
                 recipe="pane"
-                className={`p-3.5 space-y-2 border transition-all ${
-                  isSelected ? "border-purple-400 bg-purple-500/10 shadow-[0_0_16px_rgba(168,85,247,0.2)]" : "border-white/10"
-                }`}
+                className="p-4 space-y-3 hairline transition-colors"
               >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-semibold text-xs text-slate-100">{m.name}</h4>
-                    <span className="font-mono text-[10px] text-purple-300 block">
-                      {m.provider_type === "local_gguf" ? "Local GGUF · Vulkan" : "Cloud Remote"}
+                  <div className="space-y-1">
+                    <h4
+                      className={`text-xs font-medium ${
+                        isSelected ? "text-accent" : "text-text-primary"
+                      }`}
+                    >
+                      {m.name}
+                    </h4>
+                    <span
+                      className={`font-mono text-[11px] block ${
+                        m.provider_type === "local_gguf"
+                          ? "text-signal-local-model"
+                          : "text-text-disabled"
+                      }`}
+                    >
+                      {m.provider_type === "local_gguf" ? "Local GGUF · Vulkan" : "Cloud remote"}
                     </span>
                   </div>
-                  <span
-                    className={`rounded px-1.5 py-0.5 text-[9px] font-mono border ${
-                      m.download_status === "ready"
-                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                        : "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
-                    }`}
-                  >
-                    {m.download_status.toUpperCase()}
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-border-subtle bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-text-secondary">
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        m.download_status === "ready" ? "bg-signal-success" : "bg-signal-thinking"
+                      }`}
+                    />
+                    {m.download_status}
                   </span>
                 </div>
 
-                <div className="text-[10px] font-mono text-slate-400 space-y-0.5">
-                  <div>Context Window: {m.context_window} tokens</div>
+                <div className="text-[11px] font-mono text-text-secondary space-y-1">
+                  <div>Context window: {m.context_window} tokens</div>
                   {m.file_size_bytes && <div>Size: {formatBytes(m.file_size_bytes)}</div>}
-                  {m.file_path && <div className="truncate text-slate-500">Path: {m.file_path}</div>}
+                  {m.file_path && (
+                    <div className="truncate text-text-disabled">Path: {m.file_path}</div>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                  <span className="text-[10px] text-slate-500 font-mono">
-                    {m.is_default ? "Default Engine" : "Alternative"}
+                <div className="flex items-center justify-between pt-3 border-t border-border-subtle">
+                  <span className="text-[11px] text-text-disabled font-mono">
+                    {m.is_default ? "Default engine" : "Alternative"}
                   </span>
                   <button
                     onClick={() => onSelectModel?.(m)}
-                    className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                    className={`flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:text-accent ${
                       isSelected
-                        ? "bg-purple-500/30 text-purple-200 border border-purple-400/40"
-                        : "bg-white/5 hover:bg-white/10 text-slate-300"
+                        ? "bg-accent-muted text-accent border border-accent/30"
+                        : "bg-white/[0.03] hover:bg-white/10 text-text-secondary"
                     }`}
                   >
-                    {isSelected && <Check className="h-3 w-3 text-purple-300" />}
-                    <span>{isSelected ? "Active Model" : "Select Engine"}</span>
+                    {isSelected && <Check className="h-3.5 w-3.5 text-accent" strokeWidth={1.5} />}
+                    <span>{isSelected ? "Active model" : "Select engine"}</span>
                   </button>
                 </div>
               </GlassPanel>
@@ -222,32 +232,32 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
       </div>
 
       {/* Hugging Face Hub Search & Download Section */}
-      <div className="space-y-3 pt-2 border-t border-white/10">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-semibold tracking-wider uppercase text-slate-400 flex items-center gap-2">
-            <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
-            <span>Discover GGUF Models on Hugging Face Hub</span>
-          </h3>
-        </div>
+      <div className="space-y-3 pt-2 border-t border-border-subtle">
+        <h3 className="text-xs font-medium text-text-secondary">
+          Discover GGUF models on Hugging Face Hub
+        </h3>
 
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+            <Search
+              className="absolute left-3 top-3 h-4 w-4 text-text-disabled"
+              strokeWidth={1.5}
+            />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search Hugging Face (e.g. 'qwen2.5-coder', 'llama-3.2', 'deepseek')..."
-              className="w-full rounded-xl border border-white/10 bg-black/40 pl-9 pr-4 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 font-sans"
+              placeholder="Search models"
+              className="w-full rounded-xl border border-border-subtle bg-black/40 pl-9 pr-4 py-2 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent font-sans"
             />
           </div>
           <button
             type="submit"
             disabled={isSearching}
-            className="flex items-center gap-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 px-4 py-2 text-xs font-semibold text-slate-950 shadow-[0_0_16px_rgba(56,189,248,0.3)] transition-transform active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl bg-accent hover:bg-accent-hover px-4 py-2 text-xs font-medium text-accent-text transition-colors disabled:opacity-40 focus-visible:outline-none"
           >
-            <span>{isSearching ? "Searching..." : "Search Hub"}</span>
+            <span>{isSearching ? "Searching" : "Search hub"}</span>
           </button>
         </form>
 
@@ -262,81 +272,87 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
             );
 
             return (
-              <GlassPanel key={`${hf.repo_id}-${hf.filename}`} recipe="pane" className="p-3.5 space-y-2.5 border border-white/10">
+              <GlassPanel
+                key={`${hf.repo_id}-${hf.filename}`}
+                recipe="pane"
+                className="p-4 space-y-3 hairline"
+              >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-semibold text-xs text-slate-100 line-clamp-1">{hf.filename}</h4>
-                    <span className="font-mono text-[10px] text-slate-400 truncate block max-w-[200px]">
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-medium text-text-primary line-clamp-1">
+                      {hf.filename}
+                    </h4>
+                    <span className="font-mono text-[11px] text-text-disabled truncate block max-w-[200px]">
                       {hf.repo_id}
                     </span>
                   </div>
-                  <span className="rounded bg-white/10 text-slate-300 font-mono text-[9px] px-1.5 py-0.5 border border-white/15">
+                  <span className="rounded-lg border border-border-subtle bg-white/[0.03] text-text-secondary font-mono text-[11px] px-2 py-1">
                     {hf.quantization}
                   </span>
                 </div>
 
                 {/* Compatibility Badges */}
-                <div className="flex items-center justify-between text-[10px] font-mono">
-                  <span className="text-slate-400">Size: {formatBytes(hf.file_size_bytes)}</span>
+                <div className="flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-text-secondary">Size: {formatBytes(hf.file_size_bytes)}</span>
                   {hf.compatibility === "fits_in_vram" ? (
-                    <span className="text-emerald-400 flex items-center gap-1 font-semibold">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                      Fits in VRAM (Fastest)
+                    <span className="text-text-secondary flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-signal-success" />
+                      Fits in VRAM
                     </span>
                   ) : hf.compatibility === "partial_offload" ? (
-                    <span className="text-amber-400 flex items-center gap-1 font-semibold">
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                      Partial Offload
+                    <span className="text-text-secondary flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-signal-thinking" />
+                      Partial offload
                     </span>
                   ) : (
-                    <span className="text-rose-400 flex items-center gap-1 font-semibold">
-                      <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
-                      CPU Only (Slow)
+                    <span className="text-text-secondary flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-signal-gate" />
+                      CPU only
                     </span>
                   )}
                 </div>
 
                 {/* Download Progress Bar if downloading */}
                 {isDownloading && progress && (
-                  <div className="space-y-1.5 rounded-lg bg-black/40 p-2 border border-cyan-500/20">
-                    <div className="flex justify-between text-[10px] font-mono text-cyan-300">
+                  <div className="space-y-2 rounded-lg border border-border-subtle bg-black/30 p-3">
+                    <div className="flex justify-between text-[11px] font-mono text-text-secondary tabular">
                       <span>{(progress.progressFraction * 100).toFixed(1)}%</span>
                       <span>
                         {(progress.speedBytesPerSec / (1024 * 1024)).toFixed(1)} MB/s · ETA: {progress.etaSeconds}s
                       </span>
                     </div>
-                    <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                    <div className="h-1.5 w-full rounded-lg bg-white/[0.06] overflow-hidden">
                       <div
-                        className="h-full bg-cyan-400 transition-all duration-300 shadow-[0_0_8px_rgba(56,189,248,0.8)]"
+                        className="h-full bg-accent"
                         style={{ width: `${Math.round(progress.progressFraction * 100)}%` }}
                       />
                     </div>
-                    <div className="text-[9px] text-slate-400 font-mono text-right flex items-center justify-end gap-1">
-                      <Clock className="h-2.5 w-2.5 text-cyan-400" />
-                      <span>Streaming SHA-256 Pipeline...</span>
+                    <div className="text-[11px] text-text-disabled font-mono flex items-center justify-end gap-1">
+                      <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      <span>Streaming SHA-256 pipeline</span>
                     </div>
                   </div>
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex items-center justify-between pt-1 border-t border-white/5">
-                  <span className="text-[10px] font-mono text-slate-500">
+                <div className="flex items-center justify-between pt-3 border-t border-border-subtle">
+                  <span className="text-[11px] font-mono text-text-disabled">
                     Est. VRAM: ~{(hf.vram_required_mb / 1024).toFixed(1)} GB
                   </span>
 
                   {isInstalled ? (
-                    <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-400">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-1.5 text-[11px] font-medium text-signal-success">
+                      <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                       <span>Ready</span>
                     </span>
                   ) : isDownloading ? (
-                    <span className="text-[11px] font-mono text-cyan-300 animate-pulse">Downloading...</span>
+                    <span className="text-[11px] font-mono text-text-secondary">Downloading</span>
                   ) : (
                     <button
                       onClick={() => handleDownload(hf)}
-                      className="flex items-center gap-1 rounded-lg bg-cyan-400 hover:bg-cyan-300 px-3 py-1 text-xs font-semibold text-slate-950 shadow-[0_0_12px_rgba(56,189,248,0.3)] transition-transform active:scale-95"
+                      className="flex items-center gap-1.5 rounded-lg bg-accent hover:bg-accent-hover px-3 py-1.5 text-xs font-medium text-accent-text transition-colors focus-visible:outline-none"
                     >
-                      <Download className="h-3 w-3" />
+                      <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
                       <span>Download GGUF</span>
                     </button>
                   )}

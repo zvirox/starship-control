@@ -249,40 +249,35 @@ export const CockpitView: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen w-screen flex-col bg-[#0B0D11] text-slate-100 antialiased select-none font-sans overflow-hidden">
-      {/* 1. Clean Top Header */}
-      <header className="flex h-13 items-center justify-between border-b border-white/[0.08] px-4 bg-[#0E1015]/95 backdrop-blur-md">
-        {/* Left: Logo & Brand */}
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-canvas font-sans text-text-primary antialiased select-none">
+      {/* 1. Top header */}
+      <header className="flex h-13 items-center justify-between border-b border-border-subtle bg-raised px-4">
+        {/* Left: logo and brand */}
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/[0.05] border border-white/[0.08]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-border-subtle bg-white/[0.05]">
             <img src="/logo.png" alt="Starship Logo" className="h-5 w-5 object-contain" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-slate-100 tracking-tight">Starship Control</span>
-            <span className="text-[10px] font-medium text-slate-400 bg-white/[0.05] border border-white/[0.08] px-1.5 py-0.5 rounded-md">
-              {systemInfo?.version ? `v${systemInfo.version}` : "v0.1.0"}
-            </span>
+            <span className="text-sm font-medium text-text-primary">Starship Control</span>
+            <span className="quiet-chip tabular">{systemInfo?.version ? `v${systemInfo.version}` : "v0.1.0"}</span>
           </div>
         </div>
 
-        {/* Center: Model Selector & Status */}
-        <div className="flex items-center gap-2.5">
-          {/* Model Dropdown */}
+        {/* Center: model selector and status */}
+        <div className="flex items-center gap-2">
           <div className="relative">
             <button
               onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-              className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-200 hover:bg-white/[0.06] hover:border-white/[0.15] transition-colors cursor-pointer"
+              className="flex items-center gap-2 rounded-xl border border-border-subtle bg-white/[0.03] px-3 py-1.5 text-xs text-text-primary transition-colors duration-150 hover:bg-white/[0.05] focus-ring cursor-pointer"
             >
-              <Cpu className="h-3.5 w-3.5 text-sky-400" />
-              <span className="font-medium">{activeModel?.name || "Select Model"}</span>
-              <ChevronDown className="h-3 w-3 text-slate-400" />
+              <Cpu className="h-3.5 w-3.5 text-accent" strokeWidth={1.5} />
+              <span className="font-medium">{activeModel?.name || "Select model"}</span>
+              <ChevronDown className="h-3.5 w-3.5 text-text-disabled" strokeWidth={1.5} />
             </button>
 
             {modelDropdownOpen && (
-              <div className="absolute left-0 mt-1 w-64 rounded-xl border border-white/[0.1] bg-[#14171E] p-1.5 shadow-2xl z-50">
-                <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                  Select Engine
-                </div>
+              <div className="absolute left-0 z-50 mt-1 w-64 rounded-xl border border-border-subtle bg-surface-solid p-2">
+                <div className="px-2 py-1 text-[11px] text-text-disabled">Select engine</div>
                 {models.map((m) => (
                   <button
                     key={m.id}
@@ -290,54 +285,53 @@ export const CockpitView: React.FC = () => {
                       setActiveModel(m);
                       setModelDropdownOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs text-left cursor-pointer ${
+                    className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs transition-colors duration-150 focus-ring cursor-pointer ${
                       activeModel?.id === m.id
-                        ? "bg-sky-500/15 text-sky-300 font-medium"
-                        : "text-slate-300 hover:bg-white/[0.05]"
+                        ? "bg-accent-muted text-accent font-medium"
+                        : "text-text-secondary hover:bg-white/[0.05]"
                     }`}
                   >
                     <span>{m.name}</span>
-                    <span className="text-[10px] text-slate-500 capitalize">{m.provider_type.replace("cloud_", "")}</span>
+                    <span className="text-[11px] text-text-disabled capitalize">{m.provider_type.replace("cloud_", "")}</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Status Dot */}
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 bg-white/[0.02] border border-white/[0.06] px-2.5 py-1.5 rounded-xl">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            <span>Ready</span>
-          </div>
+          <span className="quiet-chip">
+            <span className="h-1.5 w-1.5 rounded-full bg-signal-success" />
+            Ready
+          </span>
         </div>
 
-        {/* Right Actions */}
+        {/* Right actions */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsSettingsOpen(true)}
-            title="Model Settings & API Keys"
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] text-slate-300 transition-colors cursor-pointer"
+            title="Model settings and API keys"
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border-subtle bg-white/[0.03] text-text-secondary transition-colors duration-150 hover:bg-white/[0.05] hover:text-text-primary focus-ring cursor-pointer"
           >
-            <Settings className="h-3.5 w-3.5" />
+            <Settings className="h-4 w-4" strokeWidth={1.5} />
           </button>
 
           <button
             onClick={handleToggleHud}
-            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs transition-colors cursor-pointer ${
+            className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition-colors duration-150 focus-ring cursor-pointer ${
               hudActive
-                ? "border-sky-400/50 bg-sky-500/15 text-sky-200"
-                : "border-white/[0.08] bg-white/[0.03] text-slate-300 hover:bg-white/[0.08]"
+                ? "border-accent/50 bg-accent-muted text-accent"
+                : "border-border-subtle bg-white/[0.03] text-text-secondary hover:bg-white/[0.05]"
             }`}
           >
-            <ExternalLink className="h-3.5 w-3.5 text-sky-400" />
-            <span>{hudActive ? "HUD Active" : "Launch HUD"}</span>
+            <ExternalLink className="h-4 w-4" strokeWidth={1.5} />
+            <span>{hudActive ? "HUD active" : "Launch HUD"}</span>
           </button>
         </div>
       </header>
 
-      {/* 2. Simplified Clean Navigation Bar */}
-      <nav className="flex h-11 items-center justify-between border-b border-white/[0.06] px-4 bg-[#0B0D11]">
-        <div className="flex items-center gap-1 text-xs">
+      {/* 2. Navigation strip */}
+      <nav className="flex h-11 items-center justify-between gap-4 border-b border-border-subtle bg-canvas px-4">
+        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto text-xs [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {[
             { id: "chat", label: "Chat", icon: MessageSquare },
             { id: "timeline", label: "Timeline", icon: Clock },
@@ -355,28 +349,26 @@ export const CockpitView: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setNavTab(tab.id as typeof navTab)}
-                className={`flex items-center gap-2 rounded-lg px-3 py-1.5 transition-colors cursor-pointer ${
+                className={`flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 transition-colors duration-150 focus-ring cursor-pointer ${
                   isActive
-                    ? "bg-white/[0.08] text-slate-100 font-medium"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]"
+                    ? "bg-white/[0.08] text-text-primary font-medium"
+                    : "text-text-secondary hover:bg-white/[0.03] hover:text-text-primary"
                 }`}
               >
-                <Icon className="h-3.5 w-3.5 text-slate-400" />
-                <span>{tab.label}</span>
+                <Icon className="h-3.5 w-3.5" strokeWidth={1.5} />
+                <span className="whitespace-nowrap">{tab.label}</span>
               </button>
             );
           })}
         </div>
 
-        <div className="flex items-center gap-3 text-xs text-slate-500">
-          <span>Local First Engine</span>
-        </div>
+        <span className="quiet-chip shrink-0">Local-first engine</span>
       </nav>
 
-      {/* 3. Main Workspace Area */}
+      {/* 3. Main workspace area */}
       {navTab === "timeline" ? (
-        <div className="flex-1 overflow-y-auto p-6 bg-[#0B0D11]">
-          <div className="max-w-5xl mx-auto w-full">
+        <div className="flex-1 overflow-y-auto bg-canvas p-6">
+          <div className="mx-auto w-full max-w-5xl">
             <MissionTimelineView
               missionId={activeMissionId}
               missionTitle={activePlan?.title || missions.find((m) => m.id === activeMissionId)?.title}
@@ -386,8 +378,8 @@ export const CockpitView: React.FC = () => {
           </div>
         </div>
       ) : navTab === "history" ? (
-        <div className="flex-1 overflow-y-auto p-6 bg-[#0B0D11]">
-          <div className="max-w-5xl mx-auto w-full">
+        <div className="flex-1 overflow-y-auto bg-canvas p-6">
+          <div className="mx-auto w-full max-w-5xl">
             <MissionHistoryView
               onReplayMission={(mId) => {
                 setActiveMissionId(mId);
@@ -397,8 +389,8 @@ export const CockpitView: React.FC = () => {
           </div>
         </div>
       ) : navTab === "workflows" ? (
-        <div className="flex-1 overflow-y-auto p-6 bg-[#0B0D11]">
-          <div className="max-w-5xl mx-auto w-full">
+        <div className="flex-1 overflow-y-auto bg-canvas p-6">
+          <div className="mx-auto w-full max-w-5xl">
             <PipelineWorkflowView
               missionId={activeMissionId}
               activePlan={activePlan}
@@ -425,59 +417,54 @@ export const CockpitView: React.FC = () => {
       ) : navTab === "activity" ? (
         <AuditLogView />
       ) : (
-        /* Chat View with Sidebar */
+        /* Chat view with mission sidebar */
         <div className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar: Conversations (260px) */}
-          <aside className="w-[260px] border-r border-white/[0.06] bg-[#0E1015]/60 flex flex-col justify-between p-3 select-none">
+          {/* Left sidebar: missions (260px) */}
+          <aside className="flex w-[260px] shrink-0 flex-col justify-between border-r border-border-subtle bg-raised/60 p-3 select-none">
             <div className="space-y-3">
-              {/* New Chat Button */}
               <button
                 onClick={handleCreateMission}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] px-3 py-2 text-xs font-medium text-slate-100 transition-colors cursor-pointer"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-border-subtle bg-white/[0.05] px-3 py-2 text-xs font-medium text-text-primary transition-colors duration-150 hover:bg-white/[0.08] focus-ring cursor-pointer"
               >
-                <Plus className="h-3.5 w-3.5 text-sky-400" />
-                <span>New Chat</span>
+                <Plus className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />
+                <span>New mission</span>
               </button>
 
-              {/* Search */}
               <div className="relative">
-                <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-500" />
+                <Search className="absolute left-3 top-2 h-4 w-4 text-text-disabled" strokeWidth={1.5} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search chats..."
-                  className="w-full rounded-xl border border-white/[0.06] bg-black/20 pl-8 pr-2 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-white/[0.15]"
+                  placeholder="Search"
+                  className="w-full rounded-xl border border-border-subtle bg-black/20 py-1.5 pl-9 pr-3 text-xs text-text-primary placeholder:text-text-disabled focus-ring focus:border-border-glass"
                 />
               </div>
 
-              {/* Conversation List */}
-              <div className="space-y-1 overflow-y-auto max-h-[calc(100vh-250px)]">
+              <div className="max-h-[calc(100vh-250px)] space-y-1 overflow-y-auto">
                 {filteredMissions.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-slate-500">
-                    No conversations yet
-                  </div>
+                  <div className="py-6 text-center text-xs text-text-disabled">No missions yet</div>
                 ) : (
                   filteredMissions.map((m) => (
                     <div
                       key={m.id}
                       onClick={() => setActiveMissionId(m.id)}
-                      className={`group flex items-center justify-between rounded-xl px-2.5 py-2 text-xs cursor-pointer transition-colors ${
+                      className={`group flex cursor-pointer items-center justify-between rounded-xl px-2 py-2 text-xs transition-colors duration-150 ${
                         activeMissionId === m.id
-                          ? "bg-white/[0.08] text-slate-100 font-medium"
-                          : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.03]"
+                          ? "bg-white/[0.08] text-text-primary font-medium"
+                          : "text-text-secondary hover:bg-white/[0.03] hover:text-text-primary"
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <MessageSquare className="h-3.5 w-3.5 shrink-0 text-slate-500 group-hover:text-slate-400" />
-                        <span className="truncate">{m.title || "Untitled Chat"}</span>
+                        <MessageSquare className="h-3.5 w-3.5 shrink-0 text-text-disabled" strokeWidth={1.5} />
+                        <span className="truncate">{m.title || "Untitled mission"}</span>
                       </div>
                       <button
                         onClick={(e) => handleDeleteMission(m.id, e)}
-                        title="Delete chat"
-                        className="opacity-0 group-hover:opacity-100 text-slate-500 hover:text-rose-400 p-1 rounded transition-opacity cursor-pointer"
+                        title="Delete mission"
+                        className="rounded p-1 text-text-disabled opacity-0 transition-opacity duration-150 hover:text-signal-gate group-hover:opacity-100 focus-ring cursor-pointer"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                       </button>
                     </div>
                   ))
@@ -485,25 +472,23 @@ export const CockpitView: React.FC = () => {
               </div>
             </div>
 
-            {/* Sidebar Bottom: Connected Apps status */}
-            <div className="border-t border-white/[0.06] pt-3 text-[11px] text-slate-400 flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <div className="flex items-center justify-between border-t border-border-subtle pt-3 text-[11px] text-text-secondary">
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-signal-success" />
                 <span>Ecosystem active</span>
               </span>
               <button
                 onClick={() => setNavTab("apps")}
-                className="text-slate-400 hover:text-slate-200 text-[11px] underline cursor-pointer"
+                className="text-[11px] text-text-secondary underline hover:text-text-primary focus-ring cursor-pointer"
               >
                 View apps
               </button>
             </div>
           </aside>
 
-          {/* Center: Chat Stream & Action Cards */}
-          <main className="flex-1 flex flex-col justify-between overflow-hidden bg-[#0B0D11]">
-            <div className="flex-1 flex flex-col overflow-y-auto p-4 max-w-4xl mx-auto w-full">
-              {/* Pending Action Approval Card if required */}
+          {/* Center: chat stream and action cards */}
+          <main className="flex min-w-0 flex-1 flex-col justify-between overflow-hidden bg-canvas">
+            <div className="mx-auto flex w-full min-w-0 max-w-4xl flex-1 flex-col overflow-y-auto p-4">
               {(() => {
                 const pendingStep =
                   activePlan?.steps.find(
@@ -538,7 +523,6 @@ export const CockpitView: React.FC = () => {
                 );
               })()}
 
-              {/* Chat Canvas */}
               <ChatCanvas
                 missionId={activeMissionId}
                 isStreaming={isStreaming}
@@ -548,9 +532,8 @@ export const CockpitView: React.FC = () => {
               />
             </div>
 
-            {/* Modern Floating Bottom Input Bar */}
-            <div className="p-4 max-w-4xl mx-auto w-full">
-              <div className="relative flex items-center rounded-2xl border border-white/[0.1] bg-[#12151B] p-2 shadow-lg focus-within:border-sky-500/50 transition-colors">
+            <div className="mx-auto w-full min-w-0 max-w-4xl p-4">
+              <div className="relative flex items-center rounded-2xl border border-border-subtle bg-surface-solid p-2 transition-colors duration-150 focus-within:border-accent/50">
                 <input
                   ref={inputRef}
                   type="text"
@@ -563,32 +546,27 @@ export const CockpitView: React.FC = () => {
                       handleSendPrompt();
                     }
                   }}
-                  placeholder={
-                    isStreaming
-                      ? "Generating response..."
-                      : "Type your message or instruction (e.g. 'Record screen demo and clean vocal track')..."
-                  }
-                  className="flex-1 bg-transparent px-3 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-50"
+                  placeholder={isStreaming ? "Generating response" : "Message or instruction"}
+                  className="flex-1 bg-transparent px-3 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none disabled:opacity-50"
                 />
 
                 <button
                   disabled={isStreaming || !prompt.trim()}
                   onClick={() => handleSendPrompt()}
-                  className="flex h-8 items-center gap-1.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] text-slate-100 px-3.5 text-xs font-medium transition-colors disabled:opacity-30 cursor-pointer"
+                  className="flex h-8 items-center gap-2 rounded-xl bg-white/[0.08] px-3 text-xs font-medium text-text-primary transition-colors duration-150 hover:bg-white/[0.12] focus-ring disabled:opacity-40 cursor-pointer"
                 >
-                  <Send className="h-3.5 w-3.5 text-sky-400" />
-                  <span>{isStreaming ? "Thinking..." : "Send"}</span>
+                  <Send className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />
+                  <span>{isStreaming ? "Thinking" : "Send"}</span>
                 </button>
               </div>
             </div>
           </main>
 
-          {/* Right Topology Drawer */}
+          {/* Right topology drawer */}
           <AppTopologyDrawer />
         </div>
       )}
 
-      {/* Model Settings Modal */}
       <ModelSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );

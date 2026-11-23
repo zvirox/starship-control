@@ -93,14 +93,16 @@ To maintain complete visual uniformity across the Linux software suite, Starship
 
 | Token | Size | Line Height | Weight | Font Family | Typical Usage |
 |---|---|---|---|---|---|
-| `display.lg` | 1.75rem (28px) | 1.20 | 700 | Familjen Grotesk | Cockpit hero titles ("Starship Control") |
-| `display.md` | 1.375rem (22px)| 1.25 | 700 | Familjen Grotesk | View headers ("Model Control", "Topology") |
-| `heading` | 1.125rem (18px)| 1.35 | 600 | Familjen Grotesk | Card headers, mission session titles |
+| `display.lg` | 1.75rem (28px) | 1.20 | 500 | Familjen Grotesk | Cockpit hero titles ("Starship Control") |
+| `display.md` | 1.375rem (22px)| 1.25 | 500 | Familjen Grotesk | View headers ("Model Control", "Topology") |
+| `heading` | 1.125rem (18px)| 1.35 | 500 | Familjen Grotesk | Card headers, mission session titles |
 | `body-md` | 0.9375rem (15px)| 1.50 | 400 | Familjen Grotesk | Chat body, agent explanations, descriptions |
 | `body-sm` | 0.8125rem (13px)| 1.45 | 400 | Familjen Grotesk | Meta labels, secondary status notes |
-| `label` | 0.75rem (12px) | 1.30 | 600 | Familjen Grotesk | Uppercase overline badges (`TIER 2`, `GGUF`) |
+| `label` | 0.75rem (12px) | 1.30 | 500 | Familjen Grotesk | Sentence-case meta labels and chips (`Tier 2`, `GGUF`) |
 | `mono-md` | 0.9375rem (15px)| 1.30 | 500 | JetBrains Mono | Memory gauges, token metrics, timers |
 | `mono-sm` | 0.8125rem (13px)| 1.35 | 400 | JetBrains Mono | Socket paths, JSON diff values, hashes |
+
+*Type law:* Hierarchy comes from size and color, not weight. Weights are 400 and 500; 600 is reserved for rare emphasis. No 700–900 headings, no gradient text, no negative tracking below 16px, no italic emphasis, and no uppercase text with wide tracking. All labels, badges and table headers use sentence case. The smallest text in any dense panel is 11px.
 
 ---
 
@@ -116,7 +118,9 @@ To maintain complete visual uniformity across the Linux software suite, Starship
 | `r.sm` | 10px | Buttons, inputs, dropdown selectors |
 | `r.md` | 14px | Task Sheet step cards, tool output boxes |
 | `r.lg` | 20px | Floating HUD capsule, dialog modals, Cockpit panels |
-| `r.full` | 999px | Pills, model switch chips, icon buttons |
+| `r.full` | 999px | The HUD capsule and genuinely circular status dots only |
+
+*Radius law:* Controls use `r.sm`, cards `r.md`, panels `r.lg`. Nested radius equals the outer radius minus the padding between them, never below 4px. Status chips, counts and badges use `r.xs` or `r.sm` with quiet text, not full pills.
 
 ### 4.3 Glass Surface Recipes
 
@@ -126,7 +130,7 @@ To maintain complete visual uniformity across the Linux software suite, Starship
 | **Float** | `surface.glass-strong` | `blur(32px) saturate(190%)` | 1px `border.glass` | `0 8px 32px -4px rgba(0,0,0,0.50)` | Floating HUD, approval action cards |
 | **Modal** | `surface.glass-strong` | `blur(36px)` | 1px `border.subtle` | `0 16px 48px -8px rgba(0,0,0,0.65)` | Model download modal, diff reviewers |
 
-*Specular Highlight Rule:* All `Float` and `Modal` recipes include an inner specular gradient overlay: `linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 45%)`.
+*Surface law:* Depth comes from surface steps and quiet hairlines. No colored glows, neon borders, specular gradient overlays or radial color washes. The frosted fill and blur are the effect; the scrim floor keeps text readable.
 
 ---
 
@@ -236,5 +240,7 @@ Implemented with `framer-motion` physics-based springs:
 | `motion.spring`| `type: "spring", stiffness: 320, damping: 26` | HUD expansion from 76px to 240px, modal popups |
 | `motion.slide` | `type: "spring", stiffness: 280, damping: 24` | Approval card slide-in, toast appearance |
 | `motion.pulse` | `duration: 1.6s, repeat: Infinity, ease: "easeInOut"` | Thinking emblem breath (opacity `0.45` to `1.0`) |
+
+*Motion law:* One easing curve (`cubic-bezier(0.22, 1, 0.36, 1)`) and a few short durations. Loop-free feedback only: hover and press change color, surface, border or opacity; menus fade and rise a few pixels. Never animate width, height, margins or large blurs. `animate-pulse` and `animate-ping` are reserved for the active agent stream and the critical-health state; no `transition-all`, bouncy springs or `hover:scale` on cards.
 
 *Accessibility:* When `@media (prefers-reduced-motion: reduce)` is active, all layout springs snap instantly (`duration: 0s`), and opacity transitions are limited to `≤100ms`.
