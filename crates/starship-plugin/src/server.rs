@@ -139,6 +139,12 @@ impl PluginBridge {
         });
     }
 
+    /// Returns a reference to the application manifest.
+    #[must_use]
+    pub fn manifest(&self) -> &AppManifest {
+        &self.manifest
+    }
+
     /// Writes application manifest to `$XDG_DATA_HOME/starship/plugins/<app-id>.json`.
     pub fn publish_manifest(&self) -> io::Result<PathBuf> {
         write_manifest(&self.manifest)
@@ -147,6 +153,12 @@ impl PluginBridge {
     /// Removes application manifest from `$XDG_DATA_HOME/starship/plugins/<app-id>.json`.
     pub fn unpublish_manifest(&self) -> io::Result<()> {
         remove_manifest(&self.manifest.app_id)
+    }
+
+    /// Convenience synchronous method to dispatch a JSON-RPC request without streaming progress.
+    #[must_use]
+    pub fn handle_request(&self, line: &str) -> Option<String> {
+        self.handle_jsonrpc_line(line, |_| {})
     }
 
     /// Processes a single line of JSON-RPC protocol message, returning the serialized response if applicable.
