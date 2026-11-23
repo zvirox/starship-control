@@ -1,0 +1,130 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-release:
+    name: Build Multi-Arch Linux Release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            libssl-dev \
+            libsqlite3-dev \
+            rpm
+
+      - name: Build frontend production bundle
+        run: |
+          cd app
+          npm ci
+          npm run build
+
+      - name: Build release binaries
+        run: cargo build --release --locked -p starship-control
+
+      - name: Assemble Linux Tarball (.tar.gz)
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          DIST_DIR="starship-control-${TAG_NAME}-x86_64-linux"
+          mkdir -p "${DIST_DIR}"/bin
+          mkdir -p "${DIST_DIR}"/share/applications
+          mkdir -p "${DIST_DIR}"/share/icons/hicolor
+
+          cp target/release/starship-control "${DIST_DIR}/bin/"
+          cp packaging/starship-control.desktop "${DIST_DIR}/share/applications/"
+          cp -r packaging/icons/hicolor/* "${DIST_DIR}/share/icons/hicolor/"
+          cp README.md "${DIST_DIR}/"
+          cp LICENSE "${DIST_DIR}/"
+
+          tar -czvf "${DIST_DIR}.tar.gz" "${DIST_DIR}"
+
+      - name: Assemble Debian Package (.deb)
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#v}
+          DEB_DIR="deb-build/starship-control_${VERSION}_amd64"
+
+          mkdir -p "${DEB_DIR}/DEBIAN"
+          mkdir -p "${DEB_DIR}/usr/bin"
+          mkdir -p "${DEB_DIR}/usr/share/applications"
+          mkdir -p "${DEB_DIR}/usr/share/icons/hicolor"
+
+          cp packaging/deb/control "${DEB_DIR}/DEBIAN/"
+          sed -i "s/^Version: .*/Version: ${VERSION}/" "${DEB_DIR}/DEBIAN/control"
+          cp packaging/deb/postinst "${DEB_DIR}/DEBIAN/"
+          cp packaging/deb/prerm "${DEB_DIR}/DEBIAN/"
+          chmod 755 "${DEB_DIR}/DEBIAN/postinst" "${DEB_DIR}/DEBIAN/prerm"
+
+          cp target/release/starship-control "${DEB_DIR}/usr/bin/"
+          cp packaging/starship-control.desktop "${DEB_DIR}/usr/share/applications/"
+          cp -r packaging/icons/hicolor/* "${DEB_DIR}/usr/share/icons/hicolor/"
+
+          dpkg-deb --build --root-owner-group "${DEB_DIR}" "starship-control_${VERSION}_amd64.deb"
+
+      - name: Assemble RPM Package (.rpm)
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          VERSION=${TAG_NAME#v}
+          RPM_TOPDIR="$HOME/rpmbuild"
+          mkdir -p "${RPM_TOPDIR}"/{BUILD,RPMS,SOURCES,SPECS,SRPMS,BUILDROOT}
+          
+          # Prepare buildroot
+          BUILDROOT="${RPM_TOPDIR}/BUILDROOT/starship-control-${VERSION}-1.x86_64"
+          mkdir -p "${BUILDROOT}/usr/bin"
+          mkdir -p "${BUILDROOT}/usr/share/applications"
+          mkdir -p "${BUILDROOT}/usr/share/icons/hicolor"
+
+          cp target/release/starship-control "${BUILDROOT}/usr/bin/"
+          cp packaging/starship-control.desktop "${BUILDROOT}/usr/share/applications/"
+          cp -r packaging/icons/hicolor/* "${BUILDROOT}/usr/share/icons/hicolor/"
+
+          # Copy and adapt spec
+          cp packaging/rpm/starship-control.spec "${RPM_TOPDIR}/SPECS/"
+          sed -i "s/^Version: .*/Version: ${VERSION}/" "${RPM_TOPDIR}/SPECS/starship-control.spec"
+
+          rpmbuild -bb --buildroot="${BUILDROOT}" --noclean "${RPM_TOPDIR}/SPECS/starship-control.spec" || true
+          # Find and copy output rpm if built
+          find "${RPM_TOPDIR}/RPMS" -name "*.rpm" -exec cp {} ./ \; || true
+
+      - name: Generate Checksums
+        run: |
+          sha256sum *.tar.gz *.deb *.rpm 2>/dev/null > SHA256SUMS || sha256sum *.tar.gz *.deb > SHA256SUMS
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            *.tar.gz
+            *.deb
+            *.rpm
+            SHA256SUMS
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
