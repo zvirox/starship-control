@@ -32,10 +32,12 @@ fn default_mcp_cli_args() -> Vec<String> {
 pub struct AppManifest {
     #[serde(default = "default_schema_version")]
     pub schema_version: String,
+    #[serde(alias = "id")]
     pub app_id: String,
     #[serde(alias = "displayName")]
     pub name: String,
     pub version: String,
+    #[serde(default)]
     pub binary_path: String,
     #[serde(default)]
     pub launch_args: Vec<String>,
@@ -221,6 +223,18 @@ mod tests {
         let parsed = AppManifest::from_json(&json).expect("from json");
         assert_eq!(manifest, parsed);
         assert_eq!(parsed.name, "Easy Edits Pro");
+
+        // Test backward-compatibility with "id" alias and optional fields
+        let legacy_json = serde_json::json!({
+            "id": "atp",
+            "name": "Agentic Tuneup Pro",
+            "version": "0.1.0",
+            "socketPath": "/run/user/1000/starship/bridges/atp.sock"
+        });
+        let legacy_parsed: AppManifest = serde_json::from_value(legacy_json).expect("parse legacy");
+        assert_eq!(legacy_parsed.app_id, "atp");
+        assert_eq!(legacy_parsed.binary_path, "");
+        assert_eq!(legacy_parsed.schema_version, "1.0");
     }
 
     #[test]
