@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/zvirox/starship-control/releases/tag/v0.1.0-alpha.2"><img src="https://img.shields.io/badge/Release-v0.1.0--alpha.2-blue.svg" alt="Release" /></a>
+  <a href="https://github.com/zvirox/starship-control/releases/tag/v0.1.0-alpha.3"><img src="https://img.shields.io/badge/Release-v0.1.0--alpha.3-blue.svg" alt="Release" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License" /></a>
   <a href="#tech-stack"><img src="https://img.shields.io/badge/Platform-Linux_(Wayland_&_X11)-orange.svg" alt="Platform" /></a>
   <a href="#tech-stack"><img src="https://img.shields.io/badge/Rust-1.85+-informational.svg" alt="Rust" /></a>
@@ -147,8 +147,8 @@ makepkg -si
 Download the latest `.deb` package from the [Releases page](https://github.com/zvirox/starship-control/releases):
 
 ```bash
-wget https://github.com/zvirox/starship-control/releases/download/v0.1.0-alpha.2/starship-control_0.1.0~alpha.2_amd64.deb
-sudo apt install ./starship-control_0.1.0~alpha.2_amd64.deb
+wget https://github.com/zvirox/starship-control/releases/download/v0.1.0-alpha.3/starship-control_0.1.0.alpha.3_amd64.deb
+sudo apt install ./starship-control_0.1.0.alpha.3_amd64.deb
 ```
 
 ### Generic Linux Tarball
@@ -156,9 +156,9 @@ sudo apt install ./starship-control_0.1.0~alpha.2_amd64.deb
 Download and unpack the portable archive:
 
 ```bash
-wget https://github.com/zvirox/starship-control/releases/download/v0.1.0-alpha.2/starship-control-v0.1.0-alpha.2-x86_64-linux.tar.gz
-tar -xzf starship-control-v0.1.0-alpha.2-x86_64-linux.tar.gz
-cd starship-control-v0.1.0-alpha.2-x86_64-linux
+wget https://github.com/zvirox/starship-control/releases/download/v0.1.0-alpha.3/starship-control-v0.1.0-alpha.3-x86_64-linux.tar.gz
+tar -xzf starship-control-v0.1.0-alpha.3-x86_64-linux.tar.gz
+cd starship-control-v0.1.0-alpha.3-x86_64-linux
 ./bin/starship-control
 ```
 
