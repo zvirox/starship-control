@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+/* Self-hosted variable fonts (DESIGN.md §3, SIL OFL 1.1 — see /fonts/OFL-*.txt) */
+@font-face {
+  font-family: "Familjen Grotesk";
+  src: url("/fonts/FamiljenGrotesk-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+}
+
 @theme {
   --color-canvas: #080B10;
   --color-raised: #0E131B;
