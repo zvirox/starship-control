@@ -61,11 +61,11 @@ Starship Control does not rely on third-party cloud servers to interact with you
 
 Starship Control coordinates a complete suite of specialized Linux desktop tools:
 
-- **Screen Studio Pro**: High-framerate desktop, window, and webcam recording on Wayland and X11.
-- **Easy Edits Pro**: Non-destructive multitrack video editing, color adjustment, and export.
-- **Audio Labs Pro**: Local voice recording, multitrack audio mixing, and speech synthesis.
-- **Agentic Tuneup Pro**: System performance monitoring, cache cleanup, and package management with byte-for-byte rollback.
-- **Net Watch Pro**: Real-time network speed tracking and per-application data usage monitoring.
+- **Screen Studio Pro** ([Repository](https://github.com/zvirox/screen-studio-pro) · [Releases](https://github.com/zvirox/screen-studio-pro/releases)): High-framerate desktop, window, and webcam recording on Wayland and X11.
+- **Easy Edits Pro** ([Repository](https://github.com/zvirox/easy-edits-pro) · [Releases](https://github.com/zvirox/easy-edits-pro/releases)): Non-destructive multitrack video editing, color adjustment, and export.
+- **Audio Labs Pro** ([Repository](https://github.com/zvirox/audio-labs-pro) · [Releases](https://github.com/zvirox/audio-labs-pro/releases)): Local voice recording, multitrack audio mixing, and speech synthesis.
+- **Agentic Tuneup Pro** ([Repository](https://github.com/zvirox/agentic-tuneup-pro) · [Releases](https://github.com/zvirox/agentic-tuneup-pro/releases)): System performance monitoring, cache cleanup, and package management with byte-for-byte rollback.
+- **Net Watch Pro** ([Repository](https://github.com/zvirox/net-watch-pro) · [Releases](https://github.com/zvirox/net-watch-pro/releases)): Real-time network speed tracking and per-application data usage monitoring.
 
 You can use each app independently as a standalone program. When paired with Starship Control, they work together as a cohesive creative and maintenance workstation.
 
