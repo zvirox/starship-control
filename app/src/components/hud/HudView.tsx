@@ -15,8 +15,11 @@ import {
   Minus,
   CornerDownLeft,
   AlertTriangle,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { GlassPanel } from "../common/GlassPanel";
+import { useThemeStore } from "../../stores/themeStore";
 import type {
   ApprovalNeededEvent,
   ApproveStepResponse,
@@ -40,6 +43,7 @@ const APP_NAMES: Record<string, string> = {
 };
 
 export const HudView: React.FC = () => {
+  const { theme, toggleTheme } = useThemeStore();
   const [expanded, setExpanded] = useState<boolean>(false);
   const [prompt, setPrompt] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
@@ -342,7 +346,7 @@ export const HudView: React.FC = () => {
         >
           {/* Brand Emblem & Model Selection Dropdown */}
           <div className="relative flex items-center gap-2 shrink-0">
-            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-white/[0.05] border border-border-subtle overflow-hidden">
+            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-surface-solid border border-border-subtle overflow-hidden">
               <img src="/logo.png" alt="Starship Control" className="h-5 w-5 object-contain" />
             </div>
 
@@ -368,7 +372,7 @@ export const HudView: React.FC = () => {
             <button
               type="button"
               onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-              className="flex items-center gap-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.05] px-2 py-1 border border-border-subtle text-xs text-text-secondary transition-colors cursor-pointer"
+              className="flex items-center gap-1 rounded-lg bg-surface-solid hover:bg-raised px-2 py-1 border border-border-subtle text-xs text-text-secondary transition-colors cursor-pointer"
             >
               <span
                 className={`h-1.5 w-1.5 rounded-full ${
@@ -383,7 +387,7 @@ export const HudView: React.FC = () => {
 
             {/* Model Dropdown Menu */}
             {modelDropdownOpen && (
-              <div className="absolute left-0 top-9 w-52 rounded-xl border border-border-subtle bg-raised p-1 z-50 text-xs">
+              <div className="absolute left-0 top-9 w-52 rounded-xl border border-border-subtle bg-raised shadow-xl p-1 z-50 text-xs">
                 {models.map((m) => (
                   <button
                     key={m.id}
@@ -393,7 +397,7 @@ export const HudView: React.FC = () => {
                       setModelDropdownOpen(false);
                     }}
                     className={`w-full text-left px-2 py-1 rounded-lg flex items-center justify-between cursor-pointer transition-colors ${
-                      activeModel?.id === m.id ? "bg-accent-muted text-accent font-medium" : "text-text-secondary hover:bg-white/[0.05]"
+                      activeModel?.id === m.id ? "bg-accent-muted text-accent font-medium" : "text-text-secondary hover:bg-surface-solid"
                     }`}
                   >
                     <span className="truncate">{m.name}</span>
@@ -410,7 +414,7 @@ export const HudView: React.FC = () => {
           {!expanded && (
             <div
               onClick={toggleExpand}
-              className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/[0.03] hover:bg-white/[0.05] border border-border-subtle cursor-pointer transition-colors max-w-[150px] shrink-0"
+              className="flex items-center gap-2 px-2 py-1 rounded-lg bg-surface-solid hover:bg-raised border border-border-subtle cursor-pointer transition-colors max-w-[136px] shrink-0"
               title={`Mission progress: ${Math.round(missionProgress * 100)}% — ${activeStepMessage}`}
             >
               <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
@@ -419,7 +423,7 @@ export const HudView: React.FC = () => {
                     cx="12"
                     cy="12"
                     r="8.5"
-                    className="stroke-white/10 fill-none"
+                    className="stroke-border-subtle fill-none"
                     strokeWidth="2.5"
                   />
                   <circle
@@ -483,7 +487,7 @@ export const HudView: React.FC = () => {
               className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors cursor-pointer ${
                 micActive
                   ? "bg-accent-muted text-accent border border-accent/40"
-                  : "bg-white/[0.03] hover:bg-white/[0.05] text-text-secondary"
+                  : "bg-surface-solid hover:bg-raised border border-border-subtle text-text-secondary"
               }`}
             >
               <Mic className="h-3.5 w-3.5" />
@@ -511,9 +515,19 @@ export const HudView: React.FC = () => {
               type="button"
               title={expanded ? "Collapse HUD" : "Expand HUD"}
               onClick={toggleExpand}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.03] hover:bg-white/[0.05] text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-solid hover:bg-raised border border-border-subtle text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
             >
               {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+            </button>
+
+            {/* Theme Toggle Button (Light/Dark mode) */}
+            <button
+              type="button"
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              onClick={toggleTheme}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-solid hover:bg-raised border border-border-subtle text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+            >
+              {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
             </button>
 
             {/* Hide HUD */}
@@ -521,7 +535,7 @@ export const HudView: React.FC = () => {
               type="button"
               title="Hide HUD"
               onClick={() => invoke("cmd_toggle_hud")}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.03] hover:bg-white/[0.05] text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-surface-solid hover:bg-raised border border-border-subtle text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
             >
               <Minus className="h-3.5 w-3.5" />
             </button>
@@ -545,7 +559,7 @@ export const HudView: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <span className="font-mono text-[11px] text-text-secondary px-2 py-1 rounded-lg bg-white/[0.05] border border-border-subtle shrink-0">
+                <span className="font-mono text-[11px] text-text-secondary px-2 py-1 rounded-lg bg-surface-solid border border-border-subtle shrink-0">
                   Auto-resume
                 </span>
               </div>
@@ -559,7 +573,7 @@ export const HudView: React.FC = () => {
                     <ShieldAlert className="h-4 w-4" />
                     <span>Approval required — {appDisplayName}</span>
                   </div>
-                  <span className="font-mono text-[11px] text-signal-gate px-2 py-1 rounded-lg bg-white/[0.05] border border-signal-gate/40">
+                  <span className="font-mono text-[11px] text-signal-gate px-2 py-1 rounded-lg bg-surface-solid border border-signal-gate/40">
                     Tier {approvalGate.riskTier}
                   </span>
                 </div>
@@ -578,7 +592,7 @@ export const HudView: React.FC = () => {
               </div>
             ) : streamedText || isStreaming ? (
               /* Active Stream Output View */
-              <div className="flex-1 overflow-y-auto rounded-xl bg-black/40 border border-border-subtle p-2 font-sans text-xs text-text-primary leading-relaxed">
+              <div className="flex-1 overflow-y-auto rounded-xl bg-surface-solid border border-border-subtle p-2 font-sans text-xs text-text-primary leading-relaxed">
                 <div className="flex items-center gap-2 text-text-secondary font-mono text-[11px] mb-1">
                   <Cpu className="h-3.5 w-3.5" />
                   <span>Agent stream output</span>
@@ -590,7 +604,7 @@ export const HudView: React.FC = () => {
               /* Idle Expanded Input View with Progress & Tray State Bar */
               <div className="space-y-2">
                 {/* Mission Progress & Step Status Bar */}
-                <div className="flex items-center justify-between rounded-xl bg-white/[0.03] border border-border-subtle p-2 text-xs">
+                <div className="flex items-center justify-between rounded-xl bg-surface-solid border border-border-subtle p-2 text-xs">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="relative flex items-center justify-center w-7 h-7 shrink-0">
                       <svg className="w-7 h-7 -rotate-90" viewBox="0 0 28 28">
@@ -598,7 +612,7 @@ export const HudView: React.FC = () => {
                           cx="14"
                           cy="14"
                           r="11"
-                          className="stroke-white/10 fill-none"
+                          className="stroke-border-subtle fill-none"
                           strokeWidth="2.5"
                         />
                         <circle
@@ -659,7 +673,7 @@ export const HudView: React.FC = () => {
                         className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] border transition-colors cursor-pointer shrink-0 ${
                           isActive
                             ? "bg-accent-muted text-accent border-accent/40 font-medium"
-                            : "bg-white/[0.03] hover:bg-white/[0.05] text-text-secondary border-border-subtle"
+                            : "bg-surface-solid hover:bg-raised text-text-secondary border-border-subtle"
                         }`}
                       >
                         <span className={`h-2 w-2 rounded-full ${ts.dotColor}`} />
@@ -711,7 +725,7 @@ export const HudView: React.FC = () => {
                       type="button"
                       onClick={handleReject}
                       disabled={isSubmitting}
-                      className="flex items-center gap-1 px-3 py-2 rounded-lg border border-border-subtle bg-raised hover:bg-white/[0.05] text-xs text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+                      className="flex items-center gap-1 px-3 py-2 rounded-lg border border-border-subtle bg-surface-solid hover:bg-raised text-xs text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
                     >
                       <X className="h-3.5 w-3.5" />
                       <span>Reject</span>
