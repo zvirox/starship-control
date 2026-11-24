@@ -43,6 +43,9 @@ jobs:
             libssl-dev \
             libsqlite3-dev
 
+      - name: Ensure frontend dist exists
+        run: mkdir -p app/dist && touch app/dist/index.html
+
       - name: Rust formatting check
         run: cargo fmt --check
 
@@ -82,6 +85,9 @@ jobs:
             libayatana-appindicator3-dev \
             libssl-dev \
             libsqlite3-dev
+
+      - name: Ensure frontend dist exists
+        run: mkdir -p app/dist && touch app/dist/index.html
 
       - name: Run workspace tests
         run: cargo test --workspace --verbose
@@ -176,6 +182,9 @@ jobs:
             libayatana-appindicator3-dev \
             libssl-dev \
             libsqlite3-dev
+
+      - name: Ensure frontend dist exists
+        run: mkdir -p app/dist && touch app/dist/index.html
 
       - name: Run coverage
         run: |
