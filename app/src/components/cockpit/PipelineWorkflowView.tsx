@@ -291,9 +291,9 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                         value={cetContent}
                         onChange={(e) => setCetContent(e.target.value)}
                         rows={5}
-                        className="w-full rounded-xl border border-border-subtle bg-black/40 p-2 text-[11px] font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                        className="w-full rounded-xl border border-border-subtle bg-surface-solid p-2.5 text-[11px] font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
                       />
-                      <span className="text-[11px] text-text-disabled">
+                      <span className="text-[11px] text-text-secondary font-medium">
                         Silence intervals of 1200 ms or more trigger automated ripple cuts in EEP.
                       </span>
                     </div>
@@ -302,7 +302,7 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                       type="text"
                       value={cetPath}
                       onChange={(e) => setCetPath(e.target.value)}
-                      className="w-full rounded-xl border border-border-subtle bg-black/40 px-3 py-2 text-xs font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-full rounded-xl border border-border-subtle bg-surface-solid px-3 py-2 text-xs font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
                     />
                   )}
                 </div>
@@ -378,9 +378,9 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                       value={introScript}
                       onChange={(e) => setIntroScript(e.target.value)}
                       rows={2}
-                      className="w-full rounded-lg border border-border-subtle bg-black/40 p-2 text-xs text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-full rounded-lg border border-border-subtle bg-surface-solid p-2 text-xs text-text-primary focus:outline-none focus:border-accent transition-colors"
                     />
-                    <span className="text-[11px] text-text-disabled">
+                    <span className="text-[11px] text-text-secondary font-medium">
                       Intro aligns at timeline start (00:00:00).
                     </span>
                   </div>
@@ -392,10 +392,10 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                 <button
                   onClick={handleRunScreencastPipeline}
                   disabled={isPlanning}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent text-accent-text hover:bg-accent/90 px-4 py-3 text-xs font-medium disabled:opacity-50 transition-colors active:scale-[0.98] cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent text-accent-text hover:bg-accent-hover px-4 py-3 text-xs font-semibold disabled:opacity-50 transition-colors active:scale-[0.98] cursor-pointer shadow-sm"
                 >
                   <Play className="h-3.5 w-3.5 fill-current" />
-                  <span>{isPlanning ? "Resolving DAG pipeline" : "Generate screencast pipeline plan"}</span>
+                  <span>{isPlanning ? "Resolving DAG pipeline..." : "Generate screencast pipeline plan"}</span>
                 </button>
               </div>
             </GlassPanel>
@@ -404,67 +404,67 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
           {/* Right Column: Execution Stages Preview */}
           <div className="lg:col-span-5 space-y-4">
             <GlassPanel recipe="pane" className="p-5 rounded-2xl border border-border-subtle space-y-4">
-              <h3 className="text-xs font-medium text-text-secondary flex items-center gap-2">
-                <Scissors className="h-3.5 w-3.5 text-text-secondary" />
+              <h3 className="text-xs font-semibold text-text-primary flex items-center gap-2">
+                <Scissors className="h-3.5 w-3.5 text-accent" />
                 Pipeline execution stages
               </h3>
 
               <div className="space-y-3 font-sans text-xs">
                 {/* Stage 0 */}
                 <div className="rounded-xl border border-border-subtle bg-white/[0.03] p-3 space-y-1">
-                  <div className="flex items-center justify-between text-text-primary font-medium">
+                  <div className="flex items-center justify-between text-text-primary font-semibold">
                     <span>Stage 0 · Inspection</span>
-                    <span className="text-[11px] font-mono text-signal-success bg-signal-success-bg px-2 py-1 rounded-lg border border-signal-success/40">
+                    <span className="text-[11px] font-mono font-semibold text-signal-success bg-signal-success-bg px-2 py-0.5 rounded-lg border border-signal-success/40">
                       Tier 1 · Autonomous
                     </span>
                   </div>
-                  <p className="text-[11px] text-text-secondary">
-                    <span className="font-mono text-text-primary">SSP</span>: Inspects video frames and audio channels in demo recording.
+                  <p className="text-[11px] text-text-secondary font-medium">
+                    <span className="font-mono text-text-primary font-semibold">SSP</span>: Inspects video frames and audio channels in demo recording.
                   </p>
                 </div>
 
-                <div className="flex justify-center text-text-disabled">
+                <div className="flex justify-center text-text-secondary font-bold">
                   <ArrowRight className="h-3.5 w-3.5 rotate-90" />
                 </div>
 
                 {/* Stage 1 */}
                 <div className="rounded-xl border border-border-subtle bg-white/[0.03] p-3 space-y-2">
-                  <div className="flex items-center justify-between text-text-primary font-medium">
+                  <div className="flex items-center justify-between text-text-primary font-semibold">
                     <span>Stage 1 · Audio processing</span>
-                    <span className="text-[11px] font-mono text-signal-thinking bg-signal-thinking-bg px-2 py-1 rounded-lg border border-signal-thinking/40">
+                    <span className="text-[11px] font-mono font-semibold text-signal-thinking bg-signal-thinking-bg px-2 py-0.5 rounded-lg border border-signal-thinking/40">
                       Tier 2 · Signed gate
                     </span>
                   </div>
-                  <div className="space-y-1 text-[11px] text-text-secondary">
+                  <div className="space-y-1 text-[11px] text-text-secondary font-medium">
                     <p>
-                      <span className="font-mono text-text-primary">ALP</span>: Audio cleanup and vocal isolation preset.
+                      <span className="font-mono text-text-primary font-semibold">ALP</span>: Audio cleanup and vocal isolation preset.
                     </p>
                     {includeIntroScript && (
                       <p>
-                        <span className="font-mono text-text-primary">ALP</span>: Synthesizes intro narration via TTS.
+                        <span className="font-mono text-text-primary font-semibold">ALP</span>: Synthesizes intro narration via TTS.
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex justify-center text-text-disabled">
+                <div className="flex justify-center text-text-secondary font-bold">
                   <ArrowRight className="h-3.5 w-3.5 rotate-90" />
                 </div>
 
                 {/* Stage 2 */}
                 <div className="rounded-xl border border-border-subtle bg-white/[0.03] p-3 space-y-1">
-                  <div className="flex items-center justify-between text-text-primary font-medium">
+                  <div className="flex items-center justify-between text-text-primary font-semibold">
                     <span>Stage 2 · Timeline cuts</span>
-                    <span className="text-[11px] font-mono text-signal-thinking bg-signal-thinking-bg px-2 py-1 rounded-lg border border-signal-thinking/40">
+                    <span className="text-[11px] font-mono font-semibold text-signal-thinking bg-signal-thinking-bg px-2 py-0.5 rounded-lg border border-signal-thinking/40">
                       Tier 2 · Signed gate
                     </span>
                   </div>
-                  <p className="text-[11px] text-text-secondary">
-                    <span className="font-mono text-text-primary">EEP</span>: Applies automated ripple cuts to delete dead air silence intervals.
+                  <p className="text-[11px] text-text-secondary font-medium">
+                    <span className="font-mono text-text-primary font-semibold">EEP</span>: Applies automated ripple cuts to delete dead air silence intervals.
                   </p>
                 </div>
 
-                <div className="flex justify-center text-text-disabled">
+                <div className="flex justify-center text-text-secondary font-bold">
                   <ArrowRight className="h-3.5 w-3.5 rotate-90" />
                 </div>
 
@@ -519,23 +519,23 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                     />
                     <span className="text-[11px] text-text-secondary font-mono">sockets</span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-text-disabled font-mono pt-1 border-t border-border-subtle">
+                  <div className="flex items-center justify-between text-[11px] text-text-secondary font-mono pt-1 border-t border-border-subtle font-medium">
                     <span>Bandwidth:</span>
                     <input
                       type="number"
                       value={totalBandwidth}
                       step={10}
                       onChange={(e) => setTotalBandwidth(Number(e.target.value))}
-                      className="w-24 rounded-lg border border-border-subtle bg-black/40 px-2 py-1 text-[11px] font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-24 rounded-lg border border-border-subtle bg-surface-solid px-2 py-1 text-[11px] font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
                     />
                     <span>kbps</span>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-border-subtle bg-black/40 p-3 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-text-secondary">
+                <div className="rounded-xl border border-border-subtle bg-surface-solid p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-text-secondary font-medium">
                     <span>Storage space (ATP)</span>
-                    <span className="text-text-primary">{diskFreeGb} GB free</span>
+                    <span className="text-text-primary font-semibold">{diskFreeGb} GB free</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -543,18 +543,18 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                       value={diskFreeGb}
                       step={1}
                       onChange={(e) => setDiskFreeGb(Number(e.target.value))}
-                      className="w-20 rounded-lg border border-border-subtle bg-black/40 px-2 py-1 text-xs font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-20 rounded-lg border border-border-subtle bg-surface-solid px-2 py-1 text-xs font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
                     />
-                    <span className="text-[11px] text-text-secondary font-mono">GB free</span>
+                    <span className="text-[11px] text-text-secondary font-mono font-medium">GB free</span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-text-disabled font-mono pt-1 border-t border-border-subtle">
+                  <div className="flex items-center justify-between text-[11px] text-text-secondary font-mono pt-1 border-t border-border-subtle font-medium">
                     <span>Used /home:</span>
                     <input
                       type="number"
                       value={diskUsedGb}
                       step={1}
                       onChange={(e) => setDiskUsedGb(Number(e.target.value))}
-                      className="w-20 rounded-lg border border-border-subtle bg-black/40 px-2 py-1 text-[11px] font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-20 rounded-lg border border-border-subtle bg-surface-solid px-2 py-1 text-[11px] font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
                     />
                     <span>GB</span>
                   </div>
@@ -639,7 +639,7 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                   </div>
                 </div>
 
-                <div className="flex justify-center text-text-disabled">
+                <div className="flex justify-center text-text-secondary font-bold">
                   <ArrowRight className="h-3.5 w-3.5 rotate-90" />
                 </div>
 

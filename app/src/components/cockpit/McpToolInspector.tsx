@@ -124,7 +124,7 @@ export const McpToolInspector: React.FC = () => {
           </div>
           <button
             onClick={fetchTools}
-            className="p-1.5 rounded-lg bg-white/[0.03] hover:bg-white/10 text-text-disabled hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:text-accent"
+            className="p-1.5 rounded-lg bg-white/[0.03] hover:bg-white/10 text-text-secondary hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:text-accent cursor-pointer"
             title="Refresh tools"
           >
             <RotateCw className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -135,15 +135,15 @@ export const McpToolInspector: React.FC = () => {
         <div className="space-y-2">
           <div className="relative">
             <Search
-              className="absolute left-3 top-3 h-4 w-4 text-text-disabled"
+              className="absolute left-3 top-3 h-4 w-4 text-text-secondary"
               strokeWidth={1.5}
             />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Filter tools"
-              className="w-full rounded-lg border border-border-subtle bg-black/30 pl-9 pr-3 py-2 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent"
+              placeholder="Filter tools by name or description..."
+              className="w-full rounded-xl border border-border-subtle bg-surface-solid pl-9 pr-3 py-2 text-xs font-medium text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent"
             />
           </div>
 
@@ -152,13 +152,13 @@ export const McpToolInspector: React.FC = () => {
               <button
                 key={app}
                 onClick={() => setActiveAppFilter(app)}
-                className={`px-2 py-1 rounded-lg border transition-colors focus-visible:outline-none focus-visible:text-accent ${
+                className={`px-2 py-1 rounded-lg border transition-colors focus-visible:outline-none focus-visible:text-accent cursor-pointer ${
                   activeAppFilter === app
-                    ? "border-accent/40 bg-accent-muted text-accent font-medium"
-                    : "border-border-subtle bg-white/[0.03] text-text-disabled hover:text-text-secondary"
+                    ? "border-accent/40 bg-accent-muted text-accent font-semibold"
+                    : "border-border-subtle bg-white/[0.03] text-text-secondary hover:text-text-primary"
                 }`}
               >
-                {app === "all" ? "All" : app}
+                {app === "all" ? "All apps" : app.toUpperCase()}
               </button>
             ))}
           </div>
@@ -167,7 +167,7 @@ export const McpToolInspector: React.FC = () => {
         {/* Tools List */}
         <div className="flex-1 overflow-y-auto space-y-2 pr-1">
           {loading ? (
-            <div className="p-4 text-center text-xs text-text-disabled">Loading tool schemas</div>
+            <div className="p-4 text-center text-xs font-medium text-text-secondary">Loading tool schemas...</div>
           ) : (
             filteredTools.map((t) => {
               const isSelected = selectedTool?.name === t.name;
@@ -182,29 +182,29 @@ export const McpToolInspector: React.FC = () => {
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-text-primary truncate">{t.name}</span>
+                    <span className="font-semibold text-text-primary truncate">{t.name}</span>
                     {t.riskTier === 1 ? (
-                      <span className="inline-flex items-center gap-1 rounded-lg border border-border-subtle bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-signal-success">
+                      <span className="inline-flex items-center gap-1 rounded-lg border border-signal-success/30 bg-signal-success-bg px-2 py-0.5 font-mono text-[11px] font-semibold text-signal-success">
                         <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
                         <span>Tier 1</span>
                       </span>
                     ) : t.riskTier === 2 ? (
-                      <span className="inline-flex items-center gap-1 rounded-lg border border-border-subtle bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-signal-thinking">
+                      <span className="inline-flex items-center gap-1 rounded-lg border border-signal-thinking/30 bg-signal-thinking-bg px-2 py-0.5 font-mono text-[11px] font-semibold text-signal-thinking">
                         <AlertTriangle className="h-3.5 w-3.5" strokeWidth={1.5} />
                         <span>Tier 2</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-lg border border-border-subtle bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-signal-gate">
+                      <span className="inline-flex items-center gap-1 rounded-lg border border-signal-gate/30 bg-signal-gate-bg px-2 py-0.5 font-mono text-[11px] font-semibold text-signal-gate">
                         <Flame className="h-3.5 w-3.5" strokeWidth={1.5} />
                         <span>Tier 3</span>
                       </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-text-secondary line-clamp-2 leading-relaxed">
+                  <p className="text-[11px] text-text-secondary font-medium line-clamp-2 leading-relaxed">
                     {t.description}
                   </p>
-                  <div className="mt-1 text-[11px] font-mono text-text-disabled flex items-center justify-between">
-                    <span>{t.appName}</span>
+                  <div className="mt-1.5 text-[11px] font-mono text-text-secondary font-medium flex items-center justify-between">
+                    <span className="text-text-primary">{t.appName}</span>
                     <span>appId: {t.appId}</span>
                   </div>
                 </div>
@@ -271,12 +271,12 @@ export const McpToolInspector: React.FC = () => {
             {/* Test Invocation Sandbox */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 font-medium text-text-secondary">
-                  <Terminal className="h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
+                <div className="flex items-center gap-1.5 font-semibold text-text-primary">
+                  <Terminal className="h-3.5 w-3.5 text-accent" strokeWidth={1.5} />
                   <span>Test dispatcher</span>
                 </div>
-                <span className="text-[11px] font-mono text-text-disabled">
-                  Transports: live socket → stdio child → simulation
+                <span className="text-[11px] font-mono text-text-secondary font-medium">
+                  Transports: live socket → stdio child
                 </span>
               </div>
 
@@ -285,21 +285,21 @@ export const McpToolInspector: React.FC = () => {
                   value={callArgs}
                   onChange={(e) => setCallArgs(e.target.value)}
                   rows={4}
-                  className="w-full rounded-xl border border-border-subtle bg-black/30 p-3 font-mono text-[11px] text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent resize-none"
-                  placeholder="Enter JSON arguments"
+                  className="w-full rounded-xl border border-border-subtle bg-surface-solid p-3 font-mono text-[11px] text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent resize-none font-medium"
+                  placeholder="Enter JSON arguments e.g. {}"
                 />
 
                 <div className="flex items-center justify-between">
                   <button
                     onClick={handleExecute}
                     disabled={executing}
-                    className="flex items-center gap-2 rounded-xl bg-accent hover:bg-accent-hover px-4 py-2 text-xs font-medium text-accent-text transition-colors disabled:opacity-40 focus-visible:outline-none"
+                    className="flex items-center gap-2 rounded-xl bg-accent hover:bg-accent-hover px-4 py-2 text-xs font-semibold text-accent-text transition-colors disabled:opacity-40 focus-visible:outline-none cursor-pointer"
                   >
-                    <Play className="h-3.5 w-3.5" strokeWidth={1.5} />
-                    <span>{executing ? "Dispatching via MCP" : "Execute tool call"}</span>
+                    <Play className="h-3.5 w-3.5" strokeWidth={2} />
+                    <span>{executing ? "Dispatching via MCP..." : "Execute tool call"}</span>
                   </button>
 
-                  <span className="text-[11px] font-mono text-text-disabled">
+                  <span className="text-[11px] font-mono text-text-secondary font-medium">
                     leaseTimeout: 10,000ms
                   </span>
                 </div>
@@ -308,11 +308,11 @@ export const McpToolInspector: React.FC = () => {
               {/* Execution Feedback */}
               {executionResult && (
                 <div className="space-y-2 pt-2">
-                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-signal-success font-mono">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-signal-success font-mono">
                     <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                     <span>Execution result</span>
                   </div>
-                  <pre className="rounded-xl border border-border-subtle bg-black/30 p-3 text-[11px] font-mono text-text-secondary overflow-x-auto">
+                  <pre className="rounded-xl border border-border-subtle bg-surface-solid p-3 text-[11px] font-mono text-text-primary overflow-x-auto">
                     {executionResult}
                   </pre>
                 </div>
@@ -320,11 +320,11 @@ export const McpToolInspector: React.FC = () => {
 
               {executionError && (
                 <div className="space-y-2 pt-2">
-                  <div className="flex items-center gap-1.5 text-[11px] font-medium text-signal-gate font-mono">
+                  <div className="flex items-center gap-1.5 text-[11px] font-semibold text-signal-gate font-mono">
                     <AlertTriangle className="h-3.5 w-3.5" strokeWidth={1.5} />
                     <span>Execution error</span>
                   </div>
-                  <pre className="rounded-xl border border-border-subtle bg-black/30 p-3 text-[11px] font-mono text-text-secondary overflow-x-auto">
+                  <pre className="rounded-xl border border-border-subtle bg-surface-solid p-3 text-[11px] font-mono text-signal-gate overflow-x-auto">
                     {executionError}
                   </pre>
                 </div>
@@ -332,7 +332,7 @@ export const McpToolInspector: React.FC = () => {
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-text-disabled text-xs">
+          <div className="flex-1 flex items-center justify-center text-text-secondary font-medium text-xs">
             Select a tool from the catalog to inspect its schema and test dispatch
           </div>
         )}

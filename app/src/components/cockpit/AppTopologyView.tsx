@@ -261,12 +261,12 @@ export const AppTopologyView: React.FC<AppTopologyViewProps> = ({ onLaunchSucces
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-text-primary">
+                        <span className="text-sm font-semibold text-text-primary">
                           {app.displayName}
                         </span>
-                        <span className="quiet-chip font-mono">v{app.version}</span>
+                        <span className="quiet-chip font-mono font-medium">v{app.version}</span>
                       </div>
-                      <span className="text-[11px] font-mono text-text-disabled">
+                      <span className="text-[11px] font-mono text-text-secondary font-medium">
                         appId: {app.appId}
                       </span>
                     </div>
@@ -274,17 +274,17 @@ export const AppTopologyView: React.FC<AppTopologyViewProps> = ({ onLaunchSucces
                     {/* Mode Badge */}
                     <div className="flex items-center gap-1.5">
                       {isLiveGui ? (
-                        <span className="quiet-chip">
+                        <span className="quiet-chip font-semibold text-signal-success border-signal-success/30">
                           <span className="h-1.5 w-1.5 rounded-full bg-signal-success" />
                           Live GUI
                         </span>
                       ) : isHeadless ? (
-                        <span className="quiet-chip">
+                        <span className="quiet-chip font-semibold text-accent border-accent/30">
                           <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                           Headless CLI
                         </span>
                       ) : (
-                        <span className="quiet-chip">
+                        <span className="quiet-chip font-semibold text-signal-gate border-signal-gate/30">
                           <span className="h-1.5 w-1.5 rounded-full bg-signal-gate" />
                           Offline
                         </span>
@@ -293,22 +293,22 @@ export const AppTopologyView: React.FC<AppTopologyViewProps> = ({ onLaunchSucces
                   </div>
 
                   {/* Latency & Transport Details */}
-                  <div className="rounded-xl border border-border-subtle bg-black/30 p-3 gap-2 font-mono text-xs">
+                  <div className="rounded-xl border border-border-subtle bg-surface-solid p-3 gap-2 font-mono text-xs">
                     <div className="flex items-center justify-between text-text-secondary">
-                      <span className="text-[11px] text-text-disabled">Transport:</span>
-                      <span className="text-text-primary">
+                      <span className="text-[11px] text-text-secondary font-medium">Transport:</span>
+                      <span className="text-text-primary font-medium">
                         {isLiveGui ? "Unix socket (SO_PEERCRED)" : "Stdio MCP pipe"}
                       </span>
                     </div>
                     {app.latencyMs !== null && (
                       <div className="flex items-center justify-between text-text-secondary">
-                        <span className="text-[11px] text-text-disabled">Round-trip ping:</span>
-                        <span className="text-accent tabular">{app.latencyMs.toFixed(2)} ms</span>
+                        <span className="text-[11px] text-text-secondary font-medium">Round-trip ping:</span>
+                        <span className="text-accent tabular font-semibold">{app.latencyMs.toFixed(2)} ms</span>
                       </div>
                     )}
                     {app.socketPath && (
                       <div
-                        className="text-[11px] text-text-disabled truncate"
+                        className="text-[11px] text-text-secondary font-medium truncate"
                         title={app.socketPath}
                       >
                         Socket: {app.socketPath}
@@ -318,7 +318,7 @@ export const AppTopologyView: React.FC<AppTopologyViewProps> = ({ onLaunchSucces
 
                   {/* Capabilities Chips */}
                   <div className="space-y-2">
-                    <span className="block text-[11px] font-medium text-text-secondary">
+                    <span className="block text-[11px] font-semibold text-text-primary">
                       Exposed MCP capabilities
                     </span>
                     <div className="flex flex-wrap gap-2">
@@ -326,13 +326,13 @@ export const AppTopologyView: React.FC<AppTopologyViewProps> = ({ onLaunchSucces
                         Object.keys(app.capabilities).map((cap) => (
                           <span
                             key={cap}
-                            className="inline-flex items-center rounded-lg border border-border-subtle bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-text-secondary"
+                            className="inline-flex items-center rounded-lg border border-border-subtle bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-text-primary font-medium"
                           >
                             {cap}
                           </span>
                         ))
                       ) : (
-                        <span className="text-[11px] text-text-disabled">Standard tools</span>
+                        <span className="text-[11px] text-text-secondary font-medium">Standard tools</span>
                       )}
                     </div>
                   </div>

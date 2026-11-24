@@ -145,11 +145,11 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
               className="font-sans text-sm font-medium text-text-primary flex items-center gap-2"
             >
               <span>Approval required</span>
-              <span className="text-text-disabled">·</span>
-              <span className="text-text-secondary">{appDisplayName}</span>
+              <span className="text-text-secondary">·</span>
+              <span className="text-text-secondary font-medium">{appDisplayName}</span>
             </h3>
             {planTitle && (
-              <p className="font-sans text-xs text-text-secondary">Mission plan: {planTitle}</p>
+              <p className="font-sans text-xs text-text-secondary font-medium">Mission plan: {planTitle}</p>
             )}
           </div>
         </div>
@@ -157,13 +157,13 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
         {/* Risk Tier & Irreversible Chips */}
         <div className="flex items-center gap-2">
           {isIrreversible && (
-            <span className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-mono border border-signal-gate/40 bg-signal-gate-bg text-signal-gate">
+            <span className="flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-mono font-semibold border border-signal-gate/40 bg-signal-gate-bg text-signal-gate">
               <AlertTriangle className="h-3.5 w-3.5" />
               <span>Irreversible</span>
             </span>
           )}
           <span
-            className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-mono border ${
+            className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-mono font-semibold border ${
               isTier3
                 ? "bg-signal-gate-bg text-signal-gate border-signal-gate/40"
                 : "bg-signal-thinking-bg text-signal-thinking border-signal-thinking/40"
@@ -178,18 +178,18 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
       {/* Impact & Action Description */}
       <div className="space-y-3 font-sans text-xs leading-relaxed text-text-primary">
         <div className="flex items-start gap-2">
-          <span className="font-medium text-text-secondary min-w-[70px]">Action:</span>
-          <span className="font-medium text-text-primary">
+          <span className="font-semibold text-text-secondary min-w-[70px]">Action:</span>
+          <span className="font-semibold text-text-primary">
             {step.diffSummary || `Execute tool: ${step.toolName}`}
           </span>
         </div>
 
         <div className="flex items-start gap-2">
-          <span className="font-medium text-text-secondary min-w-[70px]">Tool:</span>
-          <span className="font-mono text-[11px] text-text-primary bg-white/[0.05] px-2 py-1 rounded-lg border border-border-subtle">
+          <span className="font-semibold text-text-secondary min-w-[70px]">Tool:</span>
+          <span className="font-mono text-[11px] text-text-primary font-medium bg-white/[0.05] px-2 py-1 rounded-lg border border-border-subtle">
             {step.toolName}
           </span>
-          <span className="text-text-disabled ml-1">(Step #{step.stepIndex + 1})</span>
+          <span className="text-text-secondary font-medium ml-1">(Step #{step.stepIndex + 1})</span>
         </div>
 
         <div className="flex items-center gap-3 pt-2 text-[11px] text-text-secondary border-t border-border-subtle">
@@ -222,9 +222,9 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
         {showDiff && (
           <GlassPanel
             recipe="pane"
-            className="mt-2 p-3 font-mono text-[11px] text-text-secondary bg-black/40 border border-border-subtle rounded-xl max-h-48 overflow-y-auto"
+            className="mt-2 p-3 font-mono text-[11px] text-text-secondary bg-surface-solid border border-border-subtle rounded-xl max-h-48 overflow-y-auto"
           >
-            <div className="text-text-disabled mb-1">// Parameters for {step.toolName}</div>
+            <div className="text-text-secondary font-medium mb-1">// Parameters for {step.toolName}</div>
             <pre className="whitespace-pre-wrap text-text-primary">
               {JSON.stringify(step.arguments, null, 2)}
             </pre>
@@ -235,7 +235,7 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
       {/* Rejection Reason Sub-form */}
       {rejecting && (
         <div className="mt-4 p-3 rounded-xl border border-signal-gate/30 bg-signal-gate-bg space-y-2">
-          <label htmlFor={`reject-reason-${step.stepId}`} className="block text-[11px] font-medium text-signal-gate">
+          <label htmlFor={`reject-reason-${step.stepId}`} className="block text-[11px] font-semibold text-signal-gate">
             Rejection reason or guidance for planner
           </label>
           <input
@@ -244,14 +244,14 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
             value={rejectReason}
             onChange={(e) => setRejectReason(e.target.value)}
             placeholder="Reason for rejection"
-            className="w-full rounded-xl bg-black/40 border border-border-subtle px-3 py-2 font-sans text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent transition-colors"
+            className="w-full rounded-xl bg-surface-solid border border-border-subtle px-3 py-2 font-sans text-xs font-medium text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent transition-colors"
             autoFocus
           />
           <div className="flex justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={() => setRejecting(false)}
-              className="px-3 py-2 rounded-lg text-xs text-text-secondary hover:bg-white/[0.05] transition-colors"
+              className="px-3 py-2 rounded-lg text-xs font-medium text-text-secondary hover:bg-white/[0.05] transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -259,7 +259,7 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
               type="button"
               onClick={handleReject}
               disabled={isSubmitting}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg border border-border-subtle bg-raised text-xs font-medium text-text-primary hover:bg-white/[0.05] transition-colors"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg border border-border-subtle bg-raised text-xs font-semibold text-text-primary hover:bg-white/[0.05] transition-colors cursor-pointer"
             >
               <X className="h-3.5 w-3.5" />
               Confirm rejection
@@ -283,7 +283,7 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
             value={typedConfirmation}
             onChange={(e) => setTypedConfirmation(e.target.value)}
             placeholder="Type CONFIRM"
-            className="w-full rounded-xl bg-black/40 border border-signal-gate/40 px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent transition-colors"
+            className="w-full rounded-xl bg-surface-solid border border-signal-gate/40 px-3 py-2 font-mono text-xs font-medium text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent transition-colors"
           />
         </div>
       )}
@@ -291,15 +291,15 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
       {/* Action Buttons */}
       {!rejecting && (
         <div className="mt-5 flex items-center justify-between border-t border-border-subtle pt-4">
-          <div className="flex items-center gap-2 text-[11px] text-text-secondary font-sans">
+          <div className="flex items-center gap-2 text-[11px] text-text-secondary font-sans font-medium">
             <span className="hidden sm:inline">Shortcuts</span>
             <kbd className="keycap gap-1">
               <span>Enter</span>
               <CornerDownLeft className="h-3.5 w-3.5" />
             </kbd>
-            <span className="text-text-disabled">Approve</span>
+            <span className="text-text-secondary">Approve</span>
             <kbd className="keycap">Esc</kbd>
-            <span className="text-text-disabled">Reject</span>
+            <span className="text-text-secondary">Reject</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -319,10 +319,10 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
               type="button"
               onClick={handleApprove}
               disabled={!canApprove}
-              className={`flex items-center gap-2 rounded-xl px-5 py-2 font-sans text-xs font-medium transition-colors duration-150 ${
+              className={`flex items-center gap-2 rounded-xl px-5 py-2 font-sans text-xs font-semibold transition-colors duration-150 ${
                 canApprove
-                  ? "bg-accent text-accent-text hover:bg-accent/90 active:scale-[0.98] cursor-pointer"
-                  : "bg-raised text-text-disabled cursor-not-allowed border border-border-subtle"
+                  ? "bg-accent text-accent-text hover:bg-accent-hover active:scale-[0.98] cursor-pointer shadow-sm"
+                  : "bg-surface-solid text-text-secondary cursor-not-allowed border border-border-subtle"
               }`}
             >
               {isSubmitting || isExecuting ? (

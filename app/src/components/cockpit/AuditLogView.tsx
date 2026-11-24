@@ -62,13 +62,13 @@ export const AuditLogView: React.FC = () => {
             <FileText className="h-4 w-4" />
           </div>
           <div>
-            <h2 className="font-sans text-base font-medium text-text-primary flex items-center gap-2">
+            <h2 className="font-sans text-base font-semibold text-text-primary flex items-center gap-2">
               <span>Security and action audit trail</span>
-              <span className="text-[11px] font-mono text-text-disabled bg-white/[0.03] px-2 py-0.5 rounded-lg border border-border-subtle">
+              <span className="text-[11px] font-mono text-text-secondary bg-white/[0.03] px-2 py-0.5 rounded-lg border border-border-subtle font-medium">
                 Append-only WAL
               </span>
             </h2>
-            <p className="font-sans text-xs text-text-secondary">
+            <p className="font-sans text-xs text-text-secondary font-medium mt-0.5">
               Immutable cryptographic ledger recording all tool invocations, approval gates, and human signatures (DATABASE.md §3.8).
             </p>
           </div>
@@ -78,7 +78,7 @@ export const AuditLogView: React.FC = () => {
           type="button"
           onClick={fetchLogs}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-xl border border-border-subtle bg-white/[0.03] px-3 py-2 text-xs font-medium text-text-secondary hover:bg-white/[0.06] hover:text-text-primary transition-colors"
+          className="flex items-center gap-1.5 rounded-xl border border-border-subtle bg-white/[0.03] px-3.5 py-2 text-xs font-semibold text-text-secondary hover:bg-white/[0.06] hover:text-text-primary transition-colors cursor-pointer"
         >
           <RotateCcw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
           <span>Refresh</span>
@@ -89,7 +89,7 @@ export const AuditLogView: React.FC = () => {
       <div className="flex items-center justify-between gap-4 py-3">
         <div className="flex items-center gap-2 flex-1 max-w-md">
           <div className="relative w-full">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-text-disabled" />
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-text-secondary" />
             <input
               type="text"
               value={searchQuery}
@@ -97,8 +97,8 @@ export const AuditLogView: React.FC = () => {
                 const val = e.target.value;
                 startTransition(() => setSearchQuery(val));
               }}
-              placeholder="Filter by app, action, payload or signature token"
-              className="w-full rounded-xl border border-border-subtle bg-black/40 pl-8 pr-3 py-2 font-sans text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent/40"
+              placeholder="Filter by app, action, payload or signature token..."
+              className="w-full rounded-xl border border-border-subtle bg-surface-solid pl-8 pr-3 py-2 font-sans text-xs font-medium text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent"
             />
           </div>
         </div>
@@ -141,26 +141,26 @@ export const AuditLogView: React.FC = () => {
           <tbody className="divide-y divide-border-subtle font-sans text-text-secondary">
             {filteredLogs.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-12 text-center text-text-disabled font-sans">
-                  {loading ? "Loading audit records" : "No matching audit log records found"}
+                <td colSpan={8} className="py-12 text-center text-text-secondary font-medium font-sans">
+                  {loading ? "Loading audit records..." : "No matching audit log records found"}
                 </td>
               </tr>
             ) : (
               filteredLogs.map((log) => (
                 <tr key={log.id} className="hover:bg-white/[0.03] transition-colors">
-                  <td className="py-2 px-3 font-mono text-text-disabled">#{log.id}</td>
-                  <td className="py-2 px-3 font-mono text-text-disabled text-[11px] tabular">
+                  <td className="py-2.5 px-3 font-mono text-text-secondary font-medium">#{log.id}</td>
+                  <td className="py-2.5 px-3 font-mono text-text-secondary font-medium text-[11px] tabular">
                     {log.createdAt ? log.createdAt.replace("T", " ").replace("Z", "") : "Now"}
                   </td>
-                  <td className="py-2 px-3 font-mono font-medium text-text-primary">
+                  <td className="py-2.5 px-3 font-mono font-semibold text-text-primary">
                     {log.appId}
                   </td>
-                  <td className="py-2 px-3 font-medium text-text-primary">
+                  <td className="py-2.5 px-3 font-semibold text-text-primary">
                     {log.actionType}
                   </td>
-                  <td className="py-2 px-3">
+                  <td className="py-2.5 px-3">
                     <span
-                      className={`inline-block font-mono text-[11px] px-2 py-0.5 rounded-lg border ${
+                      className={`inline-block font-mono text-[11px] font-semibold px-2 py-0.5 rounded-lg border ${
                         log.riskTier === 3
                           ? "bg-signal-gate-bg text-signal-gate border-signal-gate/30"
                           : log.riskTier === 2
@@ -171,19 +171,19 @@ export const AuditLogView: React.FC = () => {
                       Tier {log.riskTier}
                     </span>
                   </td>
-                  <td className="py-2 px-3 font-mono text-[11px]">
+                  <td className="py-2.5 px-3 font-mono text-[11px]">
                     {log.signatureToken ? (
-                      <span className="flex items-center gap-1 text-signal-success bg-signal-success-bg px-2 py-0.5 rounded-lg border border-signal-success/30">
+                      <span className="flex items-center gap-1 text-signal-success bg-signal-success-bg px-2 py-0.5 rounded-lg border border-signal-success/30 font-medium">
                         <KeyRound className="h-3.5 w-3.5" />
                         <span>{log.signatureToken.slice(0, 16)}...</span>
                       </span>
                     ) : (
-                      <span className="text-text-disabled">—</span>
+                      <span className="text-text-secondary">—</span>
                     )}
                   </td>
-                  <td className="py-2 px-3 font-mono text-[11px]">
+                  <td className="py-2.5 px-3 font-mono text-[11px]">
                     <span
-                      className={`inline-flex items-center gap-1 font-medium ${
+                      className={`inline-flex items-center gap-1 font-semibold ${
                         log.status === "success"
                           ? "text-signal-success"
                           : log.status === "denied"
@@ -199,7 +199,7 @@ export const AuditLogView: React.FC = () => {
                       <span className="capitalize">{log.status}</span>
                     </span>
                   </td>
-                  <td className="py-2 px-3 font-mono text-[11px] text-text-disabled max-w-xs truncate">
+                  <td className="py-2.5 px-3 font-mono text-[11px] text-text-secondary font-medium max-w-xs truncate">
                     {log.payloadJson}
                   </td>
                 </tr>

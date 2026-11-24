@@ -8,6 +8,12 @@ import {
   CheckCircle2,
   AlertTriangle,
   X,
+  Cpu,
+  Layers,
+  Tv,
+  Flame,
+  HardDrive,
+  Thermometer,
 } from "lucide-react";
 import type {
   HealthAlert,
@@ -173,52 +179,87 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
 
   const StateIcon = stateBadge.icon;
 
-  // Compact, neutral stat cards — big tabular number, label, one quiet sub-metric.
-  // The telemetry chart below is the only rich data moment.
+  // Colorful, high-contrast stat cards with semantic icons, metrics, and tracks
   const statCards = [
     {
-      label: "CPU",
+      label: "CPU Load",
       value: sample?.cpu ? `${Math.round(sample.cpu.globalUtilPct)}%` : "0%",
-      sub: sample?.cpu?.avgFreqMhz ? `${sample.cpu.avgFreqMhz} MHz` : "1.0 Hz",
+      sub: sample?.cpu?.avgFreqMhz ? `${sample.cpu.avgFreqMhz} MHz` : "1.0 GHz",
+      percent: sample?.cpu ? Math.round(sample.cpu.globalUtilPct) : 0,
+      icon: Cpu,
+      color: "text-sky-400",
+      bgColor: "bg-sky-500/10",
+      borderColor: "border-sky-500/25",
+      barColor: "bg-sky-400",
     },
     {
-      label: "Memory",
+      label: "RAM Used",
       value: sample?.memory ? `${Math.round(100 - sample.memory.availablePct)}%` : "0%",
       sub: sample?.memory
         ? `${(sample.memory.usedBytes / 1024 / 1024 / 1024).toFixed(1)} / ${(
             sample.memory.totalBytes / 1024 / 1024 / 1024
           ).toFixed(1)} GB`
         : "0 GB",
+      percent: sample?.memory ? Math.round(100 - sample.memory.availablePct) : 0,
+      icon: Layers,
+      color: "text-purple-400",
+      bgColor: "bg-purple-500/10",
+      borderColor: "border-purple-500/25",
+      barColor: "bg-purple-400",
     },
     {
-      label: "GPU",
+      label: "GPU Compute",
       value: sample?.gpu ? `${Math.round(sample.gpu.utilPct)}%` : "0%",
-      sub: sample?.gpu?.deviceName || "Integrated Graphics",
+      sub: sample?.gpu?.deviceName || "Hardware Acceleration",
+      percent: sample?.gpu ? Math.round(sample.gpu.utilPct) : 0,
+      icon: Tv,
+      color: "text-teal-400",
+      bgColor: "bg-teal-500/10",
+      borderColor: "border-teal-500/25",
+      barColor: "bg-teal-400",
     },
     {
-      label: "VRAM",
-      value: sample?.gpu?.vramTotalBytes ? `${Math.round(sample.gpu.vramUsedPct)}%` : "N/A",
+      label: "VRAM Used",
+      value: sample?.gpu?.vramTotalBytes ? `${Math.round(sample.gpu.vramUsedPct)}%` : "Shared",
       sub: sample?.gpu?.vramTotalBytes
         ? `${(sample.gpu.vramUsedBytes / 1024 / 1024 / 1024).toFixed(1)} / ${(
             sample.gpu.vramTotalBytes / 1024 / 1024 / 1024
           ).toFixed(1)} GB`
-        : "Shared system memory",
+        : "Unified system memory",
+      percent: sample?.gpu?.vramTotalBytes ? Math.round(sample.gpu.vramUsedPct) : 0,
+      icon: Flame,
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10",
+      borderColor: "border-amber-500/25",
+      barColor: "bg-amber-400",
     },
     {
-      label: "Disk free",
+      label: "Disk Free",
       value: sample?.disk ? `${Math.round(sample.disk.freePct)}%` : "N/A",
       sub: sample?.disk
         ? `${(sample.disk.freeBytes / 1024 / 1024 / 1024).toFixed(0)} GB free`
         : "Root partition",
+      percent: sample?.disk ? Math.round(sample.disk.freePct) : 100,
+      icon: HardDrive,
+      color: "text-emerald-400",
+      bgColor: "bg-emerald-500/10",
+      borderColor: "border-emerald-500/25",
+      barColor: "bg-emerald-400",
     },
     {
-      label: "Thermal",
-      value: sample?.thermal ? `${Math.round(sample.thermal.maxTempCelsius)}°C` : "N/A",
-      sub: sample?.thermal?.fanRpm ? `${sample.thermal.fanRpm} RPM` : "Δ to max: 25°C",
+      label: "Thermal Core",
+      value: sample?.thermal ? `${Math.round(sample.thermal.maxTempCelsius)}°C` : "Normal",
+      sub: sample?.thermal?.fanRpm ? `${sample.thermal.fanRpm} RPM` : "Within safe margin",
+      percent: sample?.thermal ? Math.min(100, Math.round((sample.thermal.maxTempCelsius / 100) * 100)) : 35,
+      icon: Thermometer,
+      color: "text-rose-400",
+      bgColor: "bg-rose-500/10",
+      borderColor: "border-rose-500/25",
+      barColor: "bg-rose-400",
     },
   ];
 
-  // Telemetry chart geometry — muted grid, one accent CPU trace, one neutral memory trace.
+  // Telemetry chart geometry — muted grid, rich gradients, bright traces
   const chart = { width: 800, height: 200, left: 44, right: 12, top: 14, bottom: 32 };
   const plotWidth = chart.width - chart.left - chart.right;
   const plotHeight = chart.height - chart.top - chart.bottom;
@@ -244,11 +285,11 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-medium text-text-primary">
+                <h2 className="text-base font-semibold text-text-primary">
                   System health and resource governor
                 </h2>
                 <div
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium border ${stateBadge.className}`}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${stateBadge.className}`}
                 >
                   <StateIcon className="h-3.5 w-3.5" />
                   <span>{stateBadge.label}</span>
@@ -266,9 +307,9 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
                 <button
                   key={r}
                   onClick={() => setSelectedRange(r)}
-                  className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${
+                  className={`px-3 py-1 rounded-lg transition-colors cursor-pointer font-medium ${
                     selectedRange === r
-                      ? "bg-accent-muted text-accent font-medium"
+                      ? "bg-accent-muted text-accent font-semibold"
                       : "text-text-secondary hover:text-text-primary"
                   }`}
                 >
@@ -287,41 +328,58 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
           </div>
         </div>
 
-        {/* 2. Neutral stat cards — the chart, not these, owns the richness */}
+        {/* 2. Color-accented, high-contrast stat cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {statCards.map((card) => (
-            <div
-              key={card.label}
-              className="p-4 rounded-xl bg-white/[0.03] border border-border-subtle flex flex-col justify-between"
-            >
-              <div className="text-xs text-text-secondary">{card.label}</div>
-              <div className="my-3">
-                <div className="text-2xl font-medium tabular text-text-primary">{card.value}</div>
-                <div className="text-[11px] text-text-disabled mt-1 truncate" title={card.sub}>
-                  {card.sub}
+          {statCards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div
+                key={card.label}
+                className="p-4 rounded-xl bg-white/[0.03] border border-border-subtle flex flex-col justify-between hover:border-border-glass transition-colors group"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-text-secondary">{card.label}</span>
+                  <div className={`flex h-6 w-6 items-center justify-center rounded-lg ${card.bgColor} ${card.color} border ${card.borderColor}`}>
+                    <Icon className="h-3.5 w-3.5" />
+                  </div>
+                </div>
+                <div className="my-2.5">
+                  <div className="text-2xl font-bold tabular text-text-primary tracking-tight">
+                    {card.value}
+                  </div>
+                  {/* Subtle colorful progress track */}
+                  <div className="w-full h-1.5 rounded-full bg-border-subtle mt-2 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${card.barColor} transition-all duration-300`}
+                      style={{ width: `${Math.max(4, Math.min(100, card.percent))}%` }}
+                    />
+                  </div>
+                  <div className="text-[11px] text-text-secondary mt-2 truncate font-mono" title={card.sub}>
+                    {card.sub}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* 3. System telemetry — the single rich data moment */}
+        {/* 3. System telemetry — rich gradients & colorful traces */}
         <div className="p-5 rounded-2xl bg-white/[0.03] border border-border-subtle">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <div>
-              <h3 className="text-sm font-medium text-text-primary">System telemetry</h3>
+              <h3 className="text-sm font-semibold text-text-primary">System telemetry</h3>
               <p className="text-xs text-text-secondary mt-1">
                 Continuous 1 Hz readings · last {selectedRange}
               </p>
             </div>
-            <div className="flex items-center gap-4 text-[11px] text-text-secondary">
+            <div className="flex items-center gap-4 text-xs font-medium text-text-secondary">
               <span className="flex items-center gap-2">
-                <span className="h-0.5 w-4 rounded-full bg-accent" />
-                CPU
+                <span className="h-1.5 w-4 rounded-full bg-sky-400" />
+                <span className="text-text-primary">CPU Utilization</span>
               </span>
               <span className="flex items-center gap-2">
-                <span className="w-4 border-t border-dashed border-text-secondary" />
-                Memory
+                <span className="h-1.5 w-4 rounded-full bg-purple-400" />
+                <span className="text-text-primary">Memory Usage</span>
               </span>
             </div>
           </div>
@@ -332,7 +390,18 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
               viewBox={`0 0 ${chart.width} ${chart.height}`}
               preserveAspectRatio="none"
             >
-              {/* Muted hairline grid */}
+              <defs>
+                <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.25" />
+                  <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="memGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#a855f7" stopOpacity="0.20" />
+                  <stop offset="100%" stopColor="#a855f7" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+
+              {/* Muted hairline grid with crisp, readable labels */}
               {[0, 25, 50, 75, 100].map((tick) => (
                 <g key={tick}>
                   <line
@@ -347,11 +416,12 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
                     x={chart.left - 8}
                     y={yFor(tick) + 4}
                     textAnchor="end"
-                    fill="var(--color-text-disabled)"
+                    fill="var(--color-text-secondary)"
                     className="font-mono tabular"
                     fontSize="11"
+                    fontWeight="500"
                   >
-                    {tick}
+                    {tick}%
                   </text>
                 </g>
               ))}
@@ -371,9 +441,10 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
                       x={x}
                       y={baselineY + 18}
                       textAnchor={idx === 0 ? "start" : idx === timeLabels[selectedRange].length - 1 ? "end" : "middle"}
-                      fill="var(--color-text-disabled)"
+                      fill="var(--color-text-secondary)"
                       className="font-mono"
                       fontSize="11"
+                      fontWeight="500"
                     >
                       {label}
                     </text>
@@ -388,41 +459,62 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
                 stroke="var(--color-border-glass)"
               />
 
-              {/* One accent CPU trace */}
+              {/* Memory Area Fill & Trace */}
               {historySamples.length > 1 && (
-                <polyline
-                  fill="none"
-                  className="text-accent"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  points={historySamples
-                    .map((s, idx) => `${xFor(idx, historySamples.length)},${yFor(s.cpu?.globalUtilPct || 0)}`)
-                    .join(" ")}
-                />
+                <>
+                  <polygon
+                    fill="url(#memGradient)"
+                    points={`
+                      ${xFor(0, historySamples.length)},${baselineY}
+                      ${historySamples
+                        .map((s, idx) => `${xFor(idx, historySamples.length)},${yFor(s.memory ? 100 - s.memory.availablePct : 0)}`)
+                        .join(" ")}
+                      ${xFor(historySamples.length - 1, historySamples.length)},${baselineY}
+                    `}
+                  />
+                  <polyline
+                    fill="none"
+                    stroke="#a855f7"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    points={historySamples
+                      .map((s, idx) =>
+                        `${xFor(idx, historySamples.length)},${yFor(s.memory ? 100 - s.memory.availablePct : 0)}`
+                      )
+                      .join(" ")}
+                  />
+                </>
               )}
 
-              {/* One neutral, dashed memory comparison */}
+              {/* CPU Area Fill & Trace */}
               {historySamples.length > 1 && (
-                <polyline
-                  fill="none"
-                  className="text-text-secondary"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeDasharray="4 4"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  points={historySamples
-                    .map((s, idx) =>
-                      `${xFor(idx, historySamples.length)},${yFor(s.memory ? 100 - s.memory.availablePct : 0)}`
-                    )
-                    .join(" ")}
-                />
+                <>
+                  <polygon
+                    fill="url(#cpuGradient)"
+                    points={`
+                      ${xFor(0, historySamples.length)},${baselineY}
+                      ${historySamples
+                        .map((s, idx) => `${xFor(idx, historySamples.length)},${yFor(s.cpu?.globalUtilPct || 0)}`)
+                        .join(" ")}
+                      ${xFor(historySamples.length - 1, historySamples.length)},${baselineY}
+                    `}
+                  />
+                  <polyline
+                    fill="none"
+                    stroke="#38bdf8"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    points={historySamples
+                      .map((s, idx) => `${xFor(idx, historySamples.length)},${yFor(s.cpu?.globalUtilPct || 0)}`)
+                      .join(" ")}
+                  />
+                </>
               )}
             </svg>
             {historySamples.length <= 1 && (
-              <div className="absolute inset-0 flex items-center justify-center text-[11px] font-mono text-text-disabled">
+              <div className="absolute inset-0 flex items-center justify-center text-xs font-mono font-medium text-text-secondary">
                 Awaiting telemetry samples
               </div>
             )}
@@ -433,52 +525,84 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 p-5 rounded-2xl bg-white/[0.03] border border-border-subtle">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-text-primary">Top resource consumers</h3>
-              <span className="text-xs text-text-disabled">Auto-tagged Starship sub-apps</span>
+              <h3 className="text-sm font-semibold text-text-primary">Top resource consumers</h3>
+              <span className="text-xs font-medium text-text-secondary">Auto-tagged Starship sub-apps</span>
             </div>
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-border-subtle text-text-disabled">
-                    <th className="py-2 font-medium">Process</th>
-                    <th className="py-2 font-medium">PID</th>
-                    <th className="py-2 font-medium">CPU %</th>
-                    <th className="py-2 font-medium">Memory</th>
-                    <th className="py-2 font-medium text-right">Tag</th>
+                  <tr className="border-b border-border-subtle text-text-secondary font-semibold">
+                    <th className="py-2.5">Process</th>
+                    <th className="py-2.5">PID</th>
+                    <th className="py-2.5">CPU %</th>
+                    <th className="py-2.5">Memory</th>
+                    <th className="py-2.5 text-right">Tag</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-subtle">
                   {sample?.topProcesses && sample.topProcesses.length > 0 ? (
-                    sample.topProcesses.map((p) => (
-                      <tr
-                        key={p.pid}
-                        className={`transition-colors ${
-                          p.isStarshipOwned
-                            ? "bg-accent-muted text-text-primary"
-                            : "text-text-secondary hover:bg-white/[0.03]"
-                        }`}
-                      >
-                        <td className="py-2 font-mono font-medium">{p.name}</td>
-                        <td className="py-2 font-mono text-text-disabled tabular">{p.pid}</td>
-                        <td className="py-2 font-medium tabular">{p.cpuPct.toFixed(1)}%</td>
-                        <td className="py-2 font-mono text-text-secondary tabular">
-                          {(p.memBytes / 1024 / 1024).toFixed(0)} MB
-                        </td>
-                        <td className="py-2 text-right">
-                          {p.isStarshipOwned ? (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-medium bg-accent-muted text-accent border border-accent/30">
-                              Starship app
-                            </span>
-                          ) : (
-                            <span className="text-text-disabled text-[11px]">Host</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))
+                    sample.topProcesses.map((p) => {
+                      const subAppMatch = p.name.toLowerCase();
+                      let tagColor = "bg-accent-muted text-accent border-accent/30";
+                      let tagLabel = "Starship app";
+                      if (subAppMatch.includes("easy-edits") || subAppMatch.includes("eep")) {
+                        tagColor = "bg-blue-500/15 text-blue-400 border-blue-500/30";
+                        tagLabel = "Easy Edits";
+                      } else if (subAppMatch.includes("screen-studio") || subAppMatch.includes("ssp")) {
+                        tagColor = "bg-amber-500/15 text-amber-400 border-amber-500/30";
+                        tagLabel = "ScreenStudio";
+                      } else if (subAppMatch.includes("audio-labs") || subAppMatch.includes("alp")) {
+                        tagColor = "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+                        tagLabel = "Audio Labs";
+                      } else if (subAppMatch.includes("net-watch") || subAppMatch.includes("nwp")) {
+                        tagColor = "bg-cyan-500/15 text-cyan-400 border-cyan-500/30";
+                        tagLabel = "Net Watch";
+                      } else if (subAppMatch.includes("agentic-tuneup") || subAppMatch.includes("atp")) {
+                        tagColor = "bg-purple-500/15 text-purple-400 border-purple-500/30";
+                        tagLabel = "Tuneup Pro";
+                      }
+
+                      return (
+                        <tr
+                          key={p.pid}
+                          className={`transition-colors ${
+                            p.isStarshipOwned
+                              ? "bg-accent-muted/20 text-text-primary"
+                              : "text-text-secondary hover:bg-white/[0.03]"
+                          }`}
+                        >
+                          <td className="py-2.5 font-mono font-medium text-text-primary">{p.name}</td>
+                          <td className="py-2.5 font-mono text-text-secondary tabular">{p.pid}</td>
+                          <td className="py-2.5 font-medium tabular text-text-primary">
+                            <div className="flex items-center gap-2">
+                              <span>{p.cpuPct.toFixed(1)}%</span>
+                              <div className="w-12 h-1 rounded-full bg-border-subtle overflow-hidden">
+                                <div
+                                  className="h-full bg-sky-400 rounded-full"
+                                  style={{ width: `${Math.min(100, Math.max(4, p.cpuPct))}%` }}
+                                />
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-2.5 font-mono text-text-secondary tabular font-medium">
+                            {(p.memBytes / 1024 / 1024).toFixed(0)} MB
+                          </td>
+                          <td className="py-2.5 text-right">
+                            {p.isStarshipOwned ? (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold border ${tagColor}`}>
+                                {tagLabel}
+                              </span>
+                            ) : (
+                              <span className="text-text-secondary text-[11px] font-medium">Host system</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan={5} className="py-4 text-center text-text-disabled">
+                      <td colSpan={5} className="py-4 text-center text-text-secondary font-medium">
                         Gathering process metrics
                       </td>
                     </tr>
@@ -486,16 +610,16 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
 
                   {/* Starship Footprint Total Row */}
                   {sample?.ownFootprint && (
-                    <tr className="border-t border-border-glass bg-white/[0.03] font-medium text-text-primary">
-                      <td className="py-2">Starship total footprint</td>
-                      <td className="py-2 font-mono text-text-secondary tabular">
+                    <tr className="border-t border-border-glass bg-white/[0.03] font-semibold text-text-primary">
+                      <td className="py-2.5">Starship total footprint</td>
+                      <td className="py-2.5 font-mono text-text-secondary tabular font-medium">
                         {sample.ownFootprint.processCount} procs
                       </td>
-                      <td className="py-2 tabular">{sample.ownFootprint.totalCpuPct.toFixed(1)}%</td>
-                      <td className="py-2 font-mono tabular">
+                      <td className="py-2.5 tabular text-sky-400">{sample.ownFootprint.totalCpuPct.toFixed(1)}%</td>
+                      <td className="py-2.5 font-mono tabular text-purple-400">
                         {(sample.ownFootprint.totalRssBytes / 1024 / 1024).toFixed(0)} MB
                       </td>
-                      <td className="py-2 text-right text-[11px] text-text-secondary">Combined</td>
+                      <td className="py-2.5 text-right text-[11px] text-text-secondary font-medium">Combined</td>
                     </tr>
                   )}
                 </tbody>
@@ -506,8 +630,8 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
           {/* 5. Alerts Timeline Drawer */}
           <div className="p-5 rounded-2xl bg-white/[0.03] border border-border-subtle flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-text-primary">Governor alerts</h3>
-              <span className="text-xs text-text-disabled">{alerts.length} logged</span>
+              <h3 className="text-sm font-semibold text-text-primary">Governor alerts</h3>
+              <span className="text-xs font-medium text-text-secondary">{alerts.length} logged</span>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2 max-h-[300px] pr-1">
@@ -518,14 +642,14 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
                     className="p-3 rounded-xl bg-white/[0.03] border border-border-subtle text-xs space-y-1"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-[11px] font-medium text-text-primary">
+                      <span className="font-mono text-[11px] font-semibold text-text-primary">
                         {a.signal}
                       </span>
-                      <span className="text-[11px] text-signal-thinking capitalize">
+                      <span className="text-[11px] text-signal-thinking font-medium capitalize">
                         {a.action}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between text-text-secondary text-[11px]">
+                    <div className="flex items-center justify-between text-text-secondary text-[11px] font-medium">
                       <span>Level: {a.level}</span>
                       <span className="tabular">Value: {a.value.toFixed(1)}</span>
                     </div>
@@ -534,9 +658,9 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
               ) : (
                 <div className="flex flex-col items-center justify-center h-32 text-center text-text-secondary text-xs">
                   <CheckCircle2 className="h-5 w-5 text-signal-success mb-2" />
-                  <span>No overload alerts tripped</span>
-                  <span className="text-[11px] text-text-disabled mt-1">
-                    System operating within thresholds
+                  <span className="font-medium text-text-primary">No overload alerts tripped</span>
+                  <span className="text-[11px] text-text-secondary mt-1">
+                    System operating within normal parameters
                   </span>
                 </div>
               )}

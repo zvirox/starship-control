@@ -325,10 +325,10 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
       {/* 2. DAG Timeline Steps View */}
       <div className="space-y-2">
         <div className="flex items-center justify-between px-1">
-          <h4 className="text-xs font-medium text-text-secondary">
+          <h4 className="text-xs font-semibold text-text-primary">
             Execution stages and timeline
           </h4>
-          <span className="text-[11px] text-text-disabled">
+          <span className="text-[11px] font-medium text-text-secondary">
             {steps.filter((s) => s.state === "success").length} of {steps.length} stages completed
           </span>
         </div>
@@ -342,7 +342,7 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
             const isApproval = step.state === "paused_approval";
             const isQueued = step.state === "queued";
 
-            // Hairline surface steps — no colored glows or specular rims.
+            // Hairline surface steps
             const stepSurface = isRunning
               ? "bg-accent-muted"
               : isQueued || isApproval
@@ -359,7 +359,7 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
               ? "bg-accent-muted text-accent"
               : isQueued
               ? "bg-signal-thinking-bg text-signal-thinking"
-              : "bg-white/[0.03] text-text-disabled";
+              : "bg-white/[0.03] text-text-secondary font-medium";
 
             return (
               <GlassPanel
@@ -451,17 +451,17 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                           <span>Running</span>
                         </span>
                       ) : isSkipped ? (
-                        <span className="flex items-center gap-1 text-xs text-text-disabled font-medium">
+                        <span className="flex items-center gap-1 text-xs text-text-secondary font-medium">
                           <FastForward className="h-3.5 w-3.5" />
                           <span>Skipped</span>
                         </span>
                       ) : isFailed ? (
-                        <span className="flex items-center gap-1 text-xs text-signal-gate font-medium">
+                        <span className="flex items-center gap-1 text-xs text-signal-gate font-semibold">
                           <XCircle className="h-3.5 w-3.5" />
                           <span>Failed</span>
                         </span>
                       ) : (
-                        <span className="text-xs text-text-disabled">Pending</span>
+                        <span className="text-xs text-text-secondary font-medium">Pending</span>
                       )}
                     </div>
                   </div>
@@ -508,8 +508,8 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
         >
           <div className="flex items-center gap-2">
             <Terminal className="h-4 w-4" />
-            <span>Mission timeline event log</span>
-            <span className="text-[11px] font-mono px-2 py-0.5 rounded-lg bg-white/[0.03] text-text-disabled border border-border-subtle">
+            <span className="font-semibold text-text-primary">Mission timeline event log</span>
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded-lg bg-surface-solid text-text-secondary border border-border-subtle font-medium">
               {events.length > 0 ? `${events.length} events` : "Live telemetry"}
             </span>
           </div>
@@ -517,10 +517,10 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
         </button>
 
         {isLogDrawerOpen && (
-          <div className="p-4 border-t border-border-subtle bg-black/30 max-h-64 overflow-y-auto font-mono text-xs space-y-2">
+          <div className="p-4 border-t border-border-subtle bg-surface-solid max-h-64 overflow-y-auto font-mono text-xs space-y-2">
             {events.length === 0 ? (
-              <div className="text-text-disabled py-2 text-center">
-                Listening for real-time mission timeline events
+              <div className="text-text-secondary font-medium py-2 text-center">
+                Listening for real-time mission timeline events...
               </div>
             ) : (
               events.map((ev) => {
@@ -528,17 +528,17 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                 return (
                   <div
                     key={ev.id}
-                    className={`p-2 rounded-lg border transition-colors ${
+                    className={`p-2.5 rounded-lg border transition-colors ${
                       isSelected
                         ? "border-signal-thinking/30 bg-signal-thinking-bg text-text-primary"
                         : "border-border-subtle bg-white/[0.02] text-text-secondary"
                     }`}
                   >
-                    <div className="flex items-center justify-between text-[11px] text-text-disabled">
-                      <span className="text-accent font-medium">{ev.kind}</span>
+                    <div className="flex items-center justify-between text-[11px] text-text-secondary font-medium">
+                      <span className="text-accent font-semibold">{ev.kind}</span>
                       <span>#{ev.id} · {new Date(ev.tsMs).toLocaleTimeString()}</span>
                     </div>
-                    <div className="text-text-primary mt-1 break-all">
+                    <div className="text-text-primary mt-1 break-all font-medium">
                       {JSON.stringify(ev.payload)}
                     </div>
                   </div>
@@ -550,14 +550,14 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
             {isMockMode && events.length === 0 && (
               <div className="space-y-2">
                 <div
-                  className={`p-2 rounded-lg border transition-colors ${
+                  className={`p-2.5 rounded-lg border transition-colors ${
                     selectedEventId === 104
                       ? "border-signal-thinking/30 bg-signal-thinking-bg text-text-primary"
                       : "border-border-subtle bg-white/[0.02] text-text-secondary"
                   }`}
                 >
-                  <div className="flex items-center justify-between text-[11px] text-text-disabled">
-                    <span className="text-signal-thinking font-medium">fallback_engaged</span>
+                  <div className="flex items-center justify-between text-[11px] text-text-secondary font-medium">
+                    <span className="text-signal-thinking font-semibold">fallback_engaged</span>
                     <span>#104 · Event ID 104</span>
                   </div>
                   <div className="text-text-primary mt-1">
@@ -566,14 +566,14 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
                 </div>
 
                 <div
-                  className={`p-2 rounded-lg border transition-colors ${
+                  className={`p-2.5 rounded-lg border transition-colors ${
                     selectedEventId === 105
                       ? "border-signal-thinking/30 bg-signal-thinking-bg text-text-primary"
                       : "border-border-subtle bg-white/[0.02] text-text-secondary"
                   }`}
                 >
-                  <div className="flex items-center justify-between text-[11px] text-text-disabled">
-                    <span className="text-signal-thinking font-medium">step_skipped</span>
+                  <div className="flex items-center justify-between text-[11px] text-text-secondary font-medium">
+                    <span className="text-signal-thinking font-semibold">step_skipped</span>
                     <span>#105 · Event ID 105</span>
                   </div>
                   <div className="text-text-primary mt-1">

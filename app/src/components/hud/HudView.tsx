@@ -397,7 +397,7 @@ export const HudView: React.FC = () => {
                     }`}
                   >
                     <span className="truncate">{m.name}</span>
-                    <span className="text-[11px] text-text-disabled">
+                    <span className="text-[11px] text-text-secondary font-medium">
                       {m.provider_type === "local_gguf" ? "Local" : "Cloud"}
                     </span>
                   </button>
@@ -462,8 +462,8 @@ export const HudView: React.FC = () => {
                 value={prompt}
                 disabled={isStreaming}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={isStreaming ? "Working" : "Ask or instruct"}
-                className="w-full bg-black/20 border border-border-subtle rounded-xl px-2 py-1 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
+                placeholder={isStreaming ? "Working..." : "Ask or instruct..."}
+                className="w-full bg-surface-solid border border-border-subtle rounded-xl px-2.5 py-1 text-xs font-medium text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent transition-colors disabled:opacity-50"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && prompt.trim()) {
                     handleSendPrompt();
@@ -521,7 +521,7 @@ export const HudView: React.FC = () => {
               type="button"
               title="Hide HUD"
               onClick={() => invoke("cmd_toggle_hud")}
-              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.03] hover:bg-white/[0.05] text-text-disabled hover:text-text-primary transition-colors cursor-pointer"
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/[0.03] hover:bg-white/[0.05] text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
             >
               <Minus className="h-3.5 w-3.5" />
             </button>
@@ -674,8 +674,8 @@ export const HudView: React.FC = () => {
                   type="text"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Enter a strategic command"
-                  className="w-full rounded-xl bg-black/40 border border-border-subtle px-3 py-2 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent transition-colors"
+                  placeholder="Enter a strategic command..."
+                  className="w-full rounded-xl bg-surface-solid border border-border-subtle px-3 py-2 text-xs font-medium text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent transition-colors"
                   autoFocus
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && prompt.trim()) {
@@ -695,12 +695,12 @@ export const HudView: React.FC = () => {
                       Enter
                       <CornerDownLeft className="h-3.5 w-3.5" />
                     </kbd>
-                    <span className="text-text-disabled">Approve</span>
+                    <span className="text-text-secondary font-medium">Approve</span>
                     <kbd className="keycap">Esc</kbd>
-                    <span className="text-text-disabled">Reject</span>
+                    <span className="text-text-secondary font-medium">Reject</span>
                   </>
                 ) : (
-                  <span>Ready · Esc to collapse</span>
+                  <span className="font-medium">Ready · Esc to collapse</span>
                 )}
               </div>
 

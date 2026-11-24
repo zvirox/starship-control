@@ -18,7 +18,10 @@ import {
   History,
   Trash2,
   Activity,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useThemeStore } from "../../stores/themeStore";
 import { ChatCanvas } from "./ChatCanvas";
 import { ModelSettingsModal } from "./ModelSettingsModal";
 import { ModelControlView } from "./ModelControlView";
@@ -44,6 +47,7 @@ import type {
 } from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
+  const { theme, toggleTheme } = useThemeStore();
   const [navTab, setNavTab] = useState<"chat" | "timeline" | "history" | "workflows" | "apps" | "tools" | "models" | "systems" | "activity">("chat");
   const [prompt, setPrompt] = useState("");
   const [hudActive, setHudActive] = useState(false);
@@ -271,13 +275,13 @@ export const CockpitView: React.FC = () => {
               className="flex items-center gap-2 rounded-xl border border-border-subtle bg-white/[0.03] px-3 py-1.5 text-xs text-text-primary transition-colors duration-150 hover:bg-white/[0.05] focus-ring cursor-pointer"
             >
               <Cpu className="h-3.5 w-3.5 text-accent" strokeWidth={1.5} />
-              <span className="font-medium">{activeModel?.name || "Select model"}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-text-disabled" strokeWidth={1.5} />
+              <span className="font-semibold">{activeModel?.name || "Select model"}</span>
+              <ChevronDown className="h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
             </button>
 
             {modelDropdownOpen && (
-              <div className="absolute left-0 z-50 mt-1 w-64 rounded-xl border border-border-subtle bg-surface-solid p-2">
-                <div className="px-2 py-1 text-[11px] text-text-disabled">Select engine</div>
+              <div className="absolute left-0 z-50 mt-1 w-64 rounded-xl border border-border-subtle bg-surface-solid p-2 shadow-xl">
+                <div className="px-2 py-1 text-[11px] font-semibold text-text-secondary">Select engine</div>
                 {models.map((m) => (
                   <button
                     key={m.id}
@@ -287,12 +291,12 @@ export const CockpitView: React.FC = () => {
                     }}
                     className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs transition-colors duration-150 focus-ring cursor-pointer ${
                       activeModel?.id === m.id
-                        ? "bg-accent-muted text-accent font-medium"
-                        : "text-text-secondary hover:bg-white/[0.05]"
+                        ? "bg-accent-muted text-accent font-semibold"
+                        : "text-text-secondary hover:bg-white/[0.05] hover:text-text-primary"
                     }`}
                   >
-                    <span>{m.name}</span>
-                    <span className="text-[11px] text-text-disabled capitalize">{m.provider_type.replace("cloud_", "")}</span>
+                    <span className="font-medium">{m.name}</span>
+                    <span className="text-[11px] font-mono text-text-secondary capitalize">{m.provider_type.replace("cloud_", "")}</span>
                   </button>
                 ))}
               </div>
@@ -307,6 +311,20 @@ export const CockpitView: React.FC = () => {
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
+          {/* Theme switch button */}
+          <button
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            aria-label="Toggle theme mode"
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border-subtle bg-white/[0.03] text-text-secondary transition-colors duration-150 hover:bg-white/[0.05] hover:text-text-primary focus-ring cursor-pointer"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4 text-amber-400" strokeWidth={1.5} />
+            ) : (
+              <Moon className="h-4 w-4 text-sky-600" strokeWidth={1.5} />
+            )}
+          </button>
+
           <button
             onClick={() => setIsSettingsOpen(true)}
             title="Model settings and API keys"
@@ -431,38 +449,38 @@ export const CockpitView: React.FC = () => {
               </button>
 
               <div className="relative">
-                <Search className="absolute left-3 top-2 h-4 w-4 text-text-disabled" strokeWidth={1.5} />
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-text-secondary" strokeWidth={1.5} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search"
-                  className="w-full rounded-xl border border-border-subtle bg-black/20 py-1.5 pl-9 pr-3 text-xs text-text-primary placeholder:text-text-disabled focus-ring focus:border-border-glass"
+                  placeholder="Search missions..."
+                  className="w-full rounded-xl border border-border-subtle bg-surface-solid py-1.5 pl-9 pr-3 text-xs font-medium text-text-primary placeholder:text-text-secondary focus-ring focus:border-border-glass"
                 />
               </div>
 
               <div className="max-h-[calc(100vh-250px)] space-y-1 overflow-y-auto">
                 {filteredMissions.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-text-disabled">No missions yet</div>
+                  <div className="py-6 text-center text-xs font-medium text-text-secondary">No missions yet</div>
                 ) : (
                   filteredMissions.map((m) => (
                     <div
                       key={m.id}
                       onClick={() => setActiveMissionId(m.id)}
-                      className={`group flex cursor-pointer items-center justify-between rounded-xl px-2 py-2 text-xs transition-colors duration-150 ${
+                      className={`group flex cursor-pointer items-center justify-between rounded-xl px-2.5 py-2 text-xs transition-colors duration-150 ${
                         activeMissionId === m.id
-                          ? "bg-white/[0.08] text-text-primary font-medium"
-                          : "text-text-secondary hover:bg-white/[0.03] hover:text-text-primary"
+                          ? "bg-accent-muted/30 text-text-primary font-semibold border border-accent/20"
+                          : "text-text-secondary hover:bg-white/[0.04] hover:text-text-primary"
                       }`}
                     >
                       <div className="flex items-center gap-2 truncate">
-                        <MessageSquare className="h-3.5 w-3.5 shrink-0 text-text-disabled" strokeWidth={1.5} />
-                        <span className="truncate">{m.title || "Untitled mission"}</span>
+                        <MessageSquare className="h-3.5 w-3.5 shrink-0 text-text-secondary" strokeWidth={1.5} />
+                        <span className="truncate font-medium">{m.title || "Untitled mission"}</span>
                       </div>
                       <button
                         onClick={(e) => handleDeleteMission(m.id, e)}
                         title="Delete mission"
-                        className="rounded p-1 text-text-disabled opacity-0 transition-opacity duration-150 hover:text-signal-gate group-hover:opacity-100 focus-ring cursor-pointer"
+                        className="rounded p-1 text-text-secondary opacity-0 transition-opacity duration-150 hover:text-signal-gate group-hover:opacity-100 focus-ring cursor-pointer"
                       >
                         <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                       </button>
@@ -533,7 +551,7 @@ export const CockpitView: React.FC = () => {
             </div>
 
             <div className="mx-auto w-full min-w-0 max-w-4xl p-4">
-              <div className="relative flex items-center rounded-2xl border border-border-subtle bg-surface-solid p-2 transition-colors duration-150 focus-within:border-accent/50">
+              <div className="relative flex items-center rounded-2xl border border-border-subtle bg-surface-solid p-2 transition-colors duration-150 focus-within:border-accent">
                 <input
                   ref={inputRef}
                   type="text"
@@ -546,18 +564,21 @@ export const CockpitView: React.FC = () => {
                       handleSendPrompt();
                     }
                   }}
-                  placeholder={isStreaming ? "Generating response" : "Message or instruction"}
-                  className="flex-1 bg-transparent px-3 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none disabled:opacity-50"
+                  placeholder={isStreaming ? "Thinking and coordinating agents..." : "Type instructions or coordinate sub-apps..."}
+                  className="flex-1 bg-transparent px-3 text-xs font-medium text-text-primary placeholder:text-text-secondary focus:outline-none disabled:opacity-50"
                 />
 
-                <button
-                  disabled={isStreaming || !prompt.trim()}
-                  onClick={() => handleSendPrompt()}
-                  className="flex h-8 items-center gap-2 rounded-xl bg-white/[0.08] px-3 text-xs font-medium text-text-primary transition-colors duration-150 hover:bg-white/[0.12] focus-ring disabled:opacity-40 cursor-pointer"
-                >
-                  <Send className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />
-                  <span>{isStreaming ? "Thinking" : "Send"}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <span className="quiet-chip tabular font-medium text-text-secondary">{activeModel?.name || "Local model"}</span>
+                  <button
+                    disabled={isStreaming || !prompt.trim()}
+                    onClick={() => handleSendPrompt()}
+                    className="flex h-8 items-center gap-2 rounded-xl bg-accent text-accent-text px-3.5 text-xs font-semibold transition-colors duration-150 hover:bg-accent-hover focus-ring disabled:opacity-40 cursor-pointer shadow-sm"
+                  >
+                    <Send className="h-3.5 w-3.5" strokeWidth={2} />
+                    <span>{isStreaming ? "Thinking" : "Send"}</span>
+                  </button>
+                </div>
               </div>
             </div>
           </main>

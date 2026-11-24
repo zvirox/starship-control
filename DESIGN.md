@@ -31,52 +31,64 @@ Every motion communicates state. Window expansions, card slide-ins, and approval
 
 ## 2. Color Tokens
 
-### 2.1 Dark Mode (Default & Primary)
+### 2.1 Dark Mode (Default & Primary — Graphite)
 
 | Token | Hex / Value | Semantic Role |
 |---|---|---|
-| `bg.canvas` | `#080B10` | App base canvas beneath all glass surfaces |
-| `bg.raised` | `#0E131B` | Opaque layer for forms, settings cards, audit tables |
-| `surface.glass` | `rgba(255, 255, 255, 0.055)` | Standard glass fill (Cockpit sidebars & panels) |
-| `surface.glass-strong`| `rgba(14, 19, 27, 0.78)` | High-density glass (Floating HUD, Modals, Toasts) |
-| `surface.solid` | `#141B26` | Resting cards, task sheet step blocks, dialogs |
-| `border.subtle` | `rgba(255, 255, 255, 0.08)` | Dividers, separators, inactive card edges |
-| `border.glass` | `rgba(255, 255, 255, 0.15)` | 1px inner specular boundary on glass layers |
+| `bg.canvas` | `#121214` | Neutral Graphite black base canvas beneath all glass surfaces |
+| `bg.raised` | `#18181b` | Opaque graphite layer for header, sidebars, settings cards, audit tables |
+| `surface.glass` | `rgba(255, 255, 255, 0.05)` | Standard glass fill (Cockpit sidebars & panels) |
+| `surface.glass-strong`| `rgba(24, 24, 27, 0.90)` | High-density glass (Floating HUD, Modals, Toasts) |
+| `surface.solid` | `#202024` | Resting cards, task sheet step blocks, dialogs, inputs |
+| `border.subtle` | `rgba(255, 255, 255, 0.12)` | Dividers, separators, inactive card edges |
+| `border.glass` | `rgba(255, 255, 255, 0.18)` | 1px inner specular boundary on glass layers |
 | `border.focus` | `#38BDF8` | Universal keyboard focus indicator |
-| `text.primary` | `#F1F5F9` | Headings, primary user prompts, active labels |
-| `text.secondary` | `rgba(241, 245, 249, 0.68)` | Assistant thoughts, step explanations, metadata |
-| `text.disabled` | `rgba(241, 245, 249, 0.38)` | Placeholders, inactive sub-apps, disabled buttons |
+| `text.primary` | `#FAFAFA` | High-contrast headings, primary user prompts, active labels (16.5:1 contrast) |
+| `text.secondary` | `#D4D4D8` | Assistant thoughts, step explanations, metadata, readable labels (11.8:1 contrast) |
+| `text.disabled` | `#A1A1AA` | Crisp placeholders, timestamps, subtle captions (6.5:1 contrast, WCAG AA compliant) |
 | `accent` | `#38BDF8` | Primary actions, Send button, active model selection |
 | `accent.hover` | `#7DD3FC` | Interactive hover state for primary accent |
 | `accent.active` | `#0284C7` | Pressed state for primary controls |
-| `accent.muted` | `rgba(56, 189, 248, 0.14)` | Selected table rows, active tab indicators |
+| `accent.muted` | `rgba(56, 189, 248, 0.16)` | Selected table rows, active tab indicators |
 | `accent.text` | `#031726` | High-contrast text rendered over solid `accent` |
 | `signal.thinking` | `#F59E0B` | Agent actively planning / LLM streaming tokens |
-| `signal.thinking-bg` | `rgba(245, 158, 11, 0.12)`| Ambient wash during model generation |
+| `signal.thinking-bg` | `rgba(245, 158, 11, 0.15)`| Ambient wash during model generation |
 | `signal.success` | `#10B981` | Tool verified, sub-app online, mission completed |
-| `signal.success-bg` | `rgba(16, 185, 129, 0.12)`| Success badge background |
+| `signal.success-bg` | `rgba(16, 185, 129, 0.15)`| Success badge background |
 | `signal.gate` | `#F43F5E` | Human Approval Gate required (Tier 2/3 action) |
-| `signal.gate-bg` | `rgba(244, 63, 94, 0.14)` | Approval card highlight & pulsating rim |
+| `signal.gate-bg` | `rgba(244, 63, 94, 0.16)` | Approval card highlight & pulsating rim |
 | `signal.local-model` | `#A855F7` | Indicator that local GGUF engine is running |
 
-### 2.2 Light Mode (Supported Fallback)
+### 2.2 Light Mode (Clean Graphite Light)
 
 | Token | Hex / Value | Semantic Role |
 |---|---|---|
-| `bg.canvas` | `#E2E8F0` | Light desktop canvas |
-| `bg.raised` | `#F8FAFC` | Opaque form backgrounds |
-| `surface.glass` | `rgba(255, 255, 255, 0.65)` | Translucent light panels |
-| `surface.glass-strong`| `rgba(255, 255, 255, 0.88)` | High-density light glass |
-| `surface.solid` | `#FFFFFF` | Solid cards |
-| `border.subtle` | `rgba(15, 23, 42, 0.08)` | Dividers |
-| `border.glass` | `rgba(255, 255, 255, 0.95)` | Specular inner border |
-| `text.primary` | `#0F172A` | Primary text |
-| `text.secondary` | `rgba(15, 23, 42, 0.65)` | Secondary text |
-| `accent` | `#0284C7` | Primary controls |
-| `accent.text` | `#FFFFFF` | Text on accent |
+| `bg.canvas` | `#F4F4F6` | Soft clean light desktop canvas |
+| `bg.raised` | `#FFFFFF` | Pure white top bar and sidebars |
+| `surface.glass` | `rgba(255, 255, 255, 0.88)` | Translucent light panels |
+| `surface.glass-strong`| `rgba(255, 255, 255, 0.98)` | High-density light glass |
+| `surface.solid` | `#FFFFFF` | Solid cards, inputs, dropdowns |
+| `border.subtle` | `#E4E4E7` | Zinc-200 dividers and card borders |
+| `border.glass` | `#D4D4D8` | Specular inner border |
+| `text.primary` | `#09090B` | Zinc-950 high contrast text (17.5:1 contrast) |
+| `text.secondary` | `#3F3F46` | Zinc-700 clear secondary text (9.2:1 contrast) |
+| `text.disabled` | `#71717A` | Zinc-500 crisp meta labels (4.8:1 contrast, WCAG AA compliant) |
+| `accent` | `#0284C7` | High-contrast sky blue for primary controls |
+| `accent.text` | `#FFFFFF` | Pure white text on accent |
 | `signal.thinking` | `#D97706` | Amber signal |
 | `signal.success` | `#059669` | Emerald signal |
 | `signal.gate` | `#E11D48` | Rose approval signal |
+
+### 2.3 PC Health & Telemetry Rich Color Palette
+
+| Metric | Accent Color | Hex | Visual Representation |
+|---|---|---|---|
+| **CPU Load** | Sky Blue | `#38BDF8` | Telemetry SVG area gradient, progress bar, header trace |
+| **RAM Used** | Violet / Purple | `#A855F7` | Telemetry SVG memory gradient, progress bar, footprint |
+| **GPU Compute** | Cyan / Teal | `#2DD4BF` | Compute utilization badge and track |
+| **VRAM Used** | Amber | `#FBBF24` | Memory allocation track |
+| **Disk Free** | Emerald | `#34D399` | Free storage badge and capacity meter |
+| **Thermal Core**| Rose | `#FB7185` | Temperature margin gauge |
 
 ---
 

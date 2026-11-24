@@ -215,8 +215,8 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
                 >
                   <Icon className="h-4 w-4 shrink-0 text-text-secondary" strokeWidth={1.5} />
                   <div className="min-w-0">
-                    <span className="block text-xs font-medium text-text-primary">{item.title}</span>
-                    <span className="mt-1 block truncate text-[11px] text-text-disabled">{item.prompt}</span>
+                    <span className="block text-xs font-semibold text-text-primary">{item.title}</span>
+                    <span className="mt-1 block truncate text-[11px] text-text-secondary">{item.prompt}</span>
                   </div>
                 </button>
               );
@@ -246,15 +246,15 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
                   className="flex w-full items-center gap-2 text-left text-[11px] text-text-secondary transition-colors duration-150 hover:text-text-primary focus-ring cursor-pointer"
                 >
                   <Brain className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  <span className="font-medium">Reasoning process</span>
+                  <span className="font-semibold text-text-primary">Reasoning process</span>
                   {expandedThoughts[msg.id] ? (
-                    <ChevronDown className="ml-auto h-3.5 w-3.5 text-text-disabled" strokeWidth={1.5} />
+                    <ChevronDown className="ml-auto h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
                   ) : (
-                    <ChevronRight className="ml-auto h-3.5 w-3.5 text-text-disabled" strokeWidth={1.5} />
+                    <ChevronRight className="ml-auto h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
                   )}
                 </button>
                 {expandedThoughts[msg.id] && (
-                  <div className="mt-2 border-t border-border-subtle pt-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-text-secondary">
+                  <div className="mt-2 border-t border-border-subtle pt-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-text-primary/90">
                     {msg.thought}
                   </div>
                 )}
@@ -298,13 +298,13 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
                     <span className="h-1.5 w-1.5 rounded-full bg-signal-thinking" />
                     <span className="font-medium text-text-primary">Thinking</span>
                   </div>
-                  <div className="flex items-center gap-1 text-text-disabled">
+                  <div className="flex items-center gap-1 text-text-secondary font-medium">
                     <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />
                     <span className="tabular">{elapsedSeconds}s</span>
                   </div>
                 </button>
                 {showLiveThought && (
-                  <pre className="mt-2 max-h-36 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-text-secondary">
+                  <pre className="mt-2 max-h-36 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-text-primary/90">
                     {liveThought}
                   </pre>
                 )}

@@ -101,31 +101,31 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
 
         <div className="space-y-3 text-xs">
           <div>
-            <label className="mb-1 block text-text-secondary">Base endpoint URL</label>
+            <label className="mb-1 block text-text-secondary font-medium">Base endpoint URL</label>
             <input
               type="text"
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
-              className="w-full rounded-xl border border-border-subtle bg-black/20 px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-disabled focus-ring focus:border-border-glass"
+              className="w-full rounded-xl border border-border-subtle bg-surface-solid px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-secondary focus-ring focus:border-border-glass"
             />
           </div>
 
           <div>
-            <label className="mb-1 flex items-center justify-between text-text-secondary">
+            <label className="mb-1 flex items-center justify-between text-text-secondary font-medium">
               <span>API key</span>
-              <span className="flex items-center gap-1 text-[11px] text-text-disabled">
+              <span className="flex items-center gap-1 text-[11px] text-text-secondary font-medium">
                 <Shield className="h-3.5 w-3.5 text-signal-success" strokeWidth={1.5} />
                 <span>Protected (0600 SQLite)</span>
               </span>
             </label>
             <div className="relative">
-              <Key className="absolute left-3 top-2 h-3.5 w-3.5 text-text-disabled" strokeWidth={1.5} />
+              <Key className="absolute left-3 top-2.5 h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
               <input
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="Paste API key"
-                className="w-full rounded-xl border border-border-subtle bg-black/20 py-2 pl-9 pr-3 font-mono text-xs text-text-primary placeholder:text-text-disabled focus-ring focus:border-border-glass"
+                className="w-full rounded-xl border border-border-subtle bg-surface-solid py-2 pl-9 pr-3 font-mono text-xs text-text-primary placeholder:text-text-secondary focus-ring focus:border-border-glass"
               />
             </div>
           </div>
@@ -145,7 +145,7 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
         )}
 
         <div className="flex items-center justify-between border-t border-border-subtle pt-3">
-          <span className="font-mono text-[11px] text-text-disabled">
+          <span className="font-mono text-[11px] text-text-secondary font-medium">
             Encrypted storage via provider_configs
           </span>
           <div className="flex items-center gap-2">

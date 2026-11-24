@@ -113,15 +113,15 @@ export const PlanWorkflowViewer: React.FC<PlanWorkflowViewerProps> = ({
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-medium text-text-primary">
+                      <span className="font-mono text-xs font-semibold text-text-primary">
                         {step.appId}
                       </span>
-                      <ArrowRight className="h-3.5 w-3.5 text-text-disabled" />
-                      <span className="font-mono text-xs text-text-secondary">
+                      <ArrowRight className="h-3.5 w-3.5 text-text-secondary" />
+                      <span className="font-mono text-xs font-medium text-text-secondary">
                         {step.toolName}
                       </span>
                     </div>
-                    <div className="text-[11px] text-text-secondary mt-1 line-clamp-1">
+                    <div className="text-[11px] text-text-secondary mt-1 line-clamp-1 font-medium">
                       {step.diffSummary || "Autonomous inspection or action execution"}
                     </div>
                   </div>
@@ -130,7 +130,7 @@ export const PlanWorkflowViewer: React.FC<PlanWorkflowViewerProps> = ({
                 <div className="flex items-center gap-2">
                   {/* Risk Badge */}
                   <span
-                    className={`text-[11px] font-mono px-2 py-1 rounded-lg border ${
+                    className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded-lg border ${
                       step.riskTier === 3
                         ? "bg-signal-gate-bg text-signal-gate border-signal-gate/40"
                         : step.riskTier === 2
@@ -143,22 +143,22 @@ export const PlanWorkflowViewer: React.FC<PlanWorkflowViewerProps> = ({
 
                   {/* Status Indicator */}
                   {isPendingApproval ? (
-                    <span className="flex items-center gap-1 text-[11px] font-medium text-signal-gate bg-signal-gate-bg px-2 py-1 rounded-lg border border-signal-gate/40">
+                    <span className="flex items-center gap-1 text-[11px] font-semibold text-signal-gate bg-signal-gate-bg px-2 py-0.5 rounded-lg border border-signal-gate/40">
                       <AlertTriangle className="h-3.5 w-3.5" />
                       Approval gate
                     </span>
                   ) : isRunning ? (
-                    <span className="flex items-center gap-1 text-[11px] font-mono text-accent">
+                    <span className="flex items-center gap-1 text-[11px] font-mono font-medium text-accent">
                       <Clock className="h-3.5 w-3.5" />
                       Running
                     </span>
                   ) : isCompleted ? (
-                    <span className="flex items-center gap-1 text-[11px] font-mono text-signal-success">
+                    <span className="flex items-center gap-1 text-[11px] font-mono font-medium text-signal-success">
                       <Shield className="h-3.5 w-3.5" />
                       Passed
                     </span>
                   ) : (
-                    <span className="text-[11px] font-mono text-text-disabled">
+                    <span className="text-[11px] font-mono text-text-secondary font-medium">
                       Pending
                     </span>
                   )}

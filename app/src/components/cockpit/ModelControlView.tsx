@@ -182,10 +182,10 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
                       {m.name}
                     </h4>
                     <span
-                      className={`font-mono text-[11px] block ${
+                      className={`font-mono text-[11px] block font-medium ${
                         m.provider_type === "local_gguf"
                           ? "text-signal-local-model"
-                          : "text-text-disabled"
+                          : "text-text-secondary"
                       }`}
                     >
                       {m.provider_type === "local_gguf" ? "Local GGUF · Vulkan" : "Cloud remote"}
@@ -205,12 +205,12 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
                   <div>Context window: {m.context_window} tokens</div>
                   {m.file_size_bytes && <div>Size: {formatBytes(m.file_size_bytes)}</div>}
                   {m.file_path && (
-                    <div className="truncate text-text-disabled">Path: {m.file_path}</div>
+                    <div className="truncate text-text-secondary font-mono">Path: {m.file_path}</div>
                   )}
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-border-subtle">
-                  <span className="text-[11px] text-text-disabled font-mono">
+                  <span className="text-[11px] text-text-secondary font-mono font-medium">
                     {m.is_default ? "Default engine" : "Alternative"}
                   </span>
                   <button
@@ -241,21 +241,21 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative flex-1">
             <Search
-              className="absolute left-3 top-3 h-4 w-4 text-text-disabled"
+              className="absolute left-3 top-3 h-4 w-4 text-text-secondary"
               strokeWidth={1.5}
             />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search models"
-              className="w-full rounded-xl border border-border-subtle bg-black/40 pl-9 pr-4 py-2 text-xs text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-accent font-sans"
+              placeholder="Search GGUF models on Hugging Face..."
+              className="w-full rounded-xl border border-border-subtle bg-surface-solid pl-9 pr-4 py-2 text-xs font-medium text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent font-sans"
             />
           </div>
           <button
             type="submit"
             disabled={isSearching}
-            className="flex items-center gap-2 rounded-xl bg-accent hover:bg-accent-hover px-4 py-2 text-xs font-medium text-accent-text transition-colors disabled:opacity-40 focus-visible:outline-none"
+            className="flex items-center gap-2 rounded-xl bg-accent hover:bg-accent-hover px-4 py-2 text-xs font-semibold text-accent-text transition-colors disabled:opacity-40 focus-visible:outline-none cursor-pointer"
           >
             <span>{isSearching ? "Searching" : "Search hub"}</span>
           </button>
@@ -279,10 +279,10 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
               >
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <h4 className="text-xs font-medium text-text-primary line-clamp-1">
+                    <h4 className="text-xs font-semibold text-text-primary line-clamp-1">
                       {hf.filename}
                     </h4>
-                    <span className="font-mono text-[11px] text-text-disabled truncate block max-w-[200px]">
+                    <span className="font-mono text-[11px] text-text-secondary font-medium truncate block max-w-[200px]">
                       {hf.repo_id}
                     </span>
                   </div>
@@ -293,19 +293,19 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
 
                 {/* Compatibility Badges */}
                 <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-text-secondary">Size: {formatBytes(hf.file_size_bytes)}</span>
+                  <span className="text-text-secondary font-medium">Size: {formatBytes(hf.file_size_bytes)}</span>
                   {hf.compatibility === "fits_in_vram" ? (
-                    <span className="text-text-secondary flex items-center gap-1.5">
+                    <span className="text-text-primary font-medium flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-signal-success" />
                       Fits in VRAM
                     </span>
                   ) : hf.compatibility === "partial_offload" ? (
-                    <span className="text-text-secondary flex items-center gap-1.5">
+                    <span className="text-text-primary font-medium flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-signal-thinking" />
                       Partial offload
                     </span>
                   ) : (
-                    <span className="text-text-secondary flex items-center gap-1.5">
+                    <span className="text-text-primary font-medium flex items-center gap-1.5">
                       <span className="h-1.5 w-1.5 rounded-full bg-signal-gate" />
                       CPU only
                     </span>
@@ -314,20 +314,20 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
 
                 {/* Download Progress Bar if downloading */}
                 {isDownloading && progress && (
-                  <div className="space-y-2 rounded-lg border border-border-subtle bg-black/30 p-3">
-                    <div className="flex justify-between text-[11px] font-mono text-text-secondary tabular">
+                  <div className="space-y-2 rounded-lg border border-border-subtle bg-surface-solid p-3">
+                    <div className="flex justify-between text-[11px] font-mono text-text-secondary tabular font-medium">
                       <span>{(progress.progressFraction * 100).toFixed(1)}%</span>
                       <span>
                         {(progress.speedBytesPerSec / (1024 * 1024)).toFixed(1)} MB/s · ETA: {progress.etaSeconds}s
                       </span>
                     </div>
-                    <div className="h-1.5 w-full rounded-lg bg-white/[0.06] overflow-hidden">
+                    <div className="h-1.5 w-full rounded-lg bg-border-subtle overflow-hidden">
                       <div
                         className="h-full bg-accent"
                         style={{ width: `${Math.round(progress.progressFraction * 100)}%` }}
                       />
                     </div>
-                    <div className="text-[11px] text-text-disabled font-mono flex items-center justify-end gap-1">
+                    <div className="text-[11px] text-text-secondary font-mono flex items-center justify-end gap-1">
                       <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />
                       <span>Streaming SHA-256 pipeline</span>
                     </div>
@@ -336,7 +336,7 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
 
                 {/* Action Buttons */}
                 <div className="flex items-center justify-between pt-3 border-t border-border-subtle">
-                  <span className="text-[11px] font-mono text-text-disabled">
+                  <span className="text-[11px] font-mono text-text-secondary font-medium">
                     Est. VRAM: ~{(hf.vram_required_mb / 1024).toFixed(1)} GB
                   </span>
 
