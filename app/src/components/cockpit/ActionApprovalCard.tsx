@@ -12,6 +12,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import { GlassPanel } from "../common/GlassPanel";
+import { LinearButton } from "../linear/LinearButton";
 import type { PlanStepDetail } from "../../types/ipc";
 
 export interface ActionApprovalCardProps {
@@ -248,22 +249,24 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
             autoFocus
           />
           <div className="flex justify-end gap-2 pt-1">
-            <button
+            <LinearButton
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => setRejecting(false)}
-              className="px-3 py-2 rounded-lg text-xs font-medium text-text-secondary hover:bg-white/[0.05] transition-colors cursor-pointer"
             >
               Cancel
-            </button>
-            <button
+            </LinearButton>
+            <LinearButton
               type="button"
+              variant="danger"
+              size="sm"
               onClick={handleReject}
               disabled={isSubmitting}
-              className="flex items-center gap-1 px-3 py-2 rounded-lg border border-border-subtle bg-raised text-xs font-semibold text-text-primary hover:bg-white/[0.05] transition-colors cursor-pointer"
             >
-              <X className="h-3.5 w-3.5" />
-              Confirm rejection
-            </button>
+              <X className="h-3.5 w-3.5 mr-1" />
+              <span>Confirm rejection</span>
+            </LinearButton>
           </div>
         </div>
       )}
@@ -304,39 +307,37 @@ export const ActionApprovalCard: React.FC<ActionApprovalCardProps> = ({
 
           <div className="flex items-center gap-3">
             {/* Reject Button */}
-            <button
+            <LinearButton
               type="button"
+              variant="secondary"
+              size="md"
               onClick={() => setRejecting(true)}
               disabled={isSubmitting || isExecuting}
-              className="flex items-center gap-2 rounded-xl border border-border-subtle bg-raised px-4 py-2 font-sans text-xs font-medium text-text-secondary hover:bg-white/[0.05] hover:text-text-primary transition-colors duration-150 cursor-pointer"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3.5 w-3.5 mr-1.5" />
               <span>Reject or modify</span>
-            </button>
+            </LinearButton>
 
             {/* Approve Button */}
-            <button
+            <LinearButton
               type="button"
+              variant="primary"
+              size="md"
               onClick={handleApprove}
               disabled={!canApprove}
-              className={`flex items-center gap-2 rounded-xl px-5 py-2 font-sans text-xs font-semibold transition-colors duration-150 ${
-                canApprove
-                  ? "bg-accent text-accent-text hover:bg-accent-hover active:scale-[0.98] cursor-pointer shadow-sm"
-                  : "bg-surface-solid text-text-secondary cursor-not-allowed border border-border-subtle"
-              }`}
             >
               {isSubmitting || isExecuting ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                   <span>Dispatching</span>
                 </>
               ) : (
                 <>
-                  <Check className="h-3.5 w-3.5" />
+                  <Check className="h-3.5 w-3.5 mr-1.5" />
                   <span>Approve action</span>
                 </>
               )}
-            </button>
+            </LinearButton>
           </div>
         </div>
       )}

@@ -52,7 +52,7 @@ When implementing features or fixing bugs, consult the governing specification f
    - Strings originating from external applications, file names, window titles, or CET sidecars must be wrapped inside `<untrusted_context>` blocks in prompt templates.
 6. **Design Law & Token Fidelity:**
    - Use only tokens defined in `DESIGN.md`. Never introduce arbitrary hex codes or custom font families.
-   - All glass elements must implement the approved recipes (`Pane`, `Float`, `Modal`) with a dark scrim floor.
+   - Surfaces must implement the Linear-Style solid elevated specifications (Surface 1, 2, 3, Float) with 1px hairlines and dual-shadow bevels; no `backdrop-filter: blur()`.
 7. **Verification Before Completion:**
    - Before claiming any task is done, run and verify:
      - `cargo fmt --check`

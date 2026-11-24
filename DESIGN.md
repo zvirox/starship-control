@@ -1,6 +1,6 @@
 # DESIGN.md — Starship Control Design System
 
-**Version:** 1.0 · **Date:** 2026-11-17  
+**Version:** 2.0 · **Date:** 2026-11-24  
 **Authority:** `PRD.md` (scope, functional requirements) → `ARCHITECTURE.md` (multi-window, crates, IPC) → **this file (UI & visual law)**  
 **Rule:** Every interface built in Starship Control must follow this document strictly. Do not invent custom tokens, colors, or fonts outside it. To change a token or recipe, update this specification first.
 
@@ -8,24 +8,27 @@
 
 ## 1. Brand Feel & Visual Principles
 
-**Feel:** Mission control on glass. Translucent, calm, and ambient while resting; laser-focused, precise, and authoritative when an agent plans and executes. Designed natively for modern Linux rices (KDE Plasma 6, Hyprland, niri, Sway, MangoWC) using frosted-glass compositing and high-contrast typography.
+**Feel:** Mission control engineered with Linear-Style precision. Pure solid matte surfaces, crisp 1px hairlines, inset edge lighting, and zero-glass blur. Designed natively for modern Linux desktop environments with dark elevated surface minimalism and high-contrast metrics.
 
 ### Principle 1 — Dual-Surface Identity
-- **The Cockpit (Strategic Canvas):** An immersive 1200×800 workspace for mission planning, deep multi-step workflow graphs, model downloading, and audit inspection. Solid surfaces dominate reading zones; glass frames the outer shell.
-- **The Floating HUD (Ambient Companion):** A lightweight, always-on-top glass capsule (520×76 resting) that hovers seamlessly over active apps like EEP or ALP. It expands dynamically (520×240) only when presenting live agent reasoning or requiring human approval.
+- **The Cockpit (Strategic Canvas):** An immersive 1200×800 workspace for mission planning, deep multi-step workflow graphs, model downloading, and audit inspection. Solid elevated graphite cards (`#121215`) dominate reading zones over the obsidian base canvas (`#08080a`).
+- **The Floating HUD (Ambient Companion):** A lightweight, always-on-top solid matte capsule (520×76 resting) that hovers seamlessly over active apps like EEP or ALP. It expands dynamically (520×240) only when presenting live agent reasoning or requiring human approval, rendered with dual-shadow illumination (`shadow-linear-dark`).
 
-### Principle 2 — Glass with a Contrast Floor
-Translucency must never compromise readability. Every frosted-glass layer pairs tinted surface fill with hardware backdrop blur (`blur(24px)` to `blur(32px)`), a 1px specular inner border, and a dark scrim floor (`bg.canvas` at 55% opacity). If a compositor lacks blur protocols (e.g. pure X11 without Compton/Picom), surfaces gracefully step down to opaque solid tokens without layout shift.
+### Principle 2 — Pure Solid Surfaces (Zero Glass Blur)
+Do not use `backdrop-filter: blur()`. Panels are 100% opaque matte graphite/charcoal (Dark) or crisp alabaster/paper (Light). Depth comes from physical elevation:
+- A subtle **inset highlight** on the top edge simulates physical light catching a beveled matte card.
+- A deep, soft ambient drop shadow gives the illusion of physical elevation above the base canvas.
+- Structural boundaries use a crisp 1px border (`#23232a` subtle, `#33333d` active). Never use thick borders or specular gradients.
 
 ### Principle 3 — Signal-Driven Color Economy
-The UI is built on quiet obsidian neutrals with **Electric Cyan (`#38BDF8`)** as the primary focus accent (meaning: *action available / active agent execution*). Color is never used as arbitrary decoration:
+The UI is built on quiet obsidian neutrals with **Electric Cyan (`#22d3ee`)** as the primary focus accent (meaning: *action available / active agent execution*). Color is never used as arbitrary decoration:
 - **Amber (`#F59E0B`)**: Agent Thinking / Planning in progress.
 - **Emerald (`#10B981`)**: Step Verified / Sub-app Connected.
 - **Rose (`#F43F5E`)**: Human Approval Gate Required (Tier 2/3) / Tool Error.
 - **Violet (`#A855F7`)**: Local Hugging Face GGUF Execution.
 
 ### Principle 4 — Motion is Operational Feedback
-Every motion communicates state. Window expansions, card slide-ins, and approval reveals use spring physics (`framer-motion`, 180–240ms). No looping animations outside the active agent reasoning pulse. Fully suppressed when `prefers-reduced-motion` is detected.
+Every motion communicates state. Window expansions, card slide-ins, and approval reveals use mechanical easing curves (`150ms-250ms`, `cubic-bezier(0.16, 1, 0.3, 1)` via `motion/react`). No looping animations outside the active agent reasoning pulse. Fully suppressed when `prefers-reduced-motion` is detected.
 
 ---
 
@@ -134,15 +137,16 @@ To maintain complete visual uniformity across the Linux software suite, Starship
 
 *Radius law:* Controls use `r.sm`, cards `r.md`, panels `r.lg`. Nested radius equals the outer radius minus the padding between them, never below 4px. Status chips, counts and badges use `r.xs` or `r.sm` with quiet text, not full pills.
 
-### 4.3 Glass Surface Recipes
+### 4.3 Linear Elevated Surface Recipes
 
 | Recipe | Base Fill | Backdrop Filter | Border | Shadow Elevation | Applied To |
 |---|---|---|---|---|---|
-| **Pane** | `surface.glass` | `blur(24px) saturate(160%)` | 1px `border.glass` | `0 4px 16px rgba(0,0,0,0.25)` | Cockpit sidebars, topology drawer |
-| **Float** | `surface.glass-strong` | `blur(32px) saturate(190%)` | 1px `border.glass` | `0 8px 32px -4px rgba(0,0,0,0.50)` | Floating HUD, approval action cards |
-| **Modal** | `surface.glass-strong` | `blur(36px)` | 1px `border.subtle` | `0 16px 48px -8px rgba(0,0,0,0.65)` | Model download modal, diff reviewers |
+| **Surface 1 (Base Panel)** | `#121215` (Dark) / `#ffffff` (Light) | None (0 blur) | 1px `#23232a` (Dark) / `#e2e2e7` (Light) | `shadow-linear-dark` / `shadow-linear-light` | Cockpit primary panels, outer shell, main cards |
+| **Surface 2 (Nested / Input)** | `#17171c` (Dark) / `#f2f2f4` (Light) | None (0 blur) | 1px `#23232a` (Dark) / `#e2e2e7` (Light) | Micro 1px inset highlight | Inputs, table headers, nested step blocks |
+| **Surface 3 (Hover / Active)** | `#202026` (Dark) / `#e8e8ec` (Light) | None (0 blur) | 1px `#33333d` (Dark) / `#c8c8d0` (Light) | Micro edge definition | Interactive hover, selected list items |
+| **Float (Capsule & HUD)** | `#121215` (Dark) / `#ffffff` (Light) | None (0 blur) | 1px `#33333d` (Dark) / `#c8c8d0` (Light) | `shadow-linear-dark` (deep ambient drop) | Floating HUD capsule, approval action overlays |
 
-*Surface law:* Depth comes from surface steps and quiet hairlines. No colored glows, neon borders, specular gradient overlays or radial color washes. The frosted fill and blur are the effect; the scrim floor keeps text readable.
+*Surface law:* 100% solid matte surfaces with 1px hairlines and dual-shadow elevation. No `backdrop-filter: blur()`, no translucent glass tints, and no specular gradient overlays. Inset top highlight catching light on beveled edges provides tactile depth.
 
 ---
 

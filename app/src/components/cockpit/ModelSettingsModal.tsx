@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { X, Check, Key, Shield, Cloud, AlertCircle } from "lucide-react";
 import { GlassPanel } from "../common/GlassPanel";
+import { LinearButton } from "../linear/LinearButton";
 import type { ProviderConfigPayload } from "../../types/ipc";
 
 export interface ModelSettingsModalProps {
@@ -62,7 +63,7 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
   const isStatusError = statusMsg?.startsWith("Failed") ?? false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm font-sans select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 font-sans select-none">
       <GlassPanel recipe="modal" className="w-full max-w-lg space-y-4 p-5">
         <div className="flex items-center justify-between border-b border-border-subtle pb-3">
           <div className="flex items-center gap-2">
@@ -149,20 +150,22 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
             Encrypted storage via provider_configs
           </span>
           <div className="flex items-center gap-2">
-            <button
+            <LinearButton
+              variant="secondary"
+              size="sm"
               onClick={onClose}
-              className="rounded-xl border border-border-subtle px-3 py-1.5 text-xs text-text-secondary transition-colors duration-150 hover:bg-white/[0.05] hover:text-text-primary focus-ring"
             >
               Cancel
-            </button>
-            <button
+            </LinearButton>
+            <LinearButton
+              variant="primary"
+              size="sm"
               disabled={saving}
               onClick={handleSave}
-              className="flex items-center gap-2 rounded-xl bg-accent px-4 py-1.5 text-xs font-medium text-accent-text transition-[opacity,transform] duration-150 hover:bg-accent-hover active:scale-[0.98] focus-ring disabled:opacity-50"
             >
-              <Check className="h-3.5 w-3.5" strokeWidth={1.5} />
+              <Check className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
               <span>{saving ? "Saving" : "Save configuration"}</span>
-            </button>
+            </LinearButton>
           </div>
         </div>
       </GlassPanel>

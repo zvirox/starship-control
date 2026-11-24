@@ -52,102 +52,99 @@
 
 :root,
 :root.dark {
-  /* Graphite Dark Theme (Primary Background & Surfaces) */
-  --color-canvas: #121214;
-  --color-raised: #18181b;
-  --color-surface-solid: #202024;
-  --color-surface-glass: rgba(255, 255, 255, 0.05);
-  --color-surface-glass-strong: rgba(24, 24, 27, 0.90);
+  /* Linear Dark Theme (Obsidian & Matte Graphite) */
+  --color-canvas: #08080a;
+  --color-raised: #121215;
+  --color-surface-solid: #121215;
+  --color-surface-1: #121215;
+  --color-surface-2: #17171c;
+  --color-surface-3: #202026;
+  --color-surface-glass: #121215;
+  --color-surface-glass-strong: #121215;
   
-  --color-border-subtle: rgba(255, 255, 255, 0.12);
-  --color-border-glass: rgba(255, 255, 255, 0.18);
-  --color-border-focus: #38BDF8;
+  --color-border-subtle: #23232a;
+  --color-border-active: #33333d;
+  --color-border-glass: #23232a;
+  --color-border-focus: #22d3ee;
 
-  --color-text-primary: #FAFAFA;
-  --color-text-secondary: #D4D4D8;
-  --color-text-disabled: #A1A1AA;
+  --color-text-primary: #f4f4f5;
+  --color-text-secondary: #a1a1aa;
+  --color-text-disabled: #71717a;
 
-  --color-accent: #38BDF8;
-  --color-accent-hover: #7DD3FC;
-  --color-accent-active: #0284C7;
-  --color-accent-muted: rgba(56, 189, 248, 0.16);
-  --color-accent-text: #031726;
+  --color-accent: #22d3ee;
+  --color-accent-hover: #38bdf8;
+  --color-accent-active: #0284c7;
+  --color-accent-muted: rgba(34, 211, 238, 0.16);
+  --color-accent-text: #08080a;
 
-  --color-signal-thinking: #F59E0B;
+  --color-signal-thinking: #f59e0b;
   --color-signal-thinking-bg: rgba(245, 158, 11, 0.15);
-  --color-signal-success: #10B981;
+  --color-signal-success: #10b981;
   --color-signal-success-bg: rgba(16, 185, 129, 0.15);
-  --color-signal-gate: #F43F5E;
+  --color-signal-gate: #f43f5e;
   --color-signal-gate-bg: rgba(244, 63, 94, 0.16);
-  --color-signal-local-model: #A855F7;
+  --color-signal-local-model: #a855f7;
+
+  --shadow-linear: inset 0 1px 0 0 rgba(255, 255, 255, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.4), 0 12px 30px -10px rgba(0, 0, 0, 0.85);
 }
 
 :root.light {
-  /* Crisp Graphite Light Theme */
-  --color-canvas: #F4F4F6;
-  --color-raised: #FFFFFF;
-  --color-surface-solid: #FFFFFF;
-  --color-surface-glass: rgba(255, 255, 255, 0.88);
-  --color-surface-glass-strong: rgba(255, 255, 255, 0.98);
+  /* Linear Light Theme (Alabaster & Engineered Paper) */
+  --color-canvas: #f7f7f8;
+  --color-raised: #ffffff;
+  --color-surface-solid: #ffffff;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f2f2f4;
+  --color-surface-3: #e8e8ec;
+  --color-surface-glass: #ffffff;
+  --color-surface-glass-strong: #ffffff;
   
-  --color-border-subtle: #E4E4E7;
-  --color-border-glass: #D4D4D8;
-  --color-border-focus: #0284C7;
+  --color-border-subtle: #e2e2e7;
+  --color-border-active: #c8c8d0;
+  --color-border-glass: #e2e2e7;
+  --color-border-focus: #0891b2;
 
-  --color-text-primary: #09090B;
-  --color-text-secondary: #3F3F46;
-  --color-text-disabled: #71717A;
+  --color-text-primary: #09090b;
+  --color-text-secondary: #52525b;
+  --color-text-disabled: #8e8e93;
 
-  --color-accent: #0284C7;
-  --color-accent-hover: #0369A1;
-  --color-accent-active: #0C4A6E;
-  --color-accent-muted: rgba(2, 132, 199, 0.12);
-  --color-accent-text: #FFFFFF;
+  --color-accent: #0891b2;
+  --color-accent-hover: #0e7490;
+  --color-accent-active: #155e75;
+  --color-accent-muted: rgba(8, 145, 178, 0.12);
+  --color-accent-text: #ffffff;
 
-  --color-signal-thinking: #D97706;
+  --color-signal-thinking: #d97706;
   --color-signal-thinking-bg: rgba(217, 119, 6, 0.12);
   --color-signal-success: #059669;
   --color-signal-success-bg: rgba(5, 150, 105, 0.12);
-  --color-signal-gate: #E11D48;
+  --color-signal-gate: #e11d48;
   --color-signal-gate-bg: rgba(225, 29, 72, 0.12);
-  --color-signal-local-model: #9333EA;
+  --color-signal-local-model: #7c3aed;
+
+  --shadow-linear: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 10px 25px -5px rgba(0, 0, 0, 0.06);
 }
 
-/* Glass surface utility recipes strictly adhering to DESIGN.md §4.3 */
-.glass-pane {
-  background: var(--color-surface-glass);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid var(--color-border-glass);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.20);
-}
-
-:root.light .glass-pane {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-}
-
-.glass-float {
-  background: var(--color-surface-glass-strong);
-  backdrop-filter: blur(32px) saturate(190%);
-  -webkit-backdrop-filter: blur(32px) saturate(190%);
-  border: 1px solid var(--color-border-glass);
-  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.45);
-}
-
-:root.light .glass-float {
-  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
-}
-
-.glass-modal {
-  background: var(--color-surface-glass-strong);
-  backdrop-filter: blur(36px);
-  -webkit-backdrop-filter: blur(36px);
+/* Linear elevated surface recipes (No Glass, Zero Blur) */
+.glass-pane,
+.surface-panel {
+  background: var(--color-surface-1);
   border: 1px solid var(--color-border-subtle);
-  box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.60);
+  box-shadow: var(--shadow-linear);
 }
 
-:root.light .glass-modal {
-  box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.12);
+.glass-float,
+.surface-float {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-active);
+  box-shadow: var(--shadow-linear);
+}
+
+.glass-modal,
+.surface-modal {
+  background: var(--color-surface-1);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: var(--shadow-linear);
 }
 
 /* Quiet primitives shared across both surfaces (DESIGN.md §4) */

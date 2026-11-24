@@ -1,4 +1,5 @@
 import React from "react";
+import { LinearCard } from "../linear/LinearCard";
 
 export interface GlassPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   recipe?: "pane" | "float" | "modal" | "solid";
@@ -10,16 +11,20 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
   children,
   ...props
 }) => {
-  const recipeClass = {
-    pane: "glass-pane rounded-2xl",
-    float: "glass-float rounded-2xl",
-    modal: "glass-modal rounded-2xl",
-    solid: "bg-surface-solid border border-border-subtle rounded-2xl",
-  }[recipe];
+  const levelMap: Record<string, 1 | 2 | 3> = {
+    pane: 1,
+    float: 1,
+    modal: 1,
+    solid: 2,
+  };
 
   return (
-    <div className={`relative transition-colors duration-150 ${recipeClass} ${className}`} {...props}>
+    <LinearCard
+      level={levelMap[recipe] ?? 1}
+      className={`relative rounded-2xl ${className}`}
+      {...props}
+    >
       {children}
-    </div>
+    </LinearCard>
   );
 };
