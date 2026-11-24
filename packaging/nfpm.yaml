@@ -1,0 +1,48 @@
+name: starship-control
+arch: amd64
+platform: linux
+version: ${VERSION}
+release: "1"
+section: utils
+maintainer: Prakash <zvirox@proton.me>
+description: Native Linux AI Agent Orchestrator & Command Center for Desktop Applications
+homepage: https://github.com/zvirox/starship-control
+license: Apache-2.0
+
+contents:
+  - src: target/release/starship-control
+    dst: /usr/bin/starship-control
+    file_info: { mode: 0755 }
+  - src: packaging/starship-control.desktop
+    dst: /usr/share/applications/starship-control.desktop
+  - src: packaging/icons/hicolor/32x32/apps/starship-control.png
+    dst: /usr/share/icons/hicolor/32x32/apps/starship-control.png
+  - src: packaging/icons/hicolor/128x128/apps/starship-control.png
+    dst: /usr/share/icons/hicolor/128x128/apps/starship-control.png
+  - src: packaging/icons/hicolor/256x256/apps/starship-control.png
+    dst: /usr/share/icons/hicolor/256x256/apps/starship-control.png
+  - src: packaging/icons/hicolor/512x512/apps/starship-control.png
+    dst: /usr/share/icons/hicolor/512x512/apps/starship-control.png
+  - src: LICENSE
+    dst: /usr/share/doc/starship-control/LICENSE
+
+scripts:
+  postinstall: packaging/scripts/postinstall.sh
+  preremove: packaging/scripts/preremove.sh
+
+overrides:
+  deb:
+    depends:
+      - libwebkit2gtk-4.1-0
+      - libgtk-3-0
+      - libayatana-appindicator3-1
+  rpm:
+    depends:
+      - webkit2gtk4.1
+      - gtk3
+      - libayatana-appindicator-gtk3
+  archlinux:
+    depends:
+      - webkit2gtk-4.1
+      - gtk3
+      - libayatana-appindicator

@@ -131,36 +131,38 @@ Starship Control connects directly to applications built with the `starship-plug
 
 ---
 
-## Installation
+## 📦 Installation
 
-### Arch Linux (AUR) *(Planned)*
-
-The official AUR package `starship-control-bin` is planned for publication with the stable release. To install locally on Arch Linux today, build directly from the included PKGBUILD:
-
-```bash
-cd packaging/aur
-makepkg -si
-```
+Download the appropriate package and `SHA256SUMS` from the [Latest Release](https://github.com/zvirox/starship-control/releases/latest).
 
 ### Debian / Ubuntu (`.deb`)
 
-Download the latest `.deb` package from the [Releases page](https://github.com/zvirox/starship-control/releases):
-
 ```bash
-wget https://github.com/zvirox/starship-control/releases/download/v0.1.0-alpha.3/starship-control_0.1.0.alpha.3_amd64.deb
-sudo apt install ./starship-control_0.1.0.alpha.3_amd64.deb
+sudo apt install ./starship-control_<version>_amd64.deb
 ```
 
-### Generic Linux Tarball
-
-Download and unpack the portable archive:
+### Fedora / RHEL (`.rpm`)
 
 ```bash
-wget https://github.com/zvirox/starship-control/releases/download/v0.1.0-alpha.3/starship-control-v0.1.0-alpha.3-x86_64-linux.tar.gz
-tar -xzf starship-control-v0.1.0-alpha.3-x86_64-linux.tar.gz
-cd starship-control-v0.1.0-alpha.3-x86_64-linux
-./bin/starship-control
+sudo dnf install ./starship-control-<version>-1.x86_64.rpm
 ```
+
+### Arch Linux / Manjaro (`.pkg.tar.zst`)
+
+```bash
+sudo pacman -U ./starship-control-<version>-1-x86_64.pkg.tar.zst
+```
+
+### Verify Checksums
+
+Verify file integrity against the release manifest:
+
+```bash
+sha256sum -c SHA256SUMS --ignore-missing
+```
+
+> [!NOTE]
+> **Packaging Update:** Generic tarballs, AppImage, and AUR builds are retired in favor of native packages (`.deb`, `.rpm`, `.pkg.tar.zst`).
 
 ---
 
