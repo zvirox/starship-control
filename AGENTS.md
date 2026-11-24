@@ -52,7 +52,7 @@ When implementing features or fixing bugs, consult the governing specification f
    - Strings originating from external applications, file names, window titles, or CET sidecars must be wrapped inside `<untrusted_context>` blocks in prompt templates.
 6. **Design Law & Token Fidelity:**
    - Use only tokens defined in `DESIGN.md`. Never introduce arbitrary hex codes or custom font families.
-   - Surfaces must implement the Linear-Style solid elevated specifications (Surface 1, 2, 3, Float) with 1px hairlines and dual-shadow bevels; no `backdrop-filter: blur()`.
+   - Surfaces must implement the Linear-Style solid elevated specifications (Surface 1, 2, 3, Float) with 1px hairlines and flat border-only dark surfaces; no `backdrop-filter: blur()`.
 7. **Verification Before Completion:**
    - Before claiming any task is done, run and verify:
      - `cargo fmt --check`
@@ -71,7 +71,7 @@ When implementing features or fixing bugs, consult the governing specification f
 4. **Do NOT bypass `SO_PEERCRED`:** Every Unix domain socket connection to a sub-application must verify peer credentials to ensure the connecting process belongs to the host user.
 5. **Do NOT duplicate sub-application engines:** Starship Control orchestrates and commands; it does not implement raw video rendering, audio mixing, or network packet capture.
 6. **Do NOT execute destructive file operations silently:** Wiping caches (ATP), modifying timelines (EEP), or deleting audio takes (ALP) requires explicit user confirmation.
-7. **Do NOT skip accessibility:** All controls must support keyboard navigation with the universal focus ring (`0 0 0 2px <bg>, 0 0 0 4px #38BDF8`), ARIA labels, and reduced-motion compliance.
+7. **Do NOT skip accessibility:** All controls must support keyboard navigation with the universal focus ring (`0 0 0 2px <bg>, 0 0 0 4px #3355FF`), ARIA labels, and reduced-motion compliance.
 
 ---
 

@@ -18,10 +18,9 @@ import {
   History,
   Trash2,
   Activity,
-  Sun,
-  Moon,
 } from "lucide-react";
 import { useThemeStore } from "../../stores/themeStore";
+import { TitleBar } from "../linear";
 import { ChatCanvas } from "./ChatCanvas";
 import { ModelSettingsModal } from "./ModelSettingsModal";
 import { ModelControlView } from "./ModelControlView";
@@ -47,7 +46,7 @@ import type {
 } from "../../types/ipc";
 
 export const CockpitView: React.FC = () => {
-  const { theme, toggleTheme } = useThemeStore();
+  const { toggleTheme } = useThemeStore();
   const [navTab, setNavTab] = useState<"chat" | "timeline" | "history" | "workflows" | "apps" | "tools" | "models" | "systems" | "activity">("chat");
   const [prompt, setPrompt] = useState("");
   const [hudActive, setHudActive] = useState(false);
@@ -253,35 +252,32 @@ export const CockpitView: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-canvas font-sans text-text-primary antialiased select-none">
-      {/* 1. Top header */}
-      <header className="flex h-13 items-center justify-between border-b border-border-subtle bg-raised px-4">
-        {/* Left: logo and brand */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-border-subtle bg-white/[0.05]">
-            <img src="/logo.png" alt="Starship Logo" className="h-5 w-5 object-contain" />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-text-primary">Starship Control</span>
-            <span className="quiet-chip tabular">{systemInfo?.version ? `v${systemInfo.version}` : "v0.1.0"}</span>
-          </div>
-        </div>
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--bg-app)] font-sans text-[var(--text)] antialiased select-none">
+      {/* 0. Window TitleBar */}
+      <TitleBar
+        title="Starship Control"
+        version={systemInfo?.version ? `v${systemInfo.version}` : "v0.1.0"}
+        icon={<img src="/logo.png" alt="Starship Logo" className="h-4 w-4 object-contain" />}
+        onThemeToggle={toggleTheme}
+      />
 
-        {/* Center: model selector and status */}
+      {/* 1. Cockpit Header Toolbar */}
+      <header className="flex h-11 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-surface)] px-4">
+        {/* Left: model selector and status */}
         <div className="flex items-center gap-2">
           <div className="relative">
             <button
               onClick={() => setModelDropdownOpen(!modelDropdownOpen)}
-              className="flex items-center gap-2 rounded-xl border border-border-subtle bg-white/[0.03] px-3 py-1.5 text-xs text-text-primary transition-colors duration-150 hover:bg-white/[0.05] focus-ring cursor-pointer"
+              className="flex items-center gap-2 rounded-lg border border-[var(--border)] bg-[var(--bg-surface-2)] px-2.5 py-1 text-xs text-[var(--text)] transition-colors duration-150 hover:border-[var(--border-strong)] focus-ring cursor-pointer"
             >
-              <Cpu className="h-3.5 w-3.5 text-accent" strokeWidth={1.5} />
+              <Cpu className="h-3.5 w-3.5 text-[#3355FF]" strokeWidth={1.5} />
               <span className="font-semibold">{activeModel?.name || "Select model"}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
+              <ChevronDown className="h-3.5 w-3.5 text-[var(--text-muted)]" strokeWidth={1.5} />
             </button>
 
             {modelDropdownOpen && (
-              <div className="absolute left-0 z-50 mt-1 w-64 rounded-xl border border-border-subtle bg-surface-solid p-2 shadow-xl">
-                <div className="px-2 py-1 text-[11px] font-semibold text-text-secondary">Select engine</div>
+              <div className="absolute left-0 z-50 mt-1 w-64 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface-2)] p-2 shadow-xl">
+                <div className="px-2 py-1 text-[11px] font-semibold text-[var(--text-muted)]">Select engine</div>
                 {models.map((m) => (
                   <button
                     key={m.id}
@@ -291,12 +287,12 @@ export const CockpitView: React.FC = () => {
                     }}
                     className={`flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-xs transition-colors duration-150 focus-ring cursor-pointer ${
                       activeModel?.id === m.id
-                        ? "bg-accent-muted text-accent font-semibold"
-                        : "text-text-secondary hover:bg-white/[0.05] hover:text-text-primary"
+                        ? "bg-[#3355FF]/10 text-[#3355FF] font-semibold"
+                        : "text-[var(--text-muted)] hover:bg-[var(--bg-surface)] hover:text-[var(--text)]"
                     }`}
                   >
                     <span className="font-medium">{m.name}</span>
-                    <span className="text-[11px] font-mono text-text-secondary capitalize">{m.provider_type.replace("cloud_", "")}</span>
+                    <span className="text-[11px] font-mono text-[var(--text-faint)] capitalize">{m.provider_type.replace("cloud_", "")}</span>
                   </button>
                 ))}
               </div>
@@ -304,44 +300,30 @@ export const CockpitView: React.FC = () => {
           </div>
 
           <span className="quiet-chip">
-            <span className="h-1.5 w-1.5 rounded-full bg-signal-success" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#22C55E]" />
             Ready
           </span>
         </div>
 
         {/* Right actions */}
         <div className="flex items-center gap-2">
-          {/* Theme switch button */}
-          <button
-            onClick={toggleTheme}
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-            aria-label="Toggle theme mode"
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border-subtle bg-white/[0.03] text-text-secondary transition-colors duration-150 hover:bg-white/[0.05] hover:text-text-primary focus-ring cursor-pointer"
-          >
-            {theme === "dark" ? (
-              <Sun className="h-4 w-4 text-amber-400" strokeWidth={1.5} />
-            ) : (
-              <Moon className="h-4 w-4 text-sky-600" strokeWidth={1.5} />
-            )}
-          </button>
-
           <button
             onClick={() => setIsSettingsOpen(true)}
             title="Model settings and API keys"
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border-subtle bg-white/[0.03] text-text-secondary transition-colors duration-150 hover:bg-white/[0.05] hover:text-text-primary focus-ring cursor-pointer"
+            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--bg-surface-2)] text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--text)] hover:border-[var(--border-strong)] focus-ring cursor-pointer"
           >
-            <Settings className="h-4 w-4" strokeWidth={1.5} />
+            <Settings className="h-3.5 w-3.5" strokeWidth={1.5} />
           </button>
 
           <button
             onClick={handleToggleHud}
-            className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs transition-colors duration-150 focus-ring cursor-pointer ${
+            className={`flex items-center gap-2 rounded-lg border px-2.5 py-1 text-xs transition-colors duration-150 focus-ring cursor-pointer ${
               hudActive
-                ? "border-accent/50 bg-accent-muted text-accent"
-                : "border-border-subtle bg-white/[0.03] text-text-secondary hover:bg-white/[0.05]"
+                ? "border-[#3355FF]/50 bg-[#3355FF]/10 text-[#3355FF]"
+                : "border-[var(--border)] bg-[var(--bg-surface-2)] text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[var(--border-strong)]"
             }`}
           >
-            <ExternalLink className="h-4 w-4" strokeWidth={1.5} />
+            <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
             <span>{hudActive ? "HUD active" : "Launch HUD"}</span>
           </button>
         </div>

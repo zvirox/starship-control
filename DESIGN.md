@@ -8,56 +8,65 @@
 
 ## 1. Brand Feel & Visual Principles
 
-**Feel:** Mission control engineered with Linear-Style precision. Pure solid matte surfaces, crisp 1px hairlines, inset edge lighting, and zero-glass blur. Designed natively for modern Linux desktop environments with dark elevated surface minimalism and high-contrast metrics.
+**Feel:** Mission control engineered with Linear-Style screenshot precision. Pure solid matte surfaces, crisp 1px hairlines, flat border-only card boundaries, and zero-glass blur. Designed natively for modern Linux desktop environments with dark elevated surface minimalism and high-contrast metrics.
 
 ### Principle 1 — Dual-Surface Identity
-- **The Cockpit (Strategic Canvas):** An immersive 1200×800 workspace for mission planning, deep multi-step workflow graphs, model downloading, and audit inspection. Solid elevated graphite cards (`#121215`) dominate reading zones over the obsidian base canvas (`#08080a`).
-- **The Floating HUD (Ambient Companion):** A lightweight, always-on-top solid matte capsule (520×76 resting) that hovers seamlessly over active apps like EEP or ALP. It expands dynamically (520×240) only when presenting live agent reasoning or requiring human approval, rendered with dual-shadow illumination (`shadow-linear-dark`).
+- **The Cockpit (Strategic Canvas):** An immersive 1200×800 workspace for mission planning, deep multi-step workflow graphs, model downloading, and audit inspection. Solid elevated surface cards (`#111213` / `#1A1B1E`) dominate reading zones over the dark base canvas (`#050505`).
+- **The Floating HUD (Ambient Companion):** A lightweight, always-on-top solid matte capsule (520×76 resting) that hovers seamlessly over active apps like EEP or ALP. It expands dynamically (520×240) only when presenting live agent reasoning or requiring human approval.
 
-### Principle 2 — Pure Solid Surfaces (Zero Glass Blur)
-Do not use `backdrop-filter: blur()`. Panels are 100% opaque matte graphite/charcoal (Dark) or crisp alabaster/paper (Light). Depth comes from physical elevation:
-- A subtle **inset highlight** on the top edge simulates physical light catching a beveled matte card.
-- A deep, soft ambient drop shadow gives the illusion of physical elevation above the base canvas.
-- Structural boundaries use a crisp 1px border (`#23232a` subtle, `#33333d` active). Never use thick borders or specular gradients.
+### Principle 2 — Pure Solid Surfaces (Zero Glass Blur, Flat in Dark Mode)
+Do not use `backdrop-filter: blur()`. Panels are 100% opaque matte graphite/charcoal (Dark: `#111213`) or crisp alabaster/paper (Light: `#FFFFFF`).
+- Dark mode surfaces are flat, border-only: no shadow, no glow, no blur.
+- Light mode cards use 1px border plus at most `0 1px 2px rgb(16 24 40 / 5%)`.
+- Structural boundaries use a crisp 1px border (`#1F2125` default, `#2C2E33` strong). Never use thick borders or specular gradients.
 
-### Principle 3 — Signal-Driven Color Economy
-The UI is built on quiet obsidian neutrals with **Electric Cyan (`#22d3ee`)** as the primary focus accent (meaning: *action available / active agent execution*). Color is never used as arbitrary decoration:
-- **Amber (`#F59E0B`)**: Agent Thinking / Planning in progress.
-- **Emerald (`#10B981`)**: Step Verified / Sub-app Connected.
-- **Rose (`#F43F5E`)**: Human Approval Gate Required (Tier 2/3) / Tool Error.
-- **Violet (`#A855F7`)**: Local Hugging Face GGUF Execution.
-
-### Principle 4 — Motion is Operational Feedback
-Every motion communicates state. Window expansions, card slide-ins, and approval reveals use mechanical easing curves (`150ms-250ms`, `cubic-bezier(0.16, 1, 0.3, 1)` via `motion/react`). No looping animations outside the active agent reasoning pulse. Fully suppressed when `prefers-reduced-motion` is detected.
+### Principle 3 — Screenshot Color Economy
+The UI is built on quiet obsidian neutrals with **Linear Blue (`#3355FF`)** as the primary focus accent (meaning: *action available / active agent execution*). Color is strictly controlled:
+- **Primary Accent (`#3355FF`)**: Primary actions, Send button, active model selection.
+- **Sky (`#38B6F0`)**: Secondary series, checkout/queue metrics.
+- **Green (`#22C55E`)**: Positive delta, step verified, sub-app online.
+- **Red (`#F43F5E`)**: Negative delta, human approval gate (Tier 2/3), tool error.
+- **Amber (`#EAB308`)**: Agent thinking / delivery processing.
+- **Teal (`#1FB5A5`)**: Delivery done / verified cache.
+- **Pink (`#EC4899`)**: Returned / reverted action.
+- **Purple (`#7C5CE6`)**: Local GGUF model execution.
+- **Orange (`#F97316`)**: Progress tracking / warning telemetry.
 
 ---
 
 ## 2. Color Tokens
 
-### 2.1 Dark Mode (Default & Primary — Graphite)
+### 2.1 Dark Mode (Default & Primary — Screenshot Palette)
 
 | Token | Hex / Value | Semantic Role |
 |---|---|---|
-| `bg.canvas` | `#121214` | Neutral Graphite black base canvas beneath all glass surfaces |
-| `bg.raised` | `#18181b` | Opaque graphite layer for header, sidebars, settings cards, audit tables |
-| `surface.glass` | `rgba(255, 255, 255, 0.05)` | Standard glass fill (Cockpit sidebars & panels) |
-| `surface.glass-strong`| `rgba(24, 24, 27, 0.90)` | High-density glass (Floating HUD, Modals, Toasts) |
-| `surface.solid` | `#202024` | Resting cards, task sheet step blocks, dialogs, inputs |
-| `border.subtle` | `rgba(255, 255, 255, 0.12)` | Dividers, separators, inactive card edges |
-| `border.glass` | `rgba(255, 255, 255, 0.18)` | 1px inner specular boundary on glass layers |
-| `border.focus` | `#38BDF8` | Universal keyboard focus indicator |
-| `text.primary` | `#FAFAFA` | High-contrast headings, primary user prompts, active labels (16.5:1 contrast) |
-| `text.secondary` | `#D4D4D8` | Assistant thoughts, step explanations, metadata, readable labels (11.8:1 contrast) |
-| `text.disabled` | `#A1A1AA` | Crisp placeholders, timestamps, subtle captions (6.5:1 contrast, WCAG AA compliant) |
-| `accent` | `#38BDF8` | Primary actions, Send button, active model selection |
-| `accent.hover` | `#7DD3FC` | Interactive hover state for primary accent |
-| `accent.active` | `#0284C7` | Pressed state for primary controls |
-| `accent.muted` | `rgba(56, 189, 248, 0.16)` | Selected table rows, active tab indicators |
-| `accent.text` | `#031726` | High-contrast text rendered over solid `accent` |
-| `signal.thinking` | `#F59E0B` | Agent actively planning / LLM streaming tokens |
-| `signal.thinking-bg` | `rgba(245, 158, 11, 0.15)`| Ambient wash during model generation |
-| `signal.success` | `#10B981` | Tool verified, sub-app online, mission completed |
-| `signal.success-bg` | `rgba(16, 185, 129, 0.15)`| Success badge background |
+| `--bg-app` | `#050505` | Window, sidebar, and canvas base |
+| `--bg-surface` | `#111213` | Primary cards, panels, and modal canvas |
+| `--bg-surface-2` | `#1A1B1E` | Active nav, secondary cards, inputs, chips |
+| `--bg-bar-idle` | `#202128` | Idle/unselected chart bars and progress tracks |
+| `--border` | `#1F2125` | Hairline card boundaries, dividers, table borders |
+| `--border-strong` | `#2C2E33` | Hovered card boundaries, active inputs, modal borders |
+| `--text` | `#F5F5F6` | High-contrast headings, primary text |
+| `--text-muted` | `#8A8B91` | Secondary descriptions, timestamps, inactive icons |
+| `--text-faint` | `#5A5B62` | Placeholders, disabled states, faint captions |
+| `accent.primary` | `#3355FF` | Linear Blue primary action buttons, focused controls |
+| `accent.sky` | `#38B6F0` | Secondary telemetry metric series |
+| `accent.green` | `#22C55E` | Positive delta, verified status |
+| `accent.red` | `#F43F5E` | Approval required, danger, negative delta |
+
+### 2.2 Light Mode (Screenshot Palette)
+
+| Token | Hex / Value | Semantic Role |
+|---|---|---|
+| `--bg-app` | `#F3F4F6` | Window background, canvas |
+| `--bg-surface` | `#FFFFFF` | Solid white cards, panels |
+| `--bg-surface-2` | `#F4F5F7` | Active nav, inputs, chips |
+| `--bg-bar-idle` | `#EAF0FF` | Light idle bars |
+| `--border` | `#E5E7EB` | Hairline borders |
+| `--border-strong` | `#D1D5DB` | Strong boundaries |
+| `--text` | `#0F1115` | High-contrast dark text |
+| `--text-muted` | `#6B7280` | Muted secondary labels |
+| `--text-faint` | `#9CA3AF` | Faint text, disabled |
 | `signal.gate` | `#F43F5E` | Human Approval Gate required (Tier 2/3 action) |
 | `signal.gate-bg` | `rgba(244, 63, 94, 0.16)` | Approval card highlight & pulsating rim |
 | `signal.local-model` | `#A855F7` | Indicator that local GGUF engine is running |
