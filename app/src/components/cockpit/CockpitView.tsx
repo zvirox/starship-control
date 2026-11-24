@@ -256,7 +256,7 @@ export const CockpitView: React.FC = () => {
       {/* 0. Window TitleBar */}
       <TitleBar
         title="Starship Control"
-        version={systemInfo?.version ? `v${systemInfo.version}` : "v0.1.0"}
+        version={systemInfo?.version ? `v${systemInfo.version}` : "v0.1.0-beta.1"}
         icon={<img src="/logo.png" alt="Starship Logo" className="h-4 w-4 object-contain" />}
         onThemeToggle={toggleTheme}
       />
