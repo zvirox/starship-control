@@ -118,8 +118,8 @@ You can run open AI models completely offline on your own graphics card or proce
 
 ## Key Features
 
-- **Two Clean Windows**: Use the full **Cockpit** (`1200x800`) to organize long tasks and watch model downloads, or tap `Super+Shift+Space` for the compact **Floating HUD** (`520x76`) that stays out of your way.
-- **Offline Local AI Engine**: Run open GGUF models directly on AMD, NVIDIA, Intel, or CPU hardware using `llama.cpp` with Vulkan and ROCm support. Nothing leaves your computer.
+- **Two Solid Linear Surfaces**: Use the full **Cockpit** (`1280x800`, min `1024x640`) to organize multi-step tasks, view live hardware telemetry, and watch model downloads, or tap `Super+Shift+Space` on Wayland for the compact **Floating HUD** (`420x64`) that stays out of your way.
+- **Offline Model Hub & Hardware Guard** *(Native `llama.cpp` runner bindings in progress)*: Search Hugging Face GGUF models inside the app, fetch weights in resumable SHA-256-verified chunks, check live VRAM/RAM headroom, and test local planning flows (currently using the built-in local planner facade until native `llama-cpp-2` bindings land).
 - **Built-in Model Downloader**: Browse Hugging Face models inside the app, fetch large files in resumable chunks, and verify file integrity automatically.
 - **Optional Cloud Providers**: Connect your own keys for Anthropic Claude, OpenAI, Google Gemini, or OpenRouter whenever you prefer remote models.
 - **Three-Tier Safety Lock**: Looking up stats or reading project status runs right away. Changing files or removing caches pauses at a signed approval prompt so nothing happens behind your back.
@@ -219,11 +219,11 @@ cargo build --release -p starship-control
 
 | Layer | Technology | Role |
 | :--- | :--- | :--- |
-| **Desktop Shell** | Rust + Tauri 2 | Native Cockpit window, Floating HUD, tray menu, and OS integration |
-| **Frontend UI** | React 19 + TypeScript + Tailwind CSS v4 | Solid matte dark interface with keyboard-first navigation |
-| **Charts and State** | Apache ECharts 6 + Zustand | Real-time CPU/VRAM telemetry charts and reactive state management |
-| **Local Inference** | `llama-cpp-2` (Vulkan / ROCm / CPU) | Private local GGUF text generation and Hugging Face model downloader |
-| **Storage** | SQLite (WAL mode) + Secret Service | Task history, model index, audit logs, and encrypted key storage |
+| **Desktop Shell** | Rust + Tauri 2 | Native Cockpit window (`1280x800`), Floating HUD (`420x64`), and OS integration |
+| **Frontend UI** | React 19 + TypeScript + Tailwind CSS v4 | Locked Linear dark/light solid interface (`Inter` + `JetBrains Mono`) with keyboard-first navigation |
+| **Charts and State** | Apache ECharts 6 + Zustand 5 | Real-time CPU/RAM/VRAM telemetry charts and synced cross-window state |
+| **Inference Layer** | Cloud SSE + Hugging Face GGUF Downloader | OpenAI/Anthropic/Gemini/OpenRouter SSE clients, chunked HF downloads, live headroom guard *(native `llama-cpp-2` inference bindings in progress)* |
+| **Storage** | SQLite (WAL mode) + `SecretVault` | Task history, event-sourced timelines, tamper-evident hash-chained audit logs, and encrypted API keys |
 | **App Protocol** | MCP over Unix Sockets (`SO_PEERCRED`) | Authenticated local communication with companion Zvirox tools |
 
 ---
@@ -240,7 +240,7 @@ No. The Rust safety layer checks every tool call before execution. Read-only loo
 No. While a Vulkan or ROCm GPU makes local models reply faster, Starship Control works on standard processors and also supports lightweight external APIs.
 
 **How do I open the Floating HUD?**
-Press `Super+Shift+Space` from any workspace on Linux to bring up the compact command capsule.
+Press `Super+Shift+Space` on Wayland (`ashpd` portal) or click the HUD toggle in the Cockpit title bar to bring up the compact `420x64` command bar.
 
 ---
 

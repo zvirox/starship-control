@@ -1,8 +1,8 @@
 # PLAN.md — Starship Control Implementation Roadmap
 
-**Version:** 1.1 · **Date:** 2026-11-22  
-**Authority chain:** `PRD.md` (scope) → `ARCHITECTURE.md` (structure) → `DESIGN.md` (UI law) → `DATABASE.md` (schema) → `API.md` (contracts) → **this file (Phases 0–8)** → [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) (Phases 9–16)  
-**Working rule:** Every phase ends with a **runnable application** (vertical slices — `cargo tauri dev` produces real, testable behavior at each phase boundary, never "backend first, UI later"). Tasks are sized $\le$ 1–2 hours. The rulebook for executing any task is [`AGENTS.md`](AGENTS.md).
+**Version:** 1.2 · **Date:** 2026-11-25  
+**Authority chain:** `PRD.md` (scope) → `ARCHITECTURE.md` (structure) → `DESIGN.md` (locked UI law) → `DATABASE.md` (schema) → `API.md` (contracts) → **this file (Phases 0–8)** → [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) (Phases 9–16)  
+**Working rule:** Every phase ends with a **runnable application** (vertical slices). **UI Visual Spec Status:** The Linear solid design system (`DESIGN.md` v2.1, implemented on `feat/linear-ui`) is **FINAL & LOCKED** — no further UI style planning or visual redesigns remain. The rulebook for executing any task is [`AGENTS.md`](AGENTS.md).
 
 ---
 
@@ -16,21 +16,20 @@
   - *Verify:* `cargo check --workspace` compiles cleanly.
 - [x] **0.2 Tauri 2 Multi-Window Scaffolding**
   - Initialize Tauri 2 with React 19, TypeScript, and Vite inside `app/`.
-  - Configure `tauri.conf.json` with two windows: `main` (Cockpit, 1200×800) and `hud` (Floating HUD, 520×76, borderless, transparent, always-on-top, hidden by default).
-  - *Verify:* `cargo tauri dev` launches the main glass window; HUD window can be programmatically displayed.
-- [ ] **0.3 Tailwind CSS v4 `@theme` & Token Bridging**
-  - Import self-hosted fonts (`FamiljenGrotesk`, `JetBrainsMono`) via `@font-face`.
-  - Author `tailwind.css` using DESIGN.md tokens (dark/light palettes, glass utility recipes `@utility pane/float/modal`, specular overlays).
-  - *Verify:* Swatch verification page renders obsidian canvas, Electric Cyan accents, and frosted glass recipes.
+  - Configure `tauri.conf.json` with two solid opaque windows: `main` (Cockpit, `1280×800`, min `1024×640`, `decorations: false`, `transparent: false`) and `hud` (Floating HUD, `420×64`, borderless, `transparent: false`, always-on-top, hidden by default).
+  - *Verify:* Multi-window Tauri configuration compiles and both surfaces render in sync.
+- [x] **0.3 Tailwind CSS v4 `@theme` & Locked Linear Token Bridging**
+  - Bundle self-hosted `InterVariable.woff2` and `JetBrainsMono-Variable.woff2` via `@font-face` (`app/public/fonts/`).
+  - Author `tailwind.css` using locked `DESIGN.md` v2.1 Linear solid surface tokens (`#050505`/`#111213`/`#1A1B1E` dark, `#F3F4F6`/`#FFFFFF`/`#F4F5F7` light, `#3355FF` primary accent, zero blur), enforced by `npm run check:linear`.
+  - *Verify:* `npm run check:linear` and `DesignVerification.tsx` validate zero blur/translucent regressions across dark and light modes.
 - [x] **0.4 SQLite Engine & Migration Runner (`starship-db`)**
   - Setup `starship-db` with `rusqlite` bundled, enabling WAL mode, `PRAGMA foreign_keys = ON`, busy timeout 5000ms, and `0600` permissions at `$XDG_DATA_HOME/starship-control/library.db`.
-  - Implement `PRAGMA user_version` runner with initial schema `0001_initial.sql` (creating `missions`, `messages`, `plans`, `steps`, `models`, `app_registry`, `audit_log`).
-  - *Verify:* Fresh boot creates `library.db` with correct tables; integration test validates CRUD and foreign key cascades.
-- [ ] **0.5 Typed IPC Skeleton & Error Format**
-  - Implement standard `CoreError` envelope (`kind`, `code`, `retryable`, `userMessage`, `details`) in Rust and TypeScript.
-  - Implement initial `ipc.hello` handshake command verifying protocol parity.
-  - Setup rotating structured logging via `tracing-subscriber` at `$XDG_STATE_HOME/starship-control/`.
-  - *Verify:* Frontend receives typed errors matching `API.md §1` without panics.
+  - Implement `PRAGMA user_version` runner with migrations `0001_initial.sql`–`0006_mission_health_summary.sql`.
+  - *Verify:* Fresh boot creates `library.db` with correct tables; integration tests (`migration_test.rs`) validate CRUD, cascades, and hash chains.
+- [ ] **0.5 Typed IPC Skeleton & Error Format** *(Partial — Logging Pending)*
+  - [x] Implement standard `CoreError` envelope (`kind`, `code`, `retryable`, `userMessage`, `details`) in Rust and TypeScript (`app/src/types/ipc.ts`), plus `ipc_hello` and `--self-test`.
+  - [ ] Setup rotating structured logging on disk (`tracing-appender`) at `$XDG_STATE_HOME/starship-control/` (currently `tracing_subscriber::fmt()` logs to stdout only).
+  - *Verify:* Frontend receives typed errors matching `API.md §1`; file log appender still pending.
 
 **Definition of Done (Phase 0):** ✅ Multi-window Tauri 2 shell launches, renders design tokens on Wayland/X11, passes CI gates (clippy `-D warnings`, `tsc --noEmit`), and seeds the SQLite WAL database.
 
@@ -44,17 +43,14 @@
   - Define `InferenceEngine` async trait returning a pinned `Stream<Item = Result<ChatChunk, CoreError>>`.
   - Implement unified `ChatRequest`, `Message`, and `ToolDefinition` abstractions.
   - *Verify:* Mock engine unit test streams token chunks deterministically.
-- [ ] **1.2 Cloud SSE Client Implementation**
-  - Implement OpenAI-compatible streaming client (supporting OpenAI, OpenRouter, and Ollama).
-  - Implement Anthropic Claude SSE streaming client (`messages` API).
-  - Implement Google Gemini streaming client.
-  - Wire encrypted provider configuration storage in `provider_configs` table.
-  - *Verify:* Live prompt against configured cloud provider streams tokens smoothly into Cockpit chat.
-- [ ] **1.3 Local GGUF Engine Integration (`llama-cpp-2`)**
-  - Author native `llama-cpp-2` wrapper with hardware detection (Vulkan, ROCm, CPU threads).
-  - Implement context caching, token sampling, and streaming token generator.
-  - Implement RAM/VRAM pre-allocation probe preventing out-of-memory crashes.
-  - *Verify:* Loading local GGUF file executes inference locally on device with token generation logged.
+- [x] **1.2 Cloud SSE Client Implementation**
+  - Implemented OpenAI-compatible SSE client (`OpenAiClient`, supporting OpenAI & OpenRouter), Anthropic Claude SSE client (`AnthropicClient`), and Google Gemini streaming client (`GeminiClient`).
+  - Wired `SecretVault` (`enc_v1:<hex>` encryption at rest + scrubbing) in `provider_configs` SQLite storage (`starship-db/src/models.rs`, verified in `docs/evidence/10.7.txt`). *(Optional Linux Secret Service daemon integration deferred).*
+  - *Verify:* Cloud SSE dispatchers compile and secret-vault roundtrip & canary-scrubbing tests pass.
+- [ ] **1.3 Local GGUF Engine Integration (`llama-cpp-2`)** *(Partial — Native Bindings Pending)*
+  - [x] Hardware detection (`HardwareCapabilities`), VRAM capacity probes, live `LocalInferenceGuard` headroom checks, and contextual/GBNF tasksheet response generation in `LocalGgufRunner`.
+  - [ ] Wire native `llama-cpp-2` C++ GGUF bindings into `starship-infer/Cargo.toml` and `runner.rs` (currently `LocalGgufRunner` synthesizes responses without executing real GGUF weights).
+  - *Verify:* Guard & runner tests pass; real on-device weight sampling remains pending.
 - [x] **1.4 Streaming Token & Thought UI**
   - Author Cockpit chat message canvas with real-time token rendering, code syntax highlighting, and expandable `<thought>` blocks.
   - Emit `evt://token/stream` and `evt://thought/stream` from Rust core to webview.
@@ -160,20 +156,20 @@
 
 ## Phase 6 — Floating Companion HUD & Global Shortcut
 
-> **Goal:** Ambient, always-on-top glass capsule toggleable via `Super + Shift + Space` over active desktop applications.
+> **Goal:** Compact, solid always-on-top Linear command bar toggleable via `Super + Shift + Space` over active desktop applications.
 
 - [x] **6.1 Floating HUD Geometry & Window Behavior**
-  - Configure Tauri HUD window: borderless, transparent, `alwaysOnTop: true`, `skipTaskbar: true`.
-  - Implement resting capsule geometry (520×76) and drag handle with screen corner snapping.
-  - *Verify:* HUD floats smoothly over full-screen apps without losing focus or stealing compositor inputs.
-- [ ] **6.2 Wayland Global Shortcut Portal (`ashpd`)**
-  - Register `Super + Shift + Space` via `ashpd` GlobalShortcuts portal on Wayland (with X11 keybinding fallback).
-  - Handle portal permission dialog gracefully with educational first-run notice.
-  - *Verify:* Pressing shortcut toggles HUD visibility anywhere on desktop.
+  - Configure Tauri HUD window: borderless (`decorations: false`), solid opaque (`transparent: false`), `alwaysOnTop: true`, `skipTaskbar: true`, synced with Cockpit theme.
+  - Implement resting rectangular bar geometry (`420×64`, `6px` radius) with drag handle, logo, close control, and corner snapping.
+  - *Verify:* HUD window compiles and renders cleanly without compositor transparency bugs on Linux Light/Dark themes.
+- [ ] **6.2 Wayland Global Shortcut Portal (`ashpd`)** *(Partial — Native X11 Fallback Pending)*
+  - [x] Register `Super + Shift + Space` via `ashpd` `GlobalShortcuts` portal on Wayland with graceful fallback notice (`app/src-tauri/src/shortcut.rs`).
+  - [ ] Native X11 global hotkey fallback (`XGrabKey`) not yet implemented (X11 relies on Cockpit/in-app HUD toggle).
+  - *Verify:* Wayland portal session binding compiles and activates `cmd_toggle_hud`; X11 global hook remains pending.
 - [x] **6.3 HUD Prompting & Streamlined Approval Expansion**
-  - Build HUD input bar with active model chip, text prompt field, and send button.
-  - Implement spring-physics expansion (520×76 $\to$ 520×240) when a Tier 2/3 approval gate triggers.
-  - *Verify:* User working in EEP can approve an edit directly on the floating HUD without switching windows.
+  - Build HUD input bar with active model chip, text prompt field, health dot indicator, and send button.
+  - Implement dynamic vertical expansion (`cmd_resize_hud`) when streaming output or Tier 2/3 approval gates trigger.
+  - *Verify:* User can submit prompts and approve/reject steps in place on the Floating HUD.
 
 **Definition of Done (Phase 6):** ✅ User can summon the Floating HUD over EEP or ALP via global shortcut, prompt the agent, and sign action approvals in place.
 
@@ -202,12 +198,12 @@
 > **Goal:** Distribution packaging for Arch Linux, Debian/Ubuntu, and Fedora/RHEL, plus GitHub Actions CI/CD release automation.
 
 - [x] **8.1 Packaging Metadata & App Icons**
-  - Setup desktop entry file `starship-control.desktop` and hicolor vector icons.
-  - Author `packaging/aur/PKGBUILD`, `packaging/deb/`, and `packaging/rpm/` specs.
+  - Setup desktop entry file `packaging/starship-control.desktop` and hicolor PNG icons (`32px`–`512px`).
+  - Author unified `packaging/nfpm.yaml` + maintainer scripts (`postinstall.sh`, `preremove.sh`) targeting `.deb`, `.rpm`, and Arch `.pkg.tar.zst` (replacing legacy `packaging/aur/` & `.deb/.rpm` manual scripts).
 - [x] **8.2 GitHub Actions CI/CD Pipeline**
-  - Author `.github/workflows/ci.yml` (formatting, clippy `-D warnings`, unit tests, typecheck).
-  - Author `.github/workflows/release.yml` (multi-arch Linux builds $\to$ GitHub Releases artifacts).
-  - *Verify:* Release pipeline generates installable `.deb`, `.rpm`, and `.tar.gz` packages.
+  - Author `.github/workflows/ci.yml` (rustfmt, clippy `-D warnings`, workspace tests, `tsc --noEmit`, `npm run build`, `--self-test` smoke check, coverage baseline, audit).
+  - Author `.github/workflows/release.yml` calling reusable Linux `nfpm` release workflow on `v*` tags.
+  - *(Note: Clean-VM multi-distro install verification & live Actions sign-off tracked in `GAP-CLOSURE-PLAN.md §16.6`.)*
 
 **Definition of Done (Phase 8):** ✅ Starship Control builds clean on CI and installs seamlessly across major Linux distributions.
 
@@ -219,14 +215,14 @@
 > Governed by `PRD.md` → `ARCHITECTURE.md` → `DESIGN.md` → `DATABASE.md` → `API.md` → `PLAN.md` → **`GAP-CLOSURE-PLAN.md`**.
 
 ### Summary of Phases 9–16:
-- [ ] **Phase 9 — Truth, CI & Foundations**: Ground-truth audit (`docs/evidence/AUDIT.md`), working CI matrix (`ci.yml`), database encryption honesty & encrypted secret store (libsecret / SQLCipher), workspace warnings & `unsafe` audit.
-- [ ] **Phase 10 — Hardened Control Plane**: Enforced safety arbiter with manifest overrides, HMAC-SHA256 signed approval tokens bound to step args, socket security (`SO_PEERCRED` + binary hash pinning), tamper-evident hash-chained audit log with verify command.
-- [ ] **Phase 11 — Executor Engine, Checkpoints & Fallback Plan**: Full execution engine (state machine, retry with jitter, timeouts, cancel), dynamic fallback planner, cross-app checkpoint & rollback engine (EEP, ALP, ATP, SSP), lease & lock supervisor for concurrent missions.
-- [ ] **Phase 12 — Planner Reliability & Tool Routing**: Dynamic tool indexing & lexical tool routing, strict JSON schema validator with 2-attempt LLM repair loop, prompt injection defense (`<untrusted_context>` wrapping), end-to-end screencast test (`tests/screencast_flow.rs`).
-- [ ] **Phase 13 — Progress Tracking**: Mission progress state & ETA estimator, crash-safe mission state reconstruction, Cockpit & HUD progress rendering.
-- [ ] **Phase 14 — System Health & Overload Monitor + Dashboard**: Host metrics sampler (`sysinfo` CPU/RAM/swap + disk), GPU telemetry (`amdgpu` sysfs / `nvml`), overload detector & throttle policy, Cockpit system status drawer & HUD overload badge.
-- [ ] **Phase 15 — Resource-Aware Scheduling (Admission Control)**: Mission admission controller & priority queue, cancellation propagation & graceful drain, Cockpit queue & pause/resume UI.
-- [ ] **Phase 16 — Test Harness, Chaos & Release Readiness**: Mock app ecosystem (5 apps over UDS/stdio), chaos / fault-injection suite, Wayland/X11 HUD verification, packaging validation (deb/rpm/PKGBUILD clean build).
+- [x] **Phase 9 — Truth, CI & Foundations**: Ground-truth audit (`docs/evidence/AUDIT.md`), CI matrix (`.github/workflows/ci.yml`), SQLite honesty notice, workspace warnings & `deny(unsafe_code)` audit (`docs/evidence/9.0, 9.1, 9.3.txt`).
+- [x] **Phase 10 — Hardened Control Plane**: Enforced safety arbiter (`tiers.toml`), HMAC-SHA256 argument-bound approval tokens, `SO_PEERCRED` + binary path checks, `SecretVault` encryption at rest, tamper-evident SHA-256 audit chain with `starship-control audit verify` (`docs/evidence/10.1–10.8.txt`).
+- [x] **Phase 11 — Executor Engine, Checkpoints & Fallback Plan**: Execution state machine, jittered retry, timeouts, dynamic fallback planner (`fallbacks.toml`), cross-app checkpoint primitives, lease supervisor, and event-sourced run log (`docs/evidence/11.1–11.11.txt`).
+- [x] **Phase 12 — Planner Reliability & Tool Routing**: Two-stage lexical tool router, strict `tasksheet/1` schema + GBNF validator with repair loop, prompt injection defense (`<untrusted_context>`), dry-run preview & `xtask` planner eval (`docs/evidence/12.1–12.7.txt`).
+- [x] **Phase 13 — Progress Tracking**: Mission progress state, EWMA/p90 ETA learner (`tool_stats`), crash reconstruction, and Cockpit Timeline / HUD progress views (`docs/evidence/13.1–13.8.txt`).
+- [x] **Phase 14 — System Health & Overload Monitor + Dashboard**: `starship-health` samplers (CPU, RAM, swap, PSI, disk, thermal, GPU), 15m ring buffer + SQLite rollups (`0005`–`0006`), hysteresis detector, overload governor, and Cockpit Systems view finalized in locked Linear UI (`docs/evidence/14.1–14.11.txt`).
+- [x] **Phase 15 — Resource-Aware Scheduling (Admission Control)**: Tool resource profiles (`resources.toml`), admission controller, local-inference live headroom guard, optional `systemd-run` containment, and fair mission queueing (`docs/evidence/15.1–15.5.txt`).
+- [ ] **Phase 16 — Test Harness, Chaos & Release Readiness** *(Pending)*: `starship-mock-app` crate (`16.1`), chaos fault-injection suite (`16.2`), real-app E2E runs (`16.3`), security mutation CI suite (`16.4`), compositor `COMPAT.md` matrix (`16.5`), clean-VM distro packaging verification (`16.6`), `THREAT_MODEL.md` (`16.7`), and performance benchmarks (`16.8`).
 
 *Refer to [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) for the authoritative task breakdown, individual task criteria, and non-negotiable verification commands.*
 

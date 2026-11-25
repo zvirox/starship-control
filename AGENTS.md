@@ -22,7 +22,7 @@ When implementing features or fixing bugs, consult the governing specification f
 |---|---|---|
 | **1** | [**`PRD.md`**](PRD.md) | Scope, MVP vs. Later, personas, functional goals, non-goals. |
 | **2** | [**`ARCHITECTURE.md`**](ARCHITECTURE.md) | Crate boundaries, system topology, IPC transports, lifecycle contracts. |
-| **3** | [**`DESIGN.md`**](DESIGN.md) | Visual law: frosted glass recipes, color tokens, typography, window layouts. |
+| **3** | [**`DESIGN.md`**](DESIGN.md) | Visual law (FINAL & LOCKED): Linear solid surfaces, color tokens, typography, window layouts. |
 | **4** | [**`DATABASE.md`**](DATABASE.md) | SQLite schema, tables, foreign keys, migrations, retention. |
 | **5** | [**`API.md`**](API.md) | Typed Tauri commands, push events, MCP JSON-RPC 2.0 wire protocol. |
 | **6** | [**`PLAN.md`**](PLAN.md) / [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) | Order of work (Phases 0–8 / Phases 9–16), vertical slices, phase-by-phase acceptance criteria. |
@@ -34,12 +34,14 @@ When implementing features or fixing bugs, consult the governing specification f
 ## 3. Mandatory Requirements (DO)
 
 1. **Adhere to the Cargo Workspace Structure:**
-   - `crates/starship-core`: Planning, task sheets, safety policy, context assembling.
-   - `crates/starship-infer`: `llama-cpp-2` local runner, Hugging Face chunked downloader, cloud SSE clients.
-   - `crates/starship-mcp`: MCP client pool, Unix domain socket transport with `SO_PEERCRED`, stdio child spawner.
-   - `crates/starship-plugin`: Shared Rust SDK crate imported by sub-apps (EEP, SSP, ALP, etc.).
-   - `crates/starship-db`: SQLite connection pool, migrations, queries, audit logging.
-   - `app/`: Tauri 2 desktop shell (`src-tauri/`) and React 19 frontend (`src/`).
+   - `crates/starship-core`: Planning (`tasksheet/1` + GBNF + repair loop), safety policy, execution state machine, resource admission, context assembling.
+   - `crates/starship-infer`: Local GGUF runner facade & VRAM guard (native `llama-cpp-2` bindings pending), Hugging Face chunked downloader, cloud SSE clients (OpenAI, Anthropic, Gemini, OpenRouter).
+   - `crates/starship-mcp`: MCP client pool, Unix domain socket transport with `SO_PEERCRED` + binary/manifest trust checks, stdio child spawner.
+   - `crates/starship-plugin`: Shared Rust SDK crate imported by sub-apps (EEP, SSP, ALP, NWP, ATP).
+   - `crates/starship-db`: SQLite connection pool, migrations (`0001`–`0006`), queries, tamper-evident hash-chained audit logging.
+   - `crates/starship-health`: Live CPU, RAM, swap, PSI, disk, thermal, and GPU telemetry samplers, ring buffer, and overload detector.
+   - `crates/xtask`: Workspace build/evaluation CLI utilities (`planner-eval`, schema/router benchmarking).
+   - `app/`: Tauri 2 desktop shell (`src-tauri/`) and React 19 frontend (`src/`), guarded by `npm run check:linear`.
 2. **Strict Enforcement of Tiered Safety:**
    - Never allow an LLM tool call to execute mutating or destructive operations without passing through the Rust `SafetyArbiter`.
    - Mutating steps require a verified, signed user token issued from the approval UI.

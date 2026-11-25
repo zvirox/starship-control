@@ -1,9 +1,9 @@
 # GAP-CLOSURE-PLAN.md — Starship Control: Gap Filling, Missing Features & Build Plan
 
-**Version:** 1.0 · **Date:** 2026-11-22
+**Version:** 1.1 · **Date:** 2026-11-25
 **Continues:** `PLAN.md` (Phases 0–8). This file defines **Phases 9–16**.
-**Authority chain:** `PRD.md` → `ARCHITECTURE.md` → `DESIGN.md` → `DATABASE.md` → `API.md` → `PLAN.md` → **this file**.
-**Audience:** a coding agent (see `AGENTS.md`) executing one task at a time.
+**Authority chain:** `PRD.md` → `ARCHITECTURE.md` → `DESIGN.md` (locked Linear UI) → `DATABASE.md` → `API.md` → `PLAN.md` → **this file**.
+**Status:** Phases 9–15 verified complete (`docs/evidence/9.0–15.5.txt`); UI style finalized & locked on `DESIGN.md` v2.1 (`feat/linear-ui`). **Phase 16 remains open/pending.**
 
 > **Honesty note.** This plan was written from the public docs (README, PLAN, ARCHITECTURE, API) and the repo's Actions page. The Rust/TypeScript source was **not** reviewed. Task 9.0 exists to reconcile this plan with the real code before anything else is built. Where this plan names a module or file that does not exist, create it; where it conflicts with the code, the code audit (`docs/evidence/AUDIT.md`) wins and this plan is amended in the same commit.
 
@@ -299,7 +299,7 @@ Step:    pending → ready → awaiting_approval → running
   * Top processes table (Starship-owned rows highlighted, "Starship total" row).
   * Alerts timeline (what tripped, when, what governor did).
   * Settings drawer for thresholds, sampling, auto-resume.
-  * Follows `DESIGN.md` glass tokens; no new colors without updating `DESIGN.md`.
+  * Follows locked `DESIGN.md` v2.1 Linear solid surface tokens (`npm run check:linear`; no further UI style planning).
   * *Verify:* mock feed drives each state; screenshots in evidence; keyboard navigable.
 - [x] **14.10 HUD & tray integration** — HUD shows a small health dot (green/amber/red) and expands the plan view with a banner when the governor pauses a mission; tray state **Overloaded**.
   * *Verify:* injected Critical state shows banner within 2 s.
@@ -341,7 +341,7 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* evidence folder present; README support table reflects reality.
 - [ ] **16.4 Security test suite** — tests for: tier floor, approval binding/replay, manifest pinning, peer exe check, CSP/XSS render, secret scrubbing, audit chain. Wire into CI.
   * *Verify:* all pass; a mutation (disable one check) makes a test fail.
-- [ ] **16.5 Compositor matrix** — manually verify HUD always-on-top, transparency, global shortcut on GNOME, KDE Plasma 6, Sway, Hyprland, X11; table in `docs/COMPAT.md` (`works / degraded / not supported` + fallback used). README "tested on" mirrors this file only.
+- [ ] **16.5 Compositor matrix** — manually verify HUD always-on-top, solid opaque rendering (`transparent: false`), and global shortcut on GNOME, KDE Plasma 6, Sway, Hyprland, X11; table in `docs/COMPAT.md` (`works / degraded / not supported` + fallback used). README "tested on" mirrors this file only.
   * *Verify:* `COMPAT.md` filled with dated test notes and versions.
 - [ ] **16.6 Packaging verification** — install/uninstall/upgrade on Ubuntu LTS, Fedora, Arch; publish AUR package (or remove README AUR instructions); checksums + signature (minisign or GPG) for releases.
   * *Verify:* clean-VM install logs in evidence.
@@ -447,12 +447,12 @@ ALTER TABLE missions ADD COLUMN outcome TEXT;
 
 ## Appendix D — Acceptance Checklist (whole program)
 
-- [ ] CI green; release installs on Ubuntu, Fedora, Arch (evidence attached)
-- [ ] `AUDIT.md` shows no `MISSING` items still ticked in PLAN.md
-- [ ] Tier floors, approval binding, manifest pinning, peer check, audit chain — all tested
-- [ ] Kill-app / kill-core / network-loss / disk-full / overload chaos scenarios pass
-- [ ] Fallback ladder demonstrated: retry → alt transport → re-plan → degrade → rollback → safe stop
-- [ ] Progress, ETA, stall detection visible in Cockpit, HUD, tray; replay works
-- [ ] Systems dashboard live; overload detection has no flapping; governor pauses and resumes
-- [ ] No-LLM template mode runs all three pipelines
-- [ ] README claims match `COMPAT.md` and evidence
+- [ ] CI green on GitHub Actions; `nfpm` release packages install cleanly on Ubuntu, Fedora, Arch (`16.6`, evidence attached)
+- [x] `AUDIT.md` shows no `MISSING` items still ticked in `PLAN.md`
+- [x] Tier floors, approval binding, manifest pinning, peer check, audit chain — tested in workspace suite (`docs/evidence/10.1–10.8.txt`; mutation suite in `16.4` pending)
+- [ ] Kill-app / kill-core / network-loss / disk-full / overload chaos scenarios pass (`16.1–16.2` pending)
+- [x] Fallback ladder demonstrated: retry → alt transport → re-plan → degrade → rollback → safe stop (`docs/evidence/11.5–11.11.txt`)
+- [x] Progress, ETA, stall detection implemented across Cockpit, HUD, tray state, and replay (`docs/evidence/13.1–13.8.txt`)
+- [x] Systems dashboard live in locked Linear UI; overload detection with hysteresis; governor pauses and resumes (`docs/evidence/14.1–14.11.txt`)
+- [x] No-LLM template mode runs screencast and diagnostics pipelines (`docs/evidence/12.7.txt`)
+- [ ] Real-app E2E (`16.3`), `THREAT_MODEL.md` (`16.7`), `COMPAT.md` (`16.5`), and performance budgets (`16.8`) complete and mirrored in `README.md`

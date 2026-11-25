@@ -1,8 +1,8 @@
 # DATABASE.md — Starship Control Data Architecture
 
-**Version:** 1.0 · **Date:** 2026-11-17  
+**Version:** 1.1 · **Date:** 2026-11-25  
 **Authority chain:** `PRD.md` (scope, safety requirements) → `ARCHITECTURE.md` (§7 data principles) → **this file (schema & persistence law)**  
-**Rule:** Defines all SQLite schemas, migrations, table definitions, foreign keys, constraints, and query patterns. No product code is written as part of this document.
+**Rule:** Defines all SQLite schemas, embedded migrations (`0001`–`0006` in `crates/starship-db/src/migrations/`), table definitions, foreign keys, constraints, and query patterns. No product code is written as part of this document.
 
 ---
 
@@ -157,6 +157,13 @@ Discrete tool execution steps within a task sheet.
 | `error_message` | `TEXT` | `NULL` | Error details if execution failed. |
 | `started_at` | `TEXT` | `NULL` | Timestamp when tool execution commenced. |
 | `finished_at` | `TEXT` | `NULL` | Timestamp when tool execution completed. |
+| `state` | `TEXT` | `NOT NULL DEFAULT 'pending'` | *(0003)* State machine state (`pending`, `ready`, `running`, `completed`, `failed_retriable`, `failed_final`, etc.). |
+| `attempt` | `INTEGER` | `NOT NULL DEFAULT 0` | *(0003)* Retry attempt counter. |
+| `checkpoint_id` | `TEXT` | `NULL` | *(0003)* Sub-app checkpoint identifier captured before mutating execution. |
+| `optional` | `INTEGER` | `NOT NULL DEFAULT 0` | *(0003)* Whether step degradation is permitted without failing the plan. |
+| `idempotency_key` | `TEXT` | `NULL` | *(0003)* Deduplication key preventing duplicate retries of mutating calls. |
+| `progress` | `REAL` | `NOT NULL DEFAULT 0.0` | *(0003)* Normalized completion fraction (`0.0`–`1.0`). |
+| `failure_class` | `TEXT` | `NULL` | *(0003)* Classified error category for recovery/fallback routing. |
 
 ---
 
@@ -208,7 +215,7 @@ Secure storage for external API endpoints.
 | `provider_id` | `TEXT` | `PRIMARY KEY` | Provider ID (`'openai'`, `'anthropic'`, `'gemini'`, `'openrouter'`). |
 | `display_name` | `TEXT` | `NOT NULL` | Display label ("Anthropic Claude"). |
 | `base_url` | `TEXT` | `NOT NULL` | REST endpoint base URL. |
-| `api_key_encrypted`| `TEXT` | `NULL` | AES-GCM-256 encrypted or Secret Service URI. |
+| `api_key_encrypted`| `TEXT` | `NULL` | `enc_v1:<hex>` ciphertext encrypted via `starship_core::SecretVault` (note: SQLite file itself is not SQLCipher-encrypted). |
 | `is_enabled` | `INTEGER` | `NOT NULL DEFAULT 1` | Check: `is_enabled IN (0, 1)`. |
 | `created_at` | `TEXT` | `NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))` | Creation timestamp. |
 | `updated_at` | `TEXT` | `NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))` | Modification timestamp. |
@@ -227,7 +234,9 @@ An append-only log recording every tool invocation, security decision, and user 
 | `risk_tier` | `INTEGER` | `NOT NULL` | Safety tier (1, 2, 3). |
 | `payload_json` | `TEXT` | `NOT NULL` | Full serialized parameters or diff summary. |
 | `status` | `TEXT` | `NOT NULL` | `'success'`, `'denied'`, `'failed'`. |
-| `signature_token`| `TEXT` | `NULL` | Cryptographic or ephemeral UI token proving human consent. |
+| `signature_token`| `TEXT` | `NULL` | HMAC-SHA256 ephemeral UI token proving human consent bound to step arguments. |
+| `prev_hash` | `TEXT` | `NOT NULL DEFAULT '0000...0000'` | *(0002)* SHA-256 hash of the preceding audit entry (`GENESIS_HASH` for entry 1). |
+| `entry_hash` | `TEXT` | `NOT NULL DEFAULT '0000...0000'` | *(0002)* Chained SHA-256 integrity hash verified via `starship-control audit verify`. |
 | `created_at` | `TEXT` | `NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))` | Immutable UTC timestamp. |
 
 ---
@@ -286,6 +295,35 @@ Records every trip into Elevated, Constrained, or Critical health states and the
 | `value` | `REAL` | `NOT NULL` | Measured sensor value that triggered the alert. |
 | `action` | `TEXT` | `NOT NULL` | Governor intervention (`'warn'`, `'throttle'`, `'safe_pause'`). |
 | `mission_id` | `INTEGER` | `NULL REFERENCES missions(id)` | Mission impacted by governor action if any. |
+
+---
+
+### 3.12 `mission_events` — Event-Sourced Run Log (Migration `0003`)
+Append-only operational event stream supporting crash recovery and Mission Timeline replay.
+
+| Column | SQLite Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Sequential event ID. |
+| `mission_id` | `INTEGER` | `NOT NULL REFERENCES missions(id) ON DELETE CASCADE` | Parent mission ID. |
+| `step_id` | `INTEGER` | `NULL` | Associated step ID if applicable. |
+| `ts_ms` | `INTEGER` | `NOT NULL` | Epoch millisecond timestamp. |
+| `kind` | `TEXT` | `NOT NULL` | Event type (`transition`, `tool_call`, `retry`, `fallback`, `progress`, `governor`, `approval`). |
+| `payload_json` | `TEXT` | `NOT NULL` | Serialized structured event metadata. |
+
+---
+
+### 3.13 `tool_stats` — Observed Latency & ETA Learner (Migration `0004`)
+Tracks empirical per-tool duration distributions for progress/ETA estimation.
+
+| Column | SQLite Type | Constraints | Description |
+|---|---|---|---|
+| `app_id` | `TEXT` | `NOT NULL (PK)` | Target app ID. |
+| `tool` | `TEXT` | `NOT NULL (PK)` | MCP tool name. |
+| `n` | `INTEGER` | `NOT NULL DEFAULT 0` | Sample count. |
+| `ewma_ms` | `REAL` | `NOT NULL DEFAULT 0.0` | Exponentially weighted moving average duration (ms). |
+| `p50_ms` | `REAL` | `NOT NULL DEFAULT 0.0` | Median duration (ms). |
+| `p90_ms` | `REAL` | `NOT NULL DEFAULT 0.0` | 90th percentile duration (ms). |
+| `samples_json` | `TEXT` | `NOT NULL DEFAULT '[]'` | Rolling JSON sample window. |
 
 ---
 

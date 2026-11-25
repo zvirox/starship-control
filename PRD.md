@@ -1,6 +1,6 @@
 # PRD — Starship Control
 
-**Status:** Draft v0.1 · **Owner:** zvirox · **Date:** 2026-11-17  
+**Status:** Implemented v0.1.0-beta.1 (Linear UI Locked) · **Owner:** zvirox · **Date:** 2026-11-25  
 **Project:** Mother Ship / Starship Control  
 **Authority:** Root Product Requirements Document for Starship Control  
 
@@ -53,8 +53,8 @@ Modern open-source desktop software is increasingly embracing AI and MCP interfa
 
 ### Product Goals (MVP)
 - **G1. Dual-Surface Interface:**
-  - **The Cockpit:** A comprehensive primary desktop window (1200×800) for mission planning, multi-app topology status, workflow visualization, model management, and audit logs.
-  - **The Floating HUD:** A lightweight, always-on-top, draggable frosted-glass companion bar (mirroring SSP's design philosophy) with global shortcut invocation for quick prompts and one-click approvals without leaving active apps.
+  - **The Cockpit:** Primary desktop command center window (`1280×800`, min `1024×640`, `decorations: false`, `transparent: false`) for chat orchestration, timeline & pipeline execution, multi-app topology, systems health dashboards, model management, and audit logs.
+  - **The Floating HUD:** Lightweight, always-on-top, draggable solid companion bar (`420×64` default, `transparent: false`, `6px` radius) with global shortcut invocation for quick prompts and one-click approvals without leaving active apps.
 - **G2. Dual Engine (Local + Cloud) from Day One:**
   - Local model runtime supporting direct Hugging Face GGUF downloads with download progress, SHA-256 verification, and hardware-accelerated local execution.
   - Universal Cloud API connectivity supporting custom Base URLs, API keys, and model IDs (compatible with OpenAI, Anthropic, Gemini, OpenRouter, and local OpenAI-compatible endpoints like Ollama).
@@ -66,7 +66,7 @@ Modern open-source desktop software is increasingly embracing AI and MCP interfa
 - **G5. Tiered Safety & Approval Gates:**
   - Read-only inspections execute autonomously.
   - Mutating actions (deletions, project modifications, take overwrites, cloud token expenditures) pause for explicit human approval via interactive preview diffs on both Cockpit and HUD.
-- **G6. Ecosystem Consistency:** Built with Rust, Tauri 2, React 19, TypeScript, and Tailwind CSS v4, matching the visual design tokens, fonts, and frosted-glass aesthetics of EEP and SSP.
+- **G6. Design Law & Ecosystem Consistency:** Built with Rust, Tauri 2, React 19, TypeScript, and Tailwind CSS v4 under the **final, locked Linear solid design system** (`DESIGN.md` v2.1: `#050505`/`#F3F4F6` matte surfaces, `1px` structural hairlines, zero blur, dark & light mode sync).
 
 ### Non-Goals (MVP)
 - **N1. Not a Generic Chatbot:** Starship Control is an application and task orchestrator, not a generic conversational assistant. Every action is grounded in tools, task sheets, and application control.
@@ -121,17 +121,17 @@ Starship Control coordinates the following primary applications and formats:
 - **Tier 3 (Destructive / High-Stakes):** File system purges (ATP), take file deletions, system package modifications. Requires explicit confirmation modal with full diff and impact warning.
 - **Interactive Preview Diffs:** Displays visual summaries of proposed modifications (e.g., "Will remove 14 dead-time segments totaling 01:22 from EEP timeline").
 
-### 6.5 User Experience & Surfaces
-- **Cockpit Desktop Window:**
-  - Multi-panel frosted glass interface (Familjen Grotesk headers, JetBrains Mono numbers/code).
-  - Central mission stream with streaming token markdown, thought inspection, and tool-call cards.
-  - Right-hand App Topology Drawer showing live status badges for all discovered applications.
-  - Dedicated **Model Control** settings tab for Hugging Face downloads and API keys.
-- **Floating Companion HUD:**
-  - Always-on-top, draggable, compact glass strip.
-  - Hotkey toggle (default: `Super + Shift + Space`).
-  - Voice/text input bar with mini audio waveform indicator.
-  - Inline action cards for Tier 2/3 approvals (Approve / Reject buttons).
+### 6.5 User Experience & Surfaces (Final Linear UI — Locked)
+- **Cockpit Desktop Window (`1280×800`, `transparent: false`):**
+  - Solid matte Linear-style interface using self-hosted `Inter` UI typography and `JetBrains Mono` for telemetry/code, with zero translucency or blur.
+  - Custom `40px` TitleBar, collapsible `240px → 56px` left Sidebar, `36px` Breadcrumb, and single active workspace panel per view (Chat, Timeline, Missions, Workflows, Apps, Tools, Models, Systems, Activity).
+  - Theme toggle (`dark` / `light`) synced in real time with the Floating HUD.
+  - Dedicated **Model Control** view for Hugging Face downloads and cloud API provider configs.
+- **Floating Companion HUD (`420×64`, `transparent: false`):**
+  - Always-on-top, draggable, solid opaque bar (`6px` radius, `1px` border, drag handle + logo + close/expand controls).
+  - Hotkey toggle (default: `Super + Shift + Space` via Wayland portal).
+  - Compact prompt input bar with active model selector chip, live health indicator, and dynamic expansion when streaming or waiting on Tier 2/3 approvals.
+  - Inline action cards for Tier 2/3 approvals (`Approve` / `Reject` buttons).
 
 ---
 

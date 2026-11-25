@@ -1,8 +1,12 @@
 # Release & Packaging Audit — Starship Control
 
-**Audited:** 2026-11-24  
-**Auditor:** Prakash / Antigravity  
+**Originally Audited:** 2026-11-24  
+**Updated:** 2026-11-25 (Post-`nfpm` Migration Reconciliation)  
 **Repository:** `starship-control` (`https://github.com/zvirox/starship-control`)
+
+> **2026-11-25 Status Summary:** The unified `nfpm` packaging migration recommended below **has been implemented** on `feat/linear-ui`: `.github/workflows/ci.yml`, `.github/workflows/release.yml` (using `zvirox/release-workflows/.github/workflows/linux-release.yml@v1`), `packaging/nfpm.yaml` (targeting `.deb`, `.rpm`, and Arch `.pkg.tar.zst`), and `packaging/scripts/{postinstall.sh,preremove.sh}` are now in place, and legacy `packaging/aur/`, `packaging/deb/`, `packaging/rpm/`, and `packaging/workflows/` have been removed. Workspace version across `Cargo.toml`, `app/package.json`, and `app/src-tauri/tauri.conf.json` is `0.1.0-beta.1`. Live multi-distro clean-VM install validation remains pending (`GAP-CLOSURE-PLAN.md §16.6`).
+
+*(Historical 2026-11-24 baseline snapshot preserved below.)*
 
 ---
 

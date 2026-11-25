@@ -1,7 +1,7 @@
 # ARCHITECTURE.md — Starship Control
 
-**Version:** 1.0 · **Date:** 2026-11-17  
-**Authority chain:** `PRD.md` (scope, requirements) → `ARCHITECTURE.md` (system structure, contracts) → `DESIGN.md` (UI law)  
+**Version:** 2.0 · **Date:** 2026-11-25  
+**Authority chain:** `PRD.md` (scope, requirements) → `ARCHITECTURE.md` (system structure, contracts) → `DESIGN.md` (locked UI law)  
 **Rule:** Defines technical structure, crate layout, protocols, process boundaries, and lifecycle contracts. No product code is written as part of this document.
 
 ---
@@ -10,8 +10,8 @@
 
 1. **Local-First & Sovereign by Default:** Starship Control operates fully on-device without phoning home. Local GGUF models run directly against the hardware (Vulkan/ROCm/CPU) via native Rust bindings. Cloud APIs are strictly optional, user-configured, and directly addressed with the user's private keys.
 2. **Two Surfaces, One Core:** The system runs a single core process hosting the agent orchestration runtime, SQLite database, and MCP client manager. It drives two distinct UI surfaces via Tauri 2:
-   - **The Cockpit:** Primary window for strategic mission planning, model downloading, app topology inspection, and detailed audit review.
-   - **The Floating HUD:** Always-on-top, draggable, translucent companion strip that sits over other applications for quick prompts, live progress, and instant approvals.
+   - **The Cockpit:** Primary window (`1280×800`, min `1024×640`, solid Linear UI) for strategic mission planning, timelines, workflows, model downloading, app topology inspection, live systems health, and audit review.
+   - **The Floating HUD:** Always-on-top, draggable, solid matte companion bar (`420×64`, `transparent: false`, synced dark/light theme) that sits over other applications for quick prompts, live progress, and instant approvals.
 3. **Sub-Apps as Autonomous MCP Agents:** Every sub-application (Easy Edits Pro, ScreenStudio Pro, Audio Labs Pro, Net Watch Pro, Agentic Tuneup Pro) is treated as an autonomous agent exposing tool surfaces through the Model Context Protocol (MCP). Starship Control does not duplicate their media engines or low-level logic—it orchestrates them.
 4. **Shared Rust SDK (`starship-plugin`):** A zero-dependency, shared Rust crate imported by each sub-app handles manifest registration, socket creation with Linux `SO_PEERCRED` authentication, and handshake negotiation.
 5. **Hybrid Control Plane (Live GUI vs. Headless CLI):**
@@ -26,20 +26,20 @@
 
 | Layer | Technology | Rationale |
 |---|---|---|
-| **App Shell** | **Tauri 2** | Multi-window support (Cockpit + transparent floating HUD), system tray, global shortcut portal, tiny memory footprint, native Linux Wayland integration. |
+| **App Shell** | **Tauri 2** | Multi-window support (Cockpit + solid opaque Floating HUD), desktop notifications, Wayland global shortcut portal, tiny memory footprint. |
 | **Frontend Framework** | **React 19 + TypeScript + Vite** | High-performance reactive UI, strict end-to-end typing matching the Rust IPC layer, fast Vite HMR loop. |
-| **Styling & Design** | **Tailwind CSS v4** | Pure CSS `@theme` tokens matching DESIGN.md v1.0 (shared across EEP and SSP). |
-| **UI Components** | **Radix UI Primitives + Lucide Icons** | Unstyled, fully accessible keyboard-navigable primitives customized to frosted-glass tokens. |
-| **UI Behaviors & Agent Bridge** | **`@ui-sdk/react` + `@ui-sdk/core` (Vercel UI SDK)** | Headless behavior primitives (popups, roving focus, selection, createAgent) from `https://ui-sdk.dev/` for robust accessible UI and agent inspection. |
-| **Animation & Motion** | **framer-motion** | Physics-based spring animations for HUD expansion, card transitions, and progress indicators. |
-| **Async Runtime (Core)** | **Rust 2024 + Tokio** | High-throughput asynchronous runtime managing multiple concurrent MCP transports, streaming SSE connections, and child processes. |
-| **Local LLM Engine** | **`llama-cpp-2` / GGUF engine** | Native, high-performance C++ bindings for GGUF quantization execution with Vulkan, ROCm, and AVX2 hardware acceleration. |
+| **Styling & Design** | **Tailwind CSS v4** | Pure CSS `@theme` tokens matching **locked** `DESIGN.md` v2.1 (Linear solid surfaces, `Inter` + `JetBrains Mono` self-hosted fonts, zero blur, dark & light modes, enforced via `npm run check:linear`). |
+| **UI Components & Charts** | **Custom Linear Primitives + Lucide Icons + Apache ECharts 6** | Accessible keyboard-first primitives (`TitleBar`, `Sidebar`, `Breadcrumb`, `DataTable`, `StatCard`, `StatusPill`, `LinearDialog`, `LinearTelemetryChart`) with precomputed ECharts 6 dark/light themes. |
+| **UI Behaviors & Agent Bridge** | **`@ui-sdk/react` + `@ui-sdk/core` + Zustand 5** | Headless behavior primitives and synchronized cross-window theme/app state. |
+| **Animation & Motion** | **framer-motion / motion** | Snappy `150ms ease-out` UI transitions compliant with `prefers-reduced-motion` and zero blur transitions. |
+| **Async Runtime (Core)** | **Rust 2024 + Tokio** | High-throughput asynchronous runtime managing concurrent MCP transports, streaming SSE connections, system health monitoring, and child processes. |
+| **Local LLM Engine** | **`starship-infer/local/` runner facade** | Hardware capability & VRAM probe, `LocalInferenceGuard`, constrained GBNF prompt/tasksheet synthesis (native `llama-cpp-2` GGUF C++ bindings pending in roadmap). |
 | **Cloud Model Client** | **`reqwest` (HTTP/2, rustls)** | Streaming Server-Sent Events (SSE) client for OpenAI, Anthropic, Gemini, and OpenRouter endpoints. |
 | **Protocol / Tooling** | **Model Context Protocol (MCP)** | Official protocol for discovering tools, schemas, resources, and executing actions across sub-apps. |
-| **IPC Transport (Sub-Apps)** | **Linux UNIX Domain Sockets (`SO_PEERCRED`)** | High-speed local IPC verified by kernel UID checks, replacing TCP/CORS vulnerabilities. |
-| **Desktop Portals** | **`ashpd`** | Async client for `xdg-desktop-portal` (GlobalShortcuts for HUD toggle, system notifications). |
-| **Database** | **SQLite via `rusqlite` (bundled)** | Zero-admin, ACID-compliant local database with WAL mode and `PRAGMA foreign_keys = ON`. |
-| **Logging & Diagnostics** | **`tracing` + `tracing-appender`** | Structured diagnostics with daily log rotation at `$XDG_STATE_HOME/starship-control/`. |
+| **IPC Transport (Sub-Apps)** | **Linux UNIX Domain Sockets (`SO_PEERCRED`)** | High-speed local IPC verified by kernel UID/binary/manifest checks, replacing TCP/CORS vulnerabilities. |
+| **Desktop Portals** | **`ashpd`** | Async client for `xdg-desktop-portal` (Wayland `GlobalShortcuts` for HUD toggle). |
+| **Database** | **SQLite via `rusqlite` (bundled)** | Zero-admin, ACID-compliant local database with WAL mode, `PRAGMA foreign_keys = ON`, and 6 embedded migrations (`0001`–`0006`). |
+| **Logging & Diagnostics** | **`tracing` + `tracing-subscriber`** | Structured env-filtered diagnostics (disk rotation appender at `$XDG_STATE_HOME/starship-control/` pending). |
 
 ---
 
@@ -102,71 +102,83 @@ Starship Control is structured as a modular Cargo workspace, isolating the agent
 
 ```
 starship-control/
-├── Cargo.toml                       # Workspace root manifest
+├── Cargo.toml                       # Workspace root manifest (8 members)
+├── .github/workflows/               # ci.yml & nfpm release.yml
 ├── ARCHITECTURE.md                  # This document
 ├── PRD.md                           # Product requirements source of truth
-├── DESIGN.md                        # Visual design tokens & window layout
-├── DATABASE.md                      # SQLite schema, indexes & queries
+├── DESIGN.md                        # Visual design tokens & window layout (LOCKED)
+├── DATABASE.md                      # SQLite schema, indexes & migrations
 ├── API.md                           # Tauri IPC & MCP bridge contracts
-├── PLAN.md                          # Implementation roadmap
+├── PLAN.md                          # Implementation roadmap (Phases 0–8 summary)
+├── GAP-CLOSURE-PLAN.md              # Hardening & reliability roadmap (Phases 9–16)
 ├── AGENTS.md                        # Agent invariants & coding rules
-├── README.md
-├── LICENSE
-├── packaging/                       # Linux distro packaging (.deb, .rpm, PKGBUILD)
+├── schemas/tasksheet-1.json         # Strict JSON Schema for tasksheet/1 plans
+├── packaging/                       # nfpm.yaml (.deb, .rpm, .pkg.tar.zst), desktop & icons
 ├── app/                             # Tauri 2 Desktop Application
-│   ├── Cargo.toml
-│   ├── tauri.conf.json              # Multi-window config (cockpit + hud)
-│   ├── capabilities/                # Tauri least-privilege capability manifests
+│   ├── package.json
+│   ├── scripts/check-linear.mjs     # Anti-regression check enforcing DESIGN.md law
 │   ├── src-tauri/
-│   │   ├── src/
-│   │   │   ├── main.rs              # Application entrypoint
-│   │   │   ├── ipc/                 # Tauri commands & event emitters
-│   │   │   ├── window/              # Multi-window managers (cockpit, hud, tray)
-│   │   │   └── shortcuts.rs         # Global portal shortcut registration
-│   ├── src/                         # Frontend (React 19 + TypeScript + Vite)
-│   │   ├── App.tsx                  # Window routing (Cockpit vs HUD view)
-│   │   ├── components/
-│   │   │   ├── cockpit/             # Cockpit panels, model manager, topology drawer
-│   │   │   ├── hud/                 # Floating HUD toolbar, approval cards, waveform
-│   │   │   ├── common/              # Glass panels, buttons, inputs, modals
-│   │   │   └── markdown/            # Streaming markdown & diff visualizer
-│   │   ├── lib/                     # Typed IPC client, stores (Zustand), events
-│   │   └── tailwind.css             # Tailwind v4 @theme tokens
-├── crates/
-│   ├── starship-core/               # Agent orchestration & execution engine
-│   │   ├── src/
-│   │   │   ├── planner/             # Task Sheet decomposition & DAG builder
-│   │   │   ├── executor/            # Step execution loop & safety arbiter
-│   │   │   ├── context/             # History assembler, token budgeter, system prompts
-│   │   │   └── error.rs             # Unified error definitions
-│   ├── starship-infer/              # Model inference facade (Local + Cloud)
-│   │   ├── src/
-│   │   │   ├── engine.rs            # InferenceEngine trait (stream_chat)
-│   │   │   ├── local/               # llama-cpp-2 runner, thread allocator, VRAM probe
-│   │   │   ├── cloud/               # OpenAI, Anthropic, Gemini, OpenRouter SSE clients
-│   │   │   ├── hf/                  # Hugging Face API client & chunked file downloader
-│   │   │   └── hash.rs              # Streaming SHA-256 verifier
-│   ├── starship-mcp/                # MCP client runtime & transport pool
-│   │   ├── src/
-│   │   │   ├── client.rs            # Async MCP JSON-RPC 2.0 client
-│   │   │   ├── transport/           # Unix domain socket & stdio pipe implementations
-│   │   │   ├── discovery.rs         # XDG manifest watcher & socket scanner
-│   │   │   ├── security.rs          # SO_PEERCRED validator & handshake verifier
-│   │   │   └── registry.rs          # Live active tools & capabilities registry
-│   ├── starship-plugin/             # Shared SDK crate (imported by EEP, SSP, etc.)
-│   │   ├── src/
-│   │   │   ├── lib.rs               # StarshipBridge server initialization
-│   │   │   ├── manifest.rs          # Auto-generates $XDG_DATA_HOME plugin JSON
-│   │   │   ├── listener.rs          # Unix domain socket server with SO_PEERCRED
-│   │   │   └── protocol.rs          # Shared message frames & lifecycle events
-│   └── starship-db/                 # SQLite storage layer
-│       ├── src/
-│       │   ├── lib.rs               # Connection pool & PRAGMA configuration
-│       │   ├── migrations/          # Embedded SQL migration scripts
-│       │   ├── missions.rs          # Mission & message store
-│       │   ├── plans.rs             # Task sheet & step store
-│       │   ├── models.rs            # Model registry & provider configuration store
-│       │   └── audit.rs             # Immutable audit log recorder
+│   │   ├── Cargo.toml
+│   │   ├── tauri.conf.json          # Multi-window config (main 1280×800 + hud 420×64)
+│   │   └── src/
+│   │       ├── main.rs              # Entrypoint, CLI flags (--self-test, audit verify), health loop
+│   │       ├── ipc/commands.rs      # Typed Tauri commands & event emitters
+│   │       ├── health_service.rs    # 1 Hz live sampler + governor loop
+│   │       ├── notification.rs      # Desktop alert & overload notification dispatch
+│   │       └── shortcut.rs          # Wayland GlobalShortcuts portal registration (ashpd)
+│   └── src/                         # Frontend (React 19 + TypeScript + Vite)
+│       ├── App.tsx                  # Window routing (Cockpit vs HUD view)
+│       ├── features/
+│       │   ├── cockpit/             # Shell chrome (CockpitView) & workspace views (CockpitDashboard)
+│       │   └── hud/                 # Linear solid HUD surface (HudView)
+│       ├── components/
+│       │   ├── linear/              # Shared Linear UI kit (TitleBar, Sidebar, Breadcrumb, ECharts theme, etc.)
+│       │   ├── cockpit/             # Domain views (Chat, Timeline, Missions, Workflows, Topology, Tools, Models, Systems, Audit)
+│       │   ├── hud/                 # Legacy HUD barrel re-exports
+│       │   └── common/              # LinearTelemetryChart, SanitizedMarkdown, DesignVerification
+│       ├── stores/themeStore.ts     # Cross-window dark/light theme sync via localStorage
+│       ├── types/ipc.ts             # Exact TypeScript mirrors of Rust IPC contracts
+│       └── tailwind.css             # Tailwind v4 @theme Linear tokens + self-hosted fonts
+└── crates/
+    ├── starship-core/               # Agent orchestration, safety, admission & recovery engine
+    │   └── src/
+    │       ├── planner/             # TaskSheet/1 DAG builder, GBNF grammar, validator, repair loop, preview
+    │       ├── executor/            # State machine, retry, timeouts, fallback, governor, admission, fair queue, leases
+    │       ├── policy/              # Enforced risk tiers (tiers.toml) & resource profiles (resources.toml)
+    │       ├── safety/              # SafetyArbiter, HMAC approval tokens, SecretVault/SecretScrubber
+    │       ├── context/             # Two-stage tool router & token budgeter
+    │       ├── pipeline/            # Screencast, record_and_edit, CET, media, diagnostics pipelines
+    │       └── error.rs             # Canonical CoreError taxonomy
+    ├── starship-infer/              # Model inference facade (Local + Cloud)
+    │   └── src/
+    │       ├── engine.rs            # InferenceEngine trait & dispatcher
+    │       ├── local/               # GGUF runner facade, hardware/VRAM probe, live headroom guard
+    │       ├── cloud/               # OpenAI, Anthropic, Gemini, OpenRouter SSE clients
+    │       └── hf/                  # Hugging Face API search & chunked SHA-256 downloader
+    ├── starship-mcp/                # MCP client runtime & hybrid transport pool
+    │   └── src/
+    │       ├── client.rs            # Async MCP JSON-RPC 2.0 client
+    │       ├── router.rs            # Hybrid Live GUI socket vs headless stdio child router
+    │       ├── registry.rs          # XDG manifest watcher & app scanner
+    │       ├── security.rs          # Linux SO_PEERCRED & binary verification
+    │       ├── containment.rs       # Optional systemd-run memory/CPU scope containment
+    │       └── aggregator.rs        # Dynamic curated tool definition aggregator
+    ├── starship-plugin/             # Shared SDK crate (imported by EEP, SSP, ALP, NWP, ATP)
+    │   └── src/
+    │       ├── lib.rs & server.rs   # StarshipBridge UDS/stdio MCP server & manifest registration
+    │       ├── checkpoint.rs        # Sub-app checkpoint protocol primitives
+    │       ├── progress.rs          # Progress streaming types
+    │       └── resource.rs          # Tool resource profile declarations
+    ├── starship-db/                 # SQLite storage layer
+    │   └── src/
+    │       ├── lib.rs               # WAL connection pool & 0001–0006 migrations
+    │       ├── migrations/          # 0001_initial..0006_mission_health_summary
+    │       ├── plans.rs & events.rs # Task sheets, steps, event-sourced run log
+    │       ├── models.rs & apps.rs  # Models, encrypted provider configs, app registry
+    │       ├── health.rs & tool_stats.rs # 1m/1h rollups, alerts, EWMA/p90 ETA learner
+    │       └── audit.rs             # Tamper-evident SHA-256 hash-chained audit log
+    ├── starship-health/             # Live host/GPU telemetry, 15m ring buffer & hysteresis detector
+    └── xtask/                       # Planner benchmark & schema/router evaluation harness
 ```
 
 ---
@@ -175,24 +187,26 @@ starship-control/
 
 Starship Control runs a single binary managing two distinct Tauri windows and a system tray icon:
 
-### 5.1 The Cockpit Window (`cockpit`)
+### 5.1 The Cockpit Window (`main`)
 * **Role:** The strategic headquarters.
-* **Geometry:** 1200×800 default, 800×600 minimum, resizable.
-* **Chrome:** Custom Client-Side Decoration (CSD) header bar with glass styling, model selector pill, connection status indicator, and navigation tabs (Mission, Topology, Models, Settings, Audit).
-* **Visibility:** Standard window lifecycle. When closed, it hides rather than terminates the process, keeping the background agent daemon and HUD responsive.
+* **Geometry:** `1280×800` default, `1024×640` minimum, resizable.
+* **Chrome:** Solid opaque Linear window (`decorations: false`, `transparent: false`, custom `40px` `TitleBar`, collapsible `240px → 56px` `Sidebar`, `36px` `Breadcrumb`, theme toggle synced with HUD, single active navigation surface across Chat, Timeline, Missions, Workflows, Apps, Tools, Models, Systems, Activity).
+* **Visibility:** Primary Tauri `main` window managed cleanly via Tauri IPC and tray state events.
 
 ### 5.2 The Floating HUD Window (`hud`)
 * **Role:** The ambient, context-aware companion.
-* **Geometry:** 520×76 fixed resting state, expanding to 520×240 when approval cards or multi-step execution plans are active.
+* **Geometry:** `420×64` compact solid rectangular command bar (`6px` border radius), dynamically resized via `cmd_resize_hud` when streaming responses or Tier 2/3 approval cards are active.
 * **Attributes:**
   - `decorations: false`
-  - `transparent: true`
+  - `transparent: false`
+  - `shadow: true`
   - `alwaysOnTop: true`
   - `skipTaskbar: true`
+  - `visible: false` (shown on toggle)
 * **Behavior:**
-  - Snaps to top-center, bottom-center, or custom user-dragged coordinates.
-  - Toggled globally via `Super + Shift + Space` (managed through `ashpd` GlobalShortcuts portal under Wayland).
-  - Automatically expands to reveal action approval buttons when a Tier 2/3 action is proposed.
+  - Drag handle (`data-tauri-drag-region`) + logo + close/toggle button + prompt bar with theme parity (`dark` / `light`).
+  - Toggled globally via `Super + Shift + Space` (managed through `ashpd` `GlobalShortcuts` portal on Wayland; in-app/cockpit toggle fallback if portal unavailable).
+  - Expands cleanly to show streaming output or action approval buttons (`Approve` / `Reject`) when a Tier 2/3 action is proposed.
 
 ### 5.3 System Tray Integration
 * **Status Icon:** Reflects agent state (Idle, Thinking, Executing, Waiting Approval, Offline).

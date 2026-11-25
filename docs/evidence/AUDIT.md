@@ -1,12 +1,30 @@
 # AUDIT.md — Ground-Truth Codebase & Roadmap Audit
 
-**Audit Date:** 2026-11-22  
-**Target:** Starship Control v0.1.0  
-**Authority:** `GAP-CLOSURE-PLAN.md` Task 9.0  
+**Original Baseline Audit:** 2026-11-22 (`GAP-CLOSURE-PLAN.md §9.0`)  
+**Re-Audit Date:** 2026-11-25 (`feat/linear-ui`, commit `9506d3b` + doc sync)  
+**Target:** Starship Control `0.1.0-beta.1`
 
 ---
 
-## 1. Executive Summary
+## 0. Current Re-Audit Summary (2026-11-25)
+
+Since the initial `2026-11-22` audit:
+- **Closed Former Partials:**
+  - **`0.3` Tailwind CSS v4 `@theme` & Tokens → `VERIFIED`:** Self-hosted `InterVariable.woff2` & `JetBrainsMono-Variable.woff2` are bundled in `app/public/fonts/`, the final Linear solid design system (`DESIGN.md` v2.1) is locked across Cockpit (`1280×800`) and HUD (`420×64`, `transparent: false`), and `npm run check:linear` passes cleanly.
+  - **`1.2` Cloud SSE & Secret Storage → `VERIFIED`:** OpenAI, Anthropic, Gemini, and OpenRouter SSE clients plus `SecretVault` (`enc_v1:<hex>` encryption at rest & log/prompt scrubbing) are implemented and tested (`docs/evidence/10.7.txt`).
+  - **`8.2` GitHub Actions CI/CD → `VERIFIED`:** Workflows now live at `.github/workflows/ci.yml` and `.github/workflows/release.yml`, backed by `packaging/nfpm.yaml` (`.deb`, `.rpm`, `.pkg.tar.zst`).
+- **Remaining Honest Partials in `PLAN.md` (Keep `[ ]`):**
+  - **`0.5` Rotating Disk Log Appender:** `CoreError`, IPC parity, `--self-test`, and `audit verify` work cleanly, while `main.rs` currently logs to stdout only (`tracing-appender` daily rotation at `$XDG_STATE_HOME/starship-control/` pending).
+  - **`1.3` Native `llama-cpp-2` Bindings:** Hardware/VRAM detection, `LocalInferenceGuard`, and `LocalGgufRunner` response/GBNF synthesis exist, while native `llama-cpp-2` GGUF inference bindings are not yet wired into `crates/starship-infer/Cargo.toml`.
+  - **`6.2` Native X11 Global Shortcut Fallback:** Wayland `ashpd` `GlobalShortcuts` (`Super+Shift+Space`) and in-app fallback exist (`shortcut.rs`), while native X11 `XGrabKey` fallback is pending.
+- **Phases 9–15:** All 52 tasks completed & verified (`docs/evidence/9.0–15.5.txt`), with Systems/Timeline/HUD/Cockpit finalized under the locked Linear UI (`DESIGN.md` v2.1).
+- **Phase 16 (`16.1–16.8`):** **Pending** (`starship-mock-app`, chaos suite, real-app E2E matrix, mutation security CI, `docs/COMPAT.md`, VM packaging tests, `docs/THREAT_MODEL.md`, performance benchmarks).
+
+---
+
+*(Historical `2026-11-22` Task 9.0 baseline table preserved below for provenance.)*
+
+## 1. Historical Baseline Summary (2026-11-22)
 
 | Category | Count | Percentage |
 |---|---|---|

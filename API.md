@@ -1,8 +1,8 @@
 # API.md — Starship Control IPC & Protocol Contracts
 
-**Version:** 1.0 · **Date:** 2026-11-17  
+**Version:** 1.1 · **Date:** 2026-11-25  
 **Authority chain:** `PRD.md` (functional requirements) → `ARCHITECTURE.md` (process boundaries, transports) → **this file (contract law)**  
-**Rule:** Defines all typed request/response commands, real-time push events, error codes, and the `starship-plugin` MCP wire protocol. No product code is written as part of this document.
+**Rule:** Defines typed request/response commands (`app/src-tauri/src/ipc/commands.rs` & `app/src/types/ipc.ts`), real-time push events, error codes, and the `starship-plugin` MCP wire protocol. No product code is written as part of this document.
 
 ---
 
@@ -44,13 +44,21 @@ Every error returned by a command or emitted over an error event strictly matche
 
 ---
 
-## 2. Tauri IPC Commands (`cmd://...`)
+## 2. Tauri IPC Commands
 
-Commands invoked by the frontend via `invoke("command_name", payload)`.
+Commands invoked by the frontend via `invoke("<rust_command_name>", payload)`. Exact registered handlers live in `app/src-tauri/src/ipc/commands.rs` (`main.rs::invoke_handler!`).
 
-### 2.1 Mission Management
+### 2.1 Handshake, HUD & System Control
 
-#### `cmd://mission_create`
+- **`ipc_hello`** — Returns application version, protocol string, SQLite readiness, and registered models (`HelloResponse`).
+- **`cmd_toggle_hud`** — Shows or hides the `hud` window and returns `bool`.
+- **`cmd_resize_hud`** (`{ expanded: bool }`) — Resizes `hud` vertically while keeping the `420px` width fixed.
+- **`cmd_tray_set_state`** — Updates logical tray indicator state and emits `evt://tray/state_changed`.
+- **`cmd_dispatch_notification`** — Dispatches system/desktop notification events.
+
+### 2.2 Mission Management
+
+#### `cmd_mission_create` (`cmd://mission_create`)
 Creates a new mission session.
 * **Payload:**
   ```json
@@ -70,7 +78,7 @@ Creates a new mission session.
   ```
 * **Errors:** `db.write_failed`, `infer.model_not_found`.
 
-#### `cmd://mission_send_prompt`
+#### `cmd_mission_send_prompt` (`cmd://mission_send_prompt`)
 Dispatches a new user message or instruction to an active mission.
 * **Payload:**
   ```json
@@ -88,16 +96,19 @@ Dispatches a new user message or instruction to an active mission.
   ```
 * **Errors:** `ipc.bad_state`, `infer.cloud_auth_failed`, `infer.model_out_of_memory`.
 
-#### `cmd://mission_abort`
-Immediately halts execution, cancels running tools, and releases project locks.
-* **Payload:** `{"missionId": 42}`
-* **Success Output:** `{"aborted": true}`
+#### Additional Mission Commands
+- **`cmd_mission_list`** / **`cmd_mission_list_history`** — Returns active and historical missions with peak health telemetry summaries.
+- **`cmd_mission_list_messages`** — Returns chronological conversation messages and reasoning traces for a mission.
+- **`cmd_mission_get_timeline`** — Returns event-sourced `mission_events` trace entries for Timeline/replay views.
+- **`cmd_mission_replay`** / **`cmd_mission_delete`** — Replays or deletes mission records.
+
+*(Note: `cmd://mission_abort` and `cmd://hud_set_pinned` are not registered in the current IPC surface.)*
 
 ---
 
-### 2.2 Plan & Safety Approvals
+### 2.3 Plan, Safety Approvals & Audit (`cmd_plan_*`, `cmd_pipeline_*`, `cmd_audit_*`)
 
-#### `cmd://plan_get_active`
+#### `cmd_plan_get_active` (`cmd://plan_get_active`)
 Fetches the current task sheet and steps for an active mission.
 * **Payload:** `{"missionId": 42}`
 * **Success Output:**
@@ -121,28 +132,8 @@ Fetches the current task sheet and steps for an active mission.
   }
   ```
 
-#### `cmd://plan_approve_step`
-User signs an approval gate on the Cockpit or HUD.
-* **Payload:**
-  ```json
-  {
-    "stepId": 101,
-    "signatureToken": "usr_sig_8f3a9e21"
-  }
-  ```
-* **Success Output:** `{"executed": true, "status": "running"}`
-* **Errors:** `safety.invalid_signature_token`, `mcp.execution_failed`.
-
-#### `cmd://plan_reject_step`
-User declines a proposed mutating step.
-* **Payload:**
-  ```json
-  {
-    "stepId": 101,
-    "reason": "Do not modify the vocal track yet"
-  }
-  ```
-* **Success Output:** `{"status": "rejected"}`
+#### `cmd_plan_approve_step` / `cmd_plan_reject_step` (`cmd_plan_create`, `cmd_plan_generate`, `cmd_plan_preview`, `cmd_plan_dry_run`)
+Manages task sheet generation, static dry-run preview (`PlanPreview` / `DryRunReport`), signed HMAC-SHA256 human step approval, rejection, and `cmd_audit_list_logs` queries.
 
 #### `cmd://pipeline_screencast`
 Generates and activates a multi-app screencast pipeline (SSP $\to$ ALP $\to$ EEP) with automatic silence ripple cuts from CET telemetry.
@@ -179,67 +170,22 @@ Generates and activates a cross-app system health inspection and disk cleanup pi
 
 ---
 
-### 2.3 Model Control & Hugging Face
+### 2.4 Model Control & Hugging Face
 
-#### `cmd://models_list`
-Lists all local weights and configured cloud models.
-* **Payload:** `{}`
-* **Success Output:**
-  ```json
-  {
-    "models": [
-      {
-        "id": "qwen2.5-coder-7b-q4",
-        "name": "Qwen 2.5 Coder 7B (Q4_K_M)",
-        "providerType": "local_gguf",
-        "filePath": "/home/user/.local/share/starship-control/models/qwen2.5-7b.gguf",
-        "fileSizeBytes": 4680000000,
-        "downloadStatus": "ready",
-        "isDefault": true,
-        "vramRequiredMb": 5120
-      },
-      {
-        "id": "claude-3-7-sonnet",
-        "name": "Claude 3.7 Sonnet",
-        "providerType": "cloud_anthropic",
-        "downloadStatus": "remote_only",
-        "isDefault": false
-      }
-    ]
-  }
-  ```
-
-#### `cmd://model_hf_download`
-Starts downloading GGUF weights directly from Hugging Face with progress tracking.
-* **Payload:**
-  ```json
-  {
-    "repoId": "Qwen/Qwen2.5-Coder-7B-Instruct-GGUF",
-    "filename": "qwen2.5-coder-7b-instruct-q4_k_m.gguf",
-    "expectedSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-  }
-  ```
-* **Success Output:** `{"downloadJobId": "dl_98f12"}`
-* **Errors:** `infer.download_failed`, `disk.no_space`.
-
-#### `cmd://provider_config_set`
-Saves cloud provider credentials.
-* **Payload:**
-  ```json
-  {
-    "providerId": "anthropic",
-    "baseUrl": "https://api.anthropic.com/v1",
-    "apiKey": "sk-ant-api03-...",
-    "isEnabled": true
-  }
-  ```
-* **Success Output:** `{"saved": true}`
+- **`cmd_list_models`** — Lists all local weights and configured cloud models (`ModelRecord[]`).
+- **`cmd_model_hf_search`** — Searches Hugging Face Hub API for GGUF repos (`HfModelMetadata[]`).
+- **`cmd_model_hf_download`** — Starts chunked resumable GGUF weight downloads with streaming SHA-256 verification.
+- **`cmd_provider_config_set`** — Stores `SecretVault`-encrypted cloud provider credentials (`openai`, `anthropic`, `gemini`, `openrouter`) in `provider_configs`.
 
 ---
 
-### 2.4 App Topology & Control
+### 2.5 App Topology, MCP & Health Commands
 
-#### `cmd://topology_list_apps`
+- **`cmd_topology_list_apps`** / **`cmd_topology_launch_app`** / **`cmd_topology_ping_app`** — Discovers, pings, and spawns connected desktop apps (`eep`, `ssp`, `alp`, `nwp`, `atp`).
+- **`cmd_mcp_list_tools`** / **`cmd_mcp_call_tool`** — Aggregates and invokes tools over `SO_PEERCRED`-verified Unix sockets or headless `--mcp` stdio child processes.
+- **`cmd_health_get_snapshot`** / **`cmd_health_get_history`** / **`cmd_health_get_thresholds`** / **`cmd_health_set_thresholds`** — Reads 1 Hz telemetry snapshots, historical rollups (`1m`/`1h`/`15m`), and overload thresholds.
+
+#### `cmd_topology_list_apps` (`cmd://topology_list_apps`)
 Lists all discovered applications from manifests and live sockets.
 * **Payload:** `{}`
 * **Success Output:**
@@ -443,6 +389,12 @@ Emitted whenever an individual sensor trips an overload threshold or recovery ru
   "action": "warn"
 }
 ```
+
+### 3.9 Additional Implemented Events
+- **`evt://stream/finished`** & **`evt://stream/error`** — Completion/error lifecycle for active chat streams.
+- **`evt://mission/progress`** & **`evt://step/state`** — Live step state transitions, progress percentages, and ETA updates.
+- **`evt://download/complete`** & **`evt://download/error`** — Terminal states for Hugging Face GGUF weight transfers.
+- **`evt://tray/state_changed`** — Logical tray state transitions (`Idle`, `Running`, `Waiting`, `Overloaded`).
 
 ---
 

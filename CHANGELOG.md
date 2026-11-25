@@ -7,10 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Finalized & Locked Linear Design System (`DESIGN.md` v2.1)**: Standardized on opaque Linear surfaces (`#050505`/`#111213`/`#1A1B1E` dark and `#F3F4F6`/`#FFFFFF`/`#F4F5F7` light), `#3355FF` primary accent, self-hosted `Inter` + `JetBrains Mono` typography, `1280×800` Cockpit (`40px` TitleBar, collapsible `240px → 56px` Sidebar, `36px` Breadcrumb), and solid opaque `420×64` Floating HUD with live dark/light theme synchronization and zero blur regressions (`npm run check:linear`).
+- **Documentation & Roadmap Sync**: Aligned `PRD.md`, `ARCHITECTURE.md`, `DATABASE.md`, `API.md`, `PLAN.md`, `GAP-CLOSURE-PLAN.md`, `AGENTS.md`, `README.md`, `docs/release-audit.md`, and `docs/evidence/AUDIT.md` with actual crate implementations (`starship-health`, `xtask`, migrations `0001`–`0006`, Phases 9–15 complete, Phase 16 & native `llama-cpp-2` bindings remaining open).
+
 ## [0.1.0-beta.1] - 2026-11-24
 
 ### Added
-- **Unified Linear-Style Design System**: Migrated to solid elevated surfaces (`#121215`, `#17171c`, `#202026`), hairline precision borders (`#23232a`), and zero blur across Cockpit and HUD.
-- **ECharts Real-Time Visuals**: Integrated Linear-themed real-time charts for CPU, memory, and model inference metrics.
-- **Packaging & CI**: Reusable packaging matrix generating .deb, .rpm, .apk, and .tar.gz assets with automated release publishing.
-- **Ecosystem Bridge**: Unified orchestration and discovery for Easy Edits Pro, Screen Studio Pro, Audio Labs Pro, Net Watch Pro, and Agentic Tuneup Pro.
+- **Unified Linear-Style Design System**: Adopted solid matte surfaces (`#050505`, `#111213`, `#1A1B1E`), `1px` precision hairline borders (`rgba(255,255,255,0.08)`), `#3355FF` accent, and zero blur across Cockpit and HUD.
+- **ECharts 6 Telemetry & Command Center**: Integrated Linear-themed real-time charts for CPU, RAM, GPU, VRAM, disk, and inference headroom diagnostics.
+- **Packaging & CI**: Configured `.github/workflows/ci.yml` and reusable `nfpm` release packaging (`packaging/nfpm.yaml`) generating `.deb`, `.rpm`, and `.pkg.tar.zst` packages.
+- **Ecosystem Bridge**: Unified orchestration, discovery, safety arbiter, event-sourced run log, and admission control for Easy Edits Pro, Screen Studio Pro, Audio Labs Pro, Net Watch Pro, and Agentic Tuneup Pro.

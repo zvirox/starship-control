@@ -1,6 +1,6 @@
 # DESIGN.md — Starship Control Design System
 
-**Version:** 2.1 · **Date:** 2026-11-25  
+**Version:** 2.1 · **Date:** 2026-11-25 · **Status:** FINAL & LOCKED (No further UI style changes)
 **Authority:** `PRD.md` (scope, functional requirements) → `ARCHITECTURE.md` (multi-window, crates, IPC) → **this file (UI & visual law)**  
 **Rule:** Every interface built in Starship Control must follow this document strictly. Do not invent custom tokens, raw hex in components, blur, translucency, or dark-theme shadows outside this specification.
 
