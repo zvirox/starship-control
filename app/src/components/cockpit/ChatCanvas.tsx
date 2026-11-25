@@ -196,11 +196,11 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
     <div className="min-w-0 flex-1 space-y-4 overflow-y-auto px-4 py-3 font-sans">
       {messages.length === 0 && !isStreaming && (
         <div className="mx-auto flex max-w-xl flex-col items-center justify-center py-16 text-center">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-border-subtle bg-white/[0.03] text-text-secondary">
-            <Workflow className="h-6 w-6" strokeWidth={1.5} />
+          <div className="mb-4 flex size-12 items-center justify-center rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)]">
+            <Workflow className="size-6" strokeWidth={1.75} />
           </div>
-          <h3 className="text-base font-medium text-text-primary">New mission</h3>
-          <p className="mt-2 max-w-md text-xs leading-relaxed text-text-secondary">
+          <h3 className="text-[16px] font-semibold text-[var(--text)]">New mission</h3>
+          <p className="mt-2 max-w-md text-[12px] leading-relaxed text-[var(--text-muted)]">
             Coordinate ScreenStudio, Audio Labs, Easy Edits, Net Watch and Agentic Tuneup from one local command center
           </p>
 
@@ -210,13 +210,14 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
               return (
                 <button
                   key={idx}
+                  type="button"
                   onClick={() => onSelectSuggestion?.(item.prompt)}
-                  className="flex items-start gap-3 rounded-xl border border-border-subtle bg-white/[0.03] p-3 text-left transition-colors duration-150 hover:bg-white/[0.05] focus-ring cursor-pointer"
+                  className="flex items-start gap-3 rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface)] p-3 text-left transition-colors duration-150 hover:bg-[var(--bg-surface-2)] hover:border-[var(--border-strong)] focus-ring cursor-pointer"
                 >
-                  <Icon className="h-4 w-4 shrink-0 text-text-secondary" strokeWidth={1.5} />
+                  <Icon className="size-4 shrink-0 text-[var(--accent-blue)]" strokeWidth={1.75} />
                   <div className="min-w-0">
-                    <span className="block text-xs font-semibold text-text-primary">{item.title}</span>
-                    <span className="mt-1 block truncate text-[11px] text-text-secondary">{item.prompt}</span>
+                    <span className="block text-[12px] font-semibold text-[var(--text)]">{item.title}</span>
+                    <span className="mt-1 block truncate text-[12px] text-[var(--text-muted)]">{item.prompt}</span>
                   </div>
                 </button>
               );
@@ -228,33 +229,34 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
       {messages.map((msg) => (
         <div
           key={msg.id}
-          className={`flex gap-3 text-xs leading-relaxed ${
+          className={`flex gap-3 text-[13px] leading-relaxed ${
             msg.role === "user" ? "justify-end" : "justify-start"
           }`}
         >
           {msg.role !== "user" && (
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border-subtle bg-white/[0.05] text-text-secondary">
-              <Workflow className="h-4 w-4" strokeWidth={1.5} />
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)]">
+              <Workflow className="size-4" strokeWidth={1.75} />
             </div>
           )}
 
           <div className="max-w-2xl space-y-2">
             {msg.thought && (
-              <div className="rounded-xl border border-border-subtle bg-white/[0.03] p-3">
+              <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface)] p-3">
                 <button
+                  type="button"
                   onClick={() => toggleThought(msg.id)}
-                  className="flex w-full items-center gap-2 text-left text-[11px] text-text-secondary transition-colors duration-150 hover:text-text-primary focus-ring cursor-pointer"
+                  className="flex w-full items-center gap-2 text-left text-[12px] text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--text)] focus-ring cursor-pointer"
                 >
-                  <Brain className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  <span className="font-semibold text-text-primary">Reasoning process</span>
+                  <Brain className="size-3.5" strokeWidth={1.75} />
+                  <span className="font-semibold text-[var(--text)]">Reasoning process</span>
                   {expandedThoughts[msg.id] ? (
-                    <ChevronDown className="ml-auto h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
+                    <ChevronDown className="ml-auto size-3.5 text-[var(--text-muted)]" strokeWidth={1.75} />
                   ) : (
-                    <ChevronRight className="ml-auto h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
+                    <ChevronRight className="ml-auto size-3.5 text-[var(--text-muted)]" strokeWidth={1.75} />
                   )}
                 </button>
                 {expandedThoughts[msg.id] && (
-                  <div className="mt-2 border-t border-border-subtle pt-2 font-mono text-[11px] leading-relaxed whitespace-pre-wrap text-text-primary/90">
+                  <div className="mt-2 border-t border-[var(--border)] pt-2 font-mono text-[12px] leading-relaxed whitespace-pre-wrap text-[var(--text)]">
                     {msg.thought}
                   </div>
                 )}
@@ -262,10 +264,10 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
             )}
 
             <div
-              className={`rounded-2xl p-3 text-xs ${
+              className={`rounded-[8px] p-3 text-[13px] border border-[var(--border)] text-[var(--text)] ${
                 msg.role === "user"
-                  ? "ml-auto rounded-tr-sm border border-border-subtle bg-surface-solid text-text-primary"
-                  : "rounded-tl-sm border border-border-subtle bg-raised text-text-primary"
+                  ? "ml-auto bg-[var(--bg-surface-2)]"
+                  : "bg-[var(--bg-surface)]"
               }`}
             >
               <SanitizedMarkdown content={msg.content} />
@@ -273,53 +275,53 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
           </div>
 
           {msg.role === "user" && (
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border-subtle bg-surface-solid text-text-secondary">
-              <User className="h-4 w-4" strokeWidth={1.5} />
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] text-[var(--text-muted)]">
+              <User className="size-4" strokeWidth={1.75} />
             </div>
           )}
         </div>
       ))}
 
       {isStreaming && (
-        <div className="flex justify-start gap-3 text-xs leading-relaxed">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border-subtle bg-white/[0.05] text-text-secondary">
-            <Workflow className="h-4 w-4" strokeWidth={1.5} />
+        <div className="flex justify-start gap-3 text-[13px] leading-relaxed">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)]">
+            <Workflow className="size-4" strokeWidth={1.75} />
           </div>
 
           <div className="min-w-0 max-w-2xl flex-1 space-y-2">
             {liveThought && (
-              <div className="rounded-xl border border-border-glass bg-white/[0.03] p-3">
+              <div className="rounded-[8px] border border-[var(--border-strong)] bg-[var(--bg-surface)] p-3">
                 <button
                   type="button"
                   onClick={() => setShowLiveThought(!showLiveThought)}
-                  className="flex w-full items-center justify-between text-left text-[11px] text-text-secondary focus-ring cursor-pointer"
+                  className="flex w-full items-center justify-between text-left text-[12px] text-[var(--text-muted)] focus-ring cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="h-1.5 w-1.5 rounded-full bg-signal-thinking" />
-                    <span className="font-medium text-text-primary">Thinking</span>
+                    <span className="size-1.5 rounded-full bg-[var(--accent-amber)]" />
+                    <span className="font-medium text-[var(--text)]">Thinking</span>
                   </div>
-                  <div className="flex items-center gap-1 text-text-secondary font-medium">
-                    <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />
-                    <span className="tabular">{elapsedSeconds}s</span>
+                  <div className="flex items-center gap-1 text-[var(--text-muted)] font-medium">
+                    <Clock className="size-3.5" strokeWidth={1.75} />
+                    <span className="tabular-nums">{elapsedSeconds}s</span>
                   </div>
                 </button>
                 {showLiveThought && (
-                  <pre className="mt-2 max-h-36 overflow-y-auto whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-text-primary/90">
+                  <pre className="mt-2 max-h-36 overflow-y-auto whitespace-pre-wrap font-mono text-[12px] leading-relaxed text-[var(--text)]">
                     {liveThought}
                   </pre>
                 )}
               </div>
             )}
 
-            <div className="rounded-2xl rounded-tl-sm border border-border-subtle bg-raised p-3 text-text-primary">
+            <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface)] p-3 text-[var(--text)]">
               {liveContent ? (
                 <div className="font-sans">
                   <SanitizedMarkdown content={liveContent} />
-                  <span className="ml-1 inline-block h-3.5 w-1.5 animate-pulse bg-accent align-middle" />
+                  <span className="ml-1 inline-block h-3.5 w-1.5 animate-pulse bg-[var(--accent-blue)] align-middle" />
                 </div>
               ) : (
-                <div className="flex items-center gap-2 text-xs text-text-secondary">
-                  <span className="h-1.5 w-1.5 rounded-full bg-signal-thinking" />
+                <div className="flex items-center gap-2 text-[12px] text-[var(--text-muted)]">
+                  <span className="size-1.5 rounded-full bg-[var(--accent-amber)]" />
                   <span>Generating response</span>
                 </div>
               )}
@@ -329,16 +331,17 @@ export const ChatCanvas: React.FC<ChatCanvasProps> = ({
       )}
 
       {errorMessage && (
-        <div className="flex max-w-2xl items-start gap-3 rounded-xl border border-signal-gate/30 bg-signal-gate-bg p-3 text-xs text-signal-gate">
-          <AlertCircle className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+        <div className="flex max-w-2xl items-start gap-3 rounded-[8px] border border-[var(--accent-red)] bg-[var(--tint-red)] p-3 text-[12px] text-[var(--accent-red)]">
+          <AlertCircle className="size-4 shrink-0" strokeWidth={1.75} />
           <div className="flex-1">
             <span className="block font-medium">Inference error</span>
-            <span className="mt-1 block text-[11px] text-text-secondary">{errorMessage}</span>
+            <span className="mt-1 block text-[12px] text-[var(--text-muted)]">{errorMessage}</span>
           </div>
           {onNavigateTab && (
             <button
+              type="button"
               onClick={() => onNavigateTab("models")}
-              className="text-[11px] text-text-secondary underline hover:text-text-primary focus-ring cursor-pointer"
+              className="text-[12px] text-[var(--text-muted)] underline hover:text-[var(--text)] focus-ring cursor-pointer"
             >
               Open models
             </button>

@@ -4,10 +4,7 @@ import { listen } from "@tauri-apps/api/event";
 import {
   Activity,
   Sliders,
-  ShieldAlert,
   CheckCircle2,
-  AlertTriangle,
-  X,
   Cpu,
   Layers,
   Tv,
@@ -15,6 +12,15 @@ import {
   HardDrive,
   Thermometer,
 } from "lucide-react";
+import {
+  LinearCard,
+  LinearButton,
+  LinearDialog,
+  RangeTabs,
+  StatusPill,
+  LINEAR_COLORS,
+} from "../linear";
+import { LinearTelemetryChart } from "../common/LinearTelemetryChart";
 import type {
   HealthAlert,
   HealthHistoryPayload,
@@ -153,33 +159,25 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
   const state: HealthState = snapshot?.state || "normal";
   const directive: GovernorDirective | undefined = snapshot?.governorDirective;
 
-  // State styling helper — semantic colors only, no looping animation on critical.
   const stateBadge = {
     normal: {
       label: "Normal",
-      className: "text-signal-success bg-signal-success-bg border-border-subtle",
-      icon: CheckCircle2,
+      status: "online" as const,
     },
     elevated: {
       label: "Elevated",
-      className: "text-signal-thinking bg-signal-thinking-bg border-border-subtle",
-      icon: AlertTriangle,
+      status: "warning" as const,
     },
     constrained: {
       label: "Constrained",
-      className: "text-signal-thinking bg-signal-thinking-bg border-border-subtle",
-      icon: ShieldAlert,
+      status: "warning" as const,
     },
     critical: {
       label: "Critical",
-      className: "text-signal-gate bg-signal-gate-bg border-signal-gate/30",
-      icon: ShieldAlert,
+      status: "alert" as const,
     },
   }[state];
 
-  const StateIcon = stateBadge.icon;
-
-  // Colorful, high-contrast stat cards with semantic icons, metrics, and tracks
   const statCards = [
     {
       label: "CPU Load",
@@ -187,10 +185,9 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
       sub: sample?.cpu?.avgFreqMhz ? `${sample.cpu.avgFreqMhz} MHz` : "1.0 GHz",
       percent: sample?.cpu ? Math.round(sample.cpu.globalUtilPct) : 0,
       icon: Cpu,
-      color: "text-sky-400",
-      bgColor: "bg-sky-500/10",
-      borderColor: "border-sky-500/25",
-      barColor: "bg-sky-400",
+      color: "text-[var(--accent-sky)]",
+      bgColor: "bg-[var(--tint-sky)]",
+      barColor: "bg-[var(--accent-sky)]",
     },
     {
       label: "RAM Used",
@@ -202,10 +199,9 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
         : "0 GB",
       percent: sample?.memory ? Math.round(100 - sample.memory.availablePct) : 0,
       icon: Layers,
-      color: "text-purple-400",
-      bgColor: "bg-purple-500/10",
-      borderColor: "border-purple-500/25",
-      barColor: "bg-purple-400",
+      color: "text-[var(--accent-purple)]",
+      bgColor: "bg-[var(--tint-purple)]",
+      barColor: "bg-[var(--accent-purple)]",
     },
     {
       label: "GPU Compute",
@@ -213,10 +209,9 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
       sub: sample?.gpu?.deviceName || "Hardware Acceleration",
       percent: sample?.gpu ? Math.round(sample.gpu.utilPct) : 0,
       icon: Tv,
-      color: "text-teal-400",
-      bgColor: "bg-teal-500/10",
-      borderColor: "border-teal-500/25",
-      barColor: "bg-teal-400",
+      color: "text-[var(--accent-teal)]",
+      bgColor: "bg-[var(--tint-teal)]",
+      barColor: "bg-[var(--accent-teal)]",
     },
     {
       label: "VRAM Used",
@@ -228,10 +223,9 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
         : "Unified system memory",
       percent: sample?.gpu?.vramTotalBytes ? Math.round(sample.gpu.vramUsedPct) : 0,
       icon: Flame,
-      color: "text-amber-400",
-      bgColor: "bg-amber-500/10",
-      borderColor: "border-amber-500/25",
-      barColor: "bg-amber-400",
+      color: "text-[var(--accent-amber)]",
+      bgColor: "bg-[var(--tint-amber)]",
+      barColor: "bg-[var(--accent-amber)]",
     },
     {
       label: "Disk Free",
@@ -241,325 +235,178 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
         : "Root partition",
       percent: sample?.disk ? Math.round(sample.disk.freePct) : 100,
       icon: HardDrive,
-      color: "text-emerald-400",
-      bgColor: "bg-emerald-500/10",
-      borderColor: "border-emerald-500/25",
-      barColor: "bg-emerald-400",
+      color: "text-[var(--accent-green)]",
+      bgColor: "bg-[var(--tint-green)]",
+      barColor: "bg-[var(--accent-green)]",
     },
     {
       label: "Thermal Core",
       value: sample?.thermal ? `${Math.round(sample.thermal.maxTempCelsius)}°C` : "Normal",
       sub: sample?.thermal?.fanRpm ? `${sample.thermal.fanRpm} RPM` : "Within safe margin",
-      percent: sample?.thermal ? Math.min(100, Math.round((sample.thermal.maxTempCelsius / 100) * 100)) : 35,
+      percent: sample?.thermal
+        ? Math.min(100, Math.round((sample.thermal.maxTempCelsius / 100) * 100))
+        : 35,
       icon: Thermometer,
-      color: "text-rose-400",
-      bgColor: "bg-rose-500/10",
-      borderColor: "border-rose-500/25",
-      barColor: "bg-rose-400",
+      color: "text-[var(--accent-red)]",
+      bgColor: "bg-[var(--tint-red)]",
+      barColor: "bg-[var(--accent-red)]",
     },
   ];
 
-  // Telemetry chart geometry — muted grid, rich gradients, bright traces
-  const chart = { width: 800, height: 200, left: 44, right: 12, top: 14, bottom: 32 };
-  const plotWidth = chart.width - chart.left - chart.right;
-  const plotHeight = chart.height - chart.top - chart.bottom;
-  const baselineY = chart.top + plotHeight;
-  const xFor = (idx: number, total: number) =>
-    chart.left + (total > 1 ? (idx / (total - 1)) * plotWidth : 0);
-  const yFor = (pct: number) =>
-    baselineY - (Math.min(100, Math.max(0, pct)) / 100) * plotHeight;
-  const timeLabels: Record<typeof selectedRange, string[]> = {
-    "15m": ["-15m", "-10m", "-5m", "now"],
-    "1h": ["-60m", "-40m", "-20m", "now"],
-    "24h": ["-24h", "-16h", "-8h", "now"],
-  };
+  const recentSamples =
+    historySamples.length > 1
+      ? historySamples.slice(-24)
+      : sample
+      ? [sample, sample]
+      : [];
+  const cpuSeries = recentSamples.map((s) =>
+    Math.round(s.cpu?.globalUtilPct ?? 0)
+  );
+  const memSeries = recentSamples.map((s) =>
+    Math.round(s.memory ? 100 - s.memory.availablePct : 0)
+  );
+  const timeLabels = recentSamples.map((s, idx) =>
+    idx === recentSamples.length - 1
+      ? "now"
+      : new Date(s.timestampMs).toLocaleTimeString([], {
+          minute: "2-digit",
+          second: "2-digit",
+        })
+  );
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-canvas text-text-primary overflow-y-auto p-6 select-none font-sans">
-      <div className="max-w-6xl mx-auto w-full space-y-6">
-        {/* 1. Header & Overall State Chip */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white/[0.03] border border-border-subtle">
+    <div className="flex-1 flex flex-col h-full bg-[var(--bg-app)] text-[var(--text)] overflow-y-auto p-5 select-none font-sans">
+      <div className="max-w-7xl mx-auto w-full space-y-4">
+        <LinearCard level={1} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-muted text-accent border border-border-subtle">
-              <Activity className="h-4 w-4" />
+            <div className="flex size-9 items-center justify-center rounded-[6px] bg-[var(--tint-blue)] text-[var(--accent-blue)]">
+              <Activity className="size-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-semibold text-text-primary">
+                <h2 className="text-[16px] font-semibold text-[var(--text)]">
                   System health and resource governor
                 </h2>
-                <div
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold border ${stateBadge.className}`}
-                >
-                  <StateIcon className="h-3.5 w-3.5" />
-                  <span>{stateBadge.label}</span>
-                </div>
+                <StatusPill label={stateBadge.label} status={stateBadge.status} />
               </div>
-              <p className="text-xs text-text-secondary mt-1">
+              <p className="text-[12px] text-[var(--text-muted)] mt-0.5">
                 {directive?.actionMessage || "Real-time system monitoring and overload protection"}
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center rounded-xl bg-white/[0.03] border border-border-subtle p-1 text-xs">
-              {(["15m", "1h", "24h"] as const).map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setSelectedRange(r)}
-                  className={`px-3 py-1 rounded-lg transition-colors cursor-pointer font-medium ${
-                    selectedRange === r
-                      ? "bg-accent-muted text-accent font-semibold"
-                      : "text-text-secondary hover:text-text-primary"
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
+            <RangeTabs
+              options={["15m", "1h", "24h"]}
+              active={selectedRange}
+              onChange={(r) => setSelectedRange(r as "15m" | "1h" | "24h")}
+            />
 
-            <button
+            <LinearButton
+              variant="secondary"
+              size="sm"
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-border-subtle text-xs text-text-secondary hover:bg-white/[0.06] hover:text-text-primary transition-colors cursor-pointer"
             >
-              <Sliders className="h-3.5 w-3.5" />
+              <Sliders className="size-3.5" />
               <span>Thresholds</span>
-            </button>
+            </LinearButton>
           </div>
-        </div>
+        </LinearCard>
 
-        {/* 2. Color-accented, high-contrast stat cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {statCards.map((card) => {
             const Icon = card.icon;
             return (
-              <div
+              <LinearCard
                 key={card.label}
-                className="p-4 rounded-xl bg-white/[0.03] border border-border-subtle flex flex-col justify-between hover:border-border-glass transition-colors group"
+                level={1}
+                className="p-4 flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-text-secondary">{card.label}</span>
-                  <div className={`flex h-6 w-6 items-center justify-center rounded-lg ${card.bgColor} ${card.color} border ${card.borderColor}`}>
-                    <Icon className="h-3.5 w-3.5" />
+                  <span className="text-[12px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+                    {card.label}
+                  </span>
+                  <div className={`flex size-6 items-center justify-center rounded-[6px] ${card.bgColor} ${card.color}`}>
+                    <Icon className="size-3.5" />
                   </div>
                 </div>
                 <div className="my-2.5">
-                  <div className="text-2xl font-bold tabular text-text-primary tracking-tight">
+                  <div className="text-[24px] font-semibold tabular-nums text-[var(--text)] tracking-tight leading-none">
                     {card.value}
                   </div>
-                  {/* Subtle colorful progress track */}
-                  <div className="w-full h-1.5 rounded-full bg-border-subtle mt-2 overflow-hidden">
+                  <div className="w-full h-1 rounded-[2px] bg-[var(--bg-bar-idle)] mt-3 overflow-hidden">
                     <div
-                      className={`h-full rounded-full ${card.barColor} transition-all duration-300`}
+                      className={`h-full rounded-[2px] ${card.barColor} transition-all duration-150`}
                       style={{ width: `${Math.max(4, Math.min(100, card.percent))}%` }}
                     />
                   </div>
-                  <div className="text-[11px] text-text-secondary mt-2 truncate font-mono" title={card.sub}>
+                  <div className="text-[12px] text-[var(--text-muted)] mt-2 truncate font-mono" title={card.sub}>
                     {card.sub}
                   </div>
                 </div>
-              </div>
+              </LinearCard>
             );
           })}
         </div>
 
-        {/* 3. System telemetry — rich gradients & colorful traces */}
-        <div className="p-5 rounded-2xl bg-white/[0.03] border border-border-subtle">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <div>
-              <h3 className="text-sm font-semibold text-text-primary">System telemetry</h3>
-              <p className="text-xs text-text-secondary mt-1">
-                Continuous 1 Hz readings · last {selectedRange}
-              </p>
+        <LinearCard level={1} className="p-5">
+          {recentSamples.length > 1 ? (
+            <LinearTelemetryChart
+              title="System telemetry"
+              subtitle={`Continuous 1 Hz readings · last ${selectedRange}`}
+              timestamps={timeLabels}
+              unit="%"
+              height="h-64"
+              series={[
+                { name: "CPU Utilization", data: cpuSeries, color: LINEAR_COLORS.sky },
+                { name: "Memory Usage", data: memSeries, color: LINEAR_COLORS.purple },
+              ]}
+            />
+          ) : (
+            <div className="flex h-56 items-center justify-center text-[12px] font-mono text-[var(--text-muted)]">
+              Awaiting telemetry samples
             </div>
-            <div className="flex items-center gap-4 text-xs font-medium text-text-secondary">
-              <span className="flex items-center gap-2">
-                <span className="h-1.5 w-4 rounded-full bg-sky-400" />
-                <span className="text-text-primary">CPU Utilization</span>
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="h-1.5 w-4 rounded-full bg-purple-400" />
-                <span className="text-text-primary">Memory Usage</span>
-              </span>
-            </div>
-          </div>
+          )}
+        </LinearCard>
 
-          <div className="relative h-64 w-full">
-            <svg
-              className="w-full h-full overflow-visible"
-              viewBox={`0 0 ${chart.width} ${chart.height}`}
-              preserveAspectRatio="none"
-            >
-              <defs>
-                <linearGradient id="cpuGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.0" />
-                </linearGradient>
-                <linearGradient id="memGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#a855f7" stopOpacity="0.20" />
-                  <stop offset="100%" stopColor="#a855f7" stopOpacity="0.0" />
-                </linearGradient>
-              </defs>
-
-              {/* Muted hairline grid with crisp, readable labels */}
-              {[0, 25, 50, 75, 100].map((tick) => (
-                <g key={tick}>
-                  <line
-                    x1={chart.left}
-                    y1={yFor(tick)}
-                    x2={chart.width - chart.right}
-                    y2={yFor(tick)}
-                    stroke="var(--color-border-subtle)"
-                    strokeDasharray="2 4"
-                  />
-                  <text
-                    x={chart.left - 8}
-                    y={yFor(tick) + 4}
-                    textAnchor="end"
-                    fill="var(--color-text-secondary)"
-                    className="font-mono tabular"
-                    fontSize="11"
-                    fontWeight="500"
-                  >
-                    {tick}%
-                  </text>
-                </g>
-              ))}
-              {timeLabels[selectedRange].map((label, idx) => {
-                const x = chart.left + (idx / (timeLabels[selectedRange].length - 1)) * plotWidth;
-                return (
-                  <g key={label}>
-                    <line
-                      x1={x}
-                      y1={chart.top}
-                      x2={x}
-                      y2={baselineY}
-                      stroke="var(--color-border-subtle)"
-                      strokeDasharray="2 4"
-                    />
-                    <text
-                      x={x}
-                      y={baselineY + 18}
-                      textAnchor={idx === 0 ? "start" : idx === timeLabels[selectedRange].length - 1 ? "end" : "middle"}
-                      fill="var(--color-text-secondary)"
-                      className="font-mono"
-                      fontSize="11"
-                      fontWeight="500"
-                    >
-                      {label}
-                    </text>
-                  </g>
-                );
-              })}
-              <line
-                x1={chart.left}
-                y1={baselineY}
-                x2={chart.width - chart.right}
-                y2={baselineY}
-                stroke="var(--color-border-glass)"
-              />
-
-              {/* Memory Area Fill & Trace */}
-              {historySamples.length > 1 && (
-                <>
-                  <polygon
-                    fill="url(#memGradient)"
-                    points={`
-                      ${xFor(0, historySamples.length)},${baselineY}
-                      ${historySamples
-                        .map((s, idx) => `${xFor(idx, historySamples.length)},${yFor(s.memory ? 100 - s.memory.availablePct : 0)}`)
-                        .join(" ")}
-                      ${xFor(historySamples.length - 1, historySamples.length)},${baselineY}
-                    `}
-                  />
-                  <polyline
-                    fill="none"
-                    stroke="#a855f7"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points={historySamples
-                      .map((s, idx) =>
-                        `${xFor(idx, historySamples.length)},${yFor(s.memory ? 100 - s.memory.availablePct : 0)}`
-                      )
-                      .join(" ")}
-                  />
-                </>
-              )}
-
-              {/* CPU Area Fill & Trace */}
-              {historySamples.length > 1 && (
-                <>
-                  <polygon
-                    fill="url(#cpuGradient)"
-                    points={`
-                      ${xFor(0, historySamples.length)},${baselineY}
-                      ${historySamples
-                        .map((s, idx) => `${xFor(idx, historySamples.length)},${yFor(s.cpu?.globalUtilPct || 0)}`)
-                        .join(" ")}
-                      ${xFor(historySamples.length - 1, historySamples.length)},${baselineY}
-                    `}
-                  />
-                  <polyline
-                    fill="none"
-                    stroke="#38bdf8"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    points={historySamples
-                      .map((s, idx) => `${xFor(idx, historySamples.length)},${yFor(s.cpu?.globalUtilPct || 0)}`)
-                      .join(" ")}
-                  />
-                </>
-              )}
-            </svg>
-            {historySamples.length <= 1 && (
-              <div className="absolute inset-0 flex items-center justify-center text-xs font-mono font-medium text-text-secondary">
-                Awaiting telemetry samples
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* 4. Top Processes & Footprint Table */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 p-5 rounded-2xl bg-white/[0.03] border border-border-subtle">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <LinearCard level={1} className="lg:col-span-2 p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-text-primary">Top resource consumers</h3>
-              <span className="text-xs font-medium text-text-secondary">Auto-tagged Starship sub-apps</span>
+              <h3 className="text-[14px] font-semibold text-[var(--text)]">Top resource consumers</h3>
+              <span className="text-[12px] text-[var(--text-muted)]">Auto-tagged Starship sub-apps</span>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-[12px] border-collapse">
                 <thead>
-                  <tr className="border-b border-border-subtle text-text-secondary font-semibold">
-                    <th className="py-2.5">Process</th>
-                    <th className="py-2.5">PID</th>
-                    <th className="py-2.5">CPU %</th>
-                    <th className="py-2.5">Memory</th>
-                    <th className="py-2.5 text-right">Tag</th>
+                  <tr className="border-b border-[var(--border)] text-[var(--text-muted)] uppercase tracking-wider">
+                    <th className="py-2.5 font-medium">Process</th>
+                    <th className="py-2.5 font-medium">PID</th>
+                    <th className="py-2.5 font-medium">CPU %</th>
+                    <th className="py-2.5 font-medium">Memory</th>
+                    <th className="py-2.5 font-medium text-right">Tag</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-subtle">
+                <tbody className="divide-y divide-[var(--border)]">
                   {sample?.topProcesses && sample.topProcesses.length > 0 ? (
                     sample.topProcesses.map((p) => {
                       const subAppMatch = p.name.toLowerCase();
-                      let tagColor = "bg-accent-muted text-accent border-accent/30";
+                      let tagColor = "bg-[var(--tint-blue)] text-[var(--accent-blue)] border-[var(--accent-blue)]";
                       let tagLabel = "Starship app";
                       if (subAppMatch.includes("easy-edits") || subAppMatch.includes("eep")) {
-                        tagColor = "bg-blue-500/15 text-blue-400 border-blue-500/30";
+                        tagColor = "bg-[var(--tint-blue)] text-[var(--accent-blue)] border-[var(--accent-blue)]";
                         tagLabel = "Easy Edits";
                       } else if (subAppMatch.includes("screen-studio") || subAppMatch.includes("ssp")) {
-                        tagColor = "bg-amber-500/15 text-amber-400 border-amber-500/30";
+                        tagColor = "bg-[var(--tint-amber)] text-[var(--accent-amber)] border-[var(--accent-amber)]";
                         tagLabel = "ScreenStudio";
                       } else if (subAppMatch.includes("audio-labs") || subAppMatch.includes("alp")) {
-                        tagColor = "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+                        tagColor = "bg-[var(--tint-green)] text-[var(--accent-green)] border-[var(--accent-green)]";
                         tagLabel = "Audio Labs";
                       } else if (subAppMatch.includes("net-watch") || subAppMatch.includes("nwp")) {
-                        tagColor = "bg-cyan-500/15 text-cyan-400 border-cyan-500/30";
+                        tagColor = "bg-[var(--tint-sky)] text-[var(--accent-sky)] border-[var(--accent-sky)]";
                         tagLabel = "Net Watch";
                       } else if (subAppMatch.includes("agentic-tuneup") || subAppMatch.includes("atp")) {
-                        tagColor = "bg-purple-500/15 text-purple-400 border-purple-500/30";
+                        tagColor = "bg-[var(--tint-purple)] text-[var(--accent-purple)] border-[var(--accent-purple)]";
                         tagLabel = "Tuneup Pro";
                       }
 
@@ -568,33 +415,33 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
                           key={p.pid}
                           className={`transition-colors ${
                             p.isStarshipOwned
-                              ? "bg-accent-muted/20 text-text-primary"
-                              : "text-text-secondary hover:bg-white/[0.03]"
+                              ? "bg-[var(--tint-blue)] text-[var(--text)]"
+                              : "text-[var(--text-muted)] hover:bg-[var(--bg-surface-2)]"
                           }`}
                         >
-                          <td className="py-2.5 font-mono font-medium text-text-primary">{p.name}</td>
-                          <td className="py-2.5 font-mono text-text-secondary tabular">{p.pid}</td>
-                          <td className="py-2.5 font-medium tabular text-text-primary">
+                          <td className="py-2.5 font-mono font-medium text-[var(--text)]">{p.name}</td>
+                          <td className="py-2.5 font-mono text-[var(--text-muted)] tabular-nums">{p.pid}</td>
+                          <td className="py-2.5 font-medium tabular-nums text-[var(--text)]">
                             <div className="flex items-center gap-2">
                               <span>{p.cpuPct.toFixed(1)}%</span>
-                              <div className="w-12 h-1 rounded-full bg-border-subtle overflow-hidden">
+                              <div className="w-12 h-1 rounded-[2px] bg-[var(--bg-bar-idle)] overflow-hidden">
                                 <div
-                                  className="h-full bg-sky-400 rounded-full"
+                                  className="h-full bg-[var(--accent-sky)] rounded-[2px]"
                                   style={{ width: `${Math.min(100, Math.max(4, p.cpuPct))}%` }}
                                 />
                               </div>
                             </div>
                           </td>
-                          <td className="py-2.5 font-mono text-text-secondary tabular font-medium">
+                          <td className="py-2.5 font-mono text-[var(--text-muted)] tabular-nums">
                             {(p.memBytes / 1024 / 1024).toFixed(0)} MB
                           </td>
                           <td className="py-2.5 text-right">
                             {p.isStarshipOwned ? (
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold border ${tagColor}`}>
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-[4px] text-[12px] font-semibold border ${tagColor}`}>
                                 {tagLabel}
                               </span>
                             ) : (
-                              <span className="text-text-secondary text-[11px] font-medium">Host system</span>
+                              <span className="text-[var(--text-muted)] text-[12px]">Host system</span>
                             )}
                           </td>
                         </tr>
@@ -602,36 +449,36 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={5} className="py-4 text-center text-text-secondary font-medium">
+                      <td colSpan={5} className="py-4 text-center text-[var(--text-muted)]">
                         Gathering process metrics
                       </td>
                     </tr>
                   )}
 
-                  {/* Starship Footprint Total Row */}
                   {sample?.ownFootprint && (
-                    <tr className="border-t border-border-glass bg-white/[0.03] font-semibold text-text-primary">
+                    <tr className="border-t border-[var(--border-strong)] bg-[var(--bg-surface-2)] font-semibold text-[var(--text)]">
                       <td className="py-2.5">Starship total footprint</td>
-                      <td className="py-2.5 font-mono text-text-secondary tabular font-medium">
+                      <td className="py-2.5 font-mono text-[var(--text-muted)] tabular-nums">
                         {sample.ownFootprint.processCount} procs
                       </td>
-                      <td className="py-2.5 tabular text-sky-400">{sample.ownFootprint.totalCpuPct.toFixed(1)}%</td>
-                      <td className="py-2.5 font-mono tabular text-purple-400">
+                      <td className="py-2.5 tabular-nums text-[var(--accent-sky)]">
+                        {sample.ownFootprint.totalCpuPct.toFixed(1)}%
+                      </td>
+                      <td className="py-2.5 font-mono tabular-nums text-[var(--accent-purple)]">
                         {(sample.ownFootprint.totalRssBytes / 1024 / 1024).toFixed(0)} MB
                       </td>
-                      <td className="py-2.5 text-right text-[11px] text-text-secondary font-medium">Combined</td>
+                      <td className="py-2.5 text-right text-[12px] text-[var(--text-muted)]">Combined</td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
-          </div>
+          </LinearCard>
 
-          {/* 5. Alerts Timeline Drawer */}
-          <div className="p-5 rounded-2xl bg-white/[0.03] border border-border-subtle flex flex-col">
+          <LinearCard level={1} className="p-5 flex flex-col">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-text-primary">Governor alerts</h3>
-              <span className="text-xs font-medium text-text-secondary">{alerts.length} logged</span>
+              <h3 className="text-[14px] font-semibold text-[var(--text)]">Governor alerts</h3>
+              <span className="text-[12px] text-[var(--text-muted)]">{alerts.length} logged</span>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-2 max-h-[300px] pr-1">
@@ -639,135 +486,122 @@ export const SystemsDashboardView: React.FC<SystemsDashboardViewProps> = () => {
                 alerts.map((a, idx) => (
                   <div
                     key={idx}
-                    className="p-3 rounded-xl bg-white/[0.03] border border-border-subtle text-xs space-y-1"
+                    className="p-3 rounded-[6px] bg-[var(--bg-surface-2)] border border-[var(--border)] text-[12px] space-y-1"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-mono text-[11px] font-semibold text-text-primary">
-                        {a.signal}
-                      </span>
-                      <span className="text-[11px] text-signal-thinking font-medium capitalize">
-                        {a.action}
-                      </span>
+                      <span className="font-mono font-semibold text-[var(--text)]">{a.signal}</span>
+                      <span className="text-[var(--accent-amber)] font-medium capitalize">{a.action}</span>
                     </div>
-                    <div className="flex items-center justify-between text-text-secondary text-[11px] font-medium">
+                    <div className="flex items-center justify-between text-[var(--text-muted)]">
                       <span>Level: {a.level}</span>
-                      <span className="tabular">Value: {a.value.toFixed(1)}</span>
+                      <span className="tabular-nums">Value: {a.value.toFixed(1)}</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="flex flex-col items-center justify-center h-32 text-center text-text-secondary text-xs">
-                  <CheckCircle2 className="h-5 w-5 text-signal-success mb-2" />
-                  <span className="font-medium text-text-primary">No overload alerts tripped</span>
-                  <span className="text-[11px] text-text-secondary mt-1">
-                    System operating within normal parameters
-                  </span>
+                <div className="flex flex-col items-center justify-center h-32 text-center text-[var(--text-muted)] text-[12px]">
+                  <CheckCircle2 className="size-5 text-[var(--accent-green)] mb-2" />
+                  <span className="font-medium text-[var(--text)]">No overload alerts tripped</span>
+                  <span className="mt-1">System operating within normal parameters</span>
                 </div>
               )}
             </div>
-          </div>
+          </LinearCard>
         </div>
       </div>
 
-      {/* 6. Settings Drawer for Thresholds */}
-      {isSettingsOpen && thresholds && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-raised border border-border-subtle p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+      {thresholds && (
+        <LinearDialog
+          open={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          title="Overload detector thresholds"
+          icon={<Sliders className="size-4 text-[var(--text-muted)]" />}
+          footer={
+            <>
+              <span className="text-[12px] text-[var(--text-muted)] font-mono">
+                Hysteresis guard
+              </span>
               <div className="flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-text-secondary" />
-                <h3 className="text-sm font-medium text-text-primary">Overload detector thresholds</h3>
+                <LinearButton variant="secondary" size="sm" onClick={() => setIsSettingsOpen(false)}>
+                  Cancel
+                </LinearButton>
+                <LinearButton
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSaveThresholds}
+                  disabled={savingThresholds}
+                >
+                  {savingThresholds ? "Saving" : "Save thresholds"}
+                </LinearButton>
               </div>
-              <button
-                onClick={() => setIsSettingsOpen(false)}
-                className="text-text-secondary hover:text-text-primary p-1 rounded-lg cursor-pointer transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
+            </>
+          }
+        >
+          <div className="space-y-4 text-[12px] text-[var(--text-muted)] max-h-[60vh] overflow-y-auto pr-1">
+            <div>
+              <label className="block mb-1">CPU elevated threshold (%)</label>
+              <input
+                type="number"
+                value={thresholds.cpuElevatedPct}
+                onChange={(e) =>
+                  setThresholds({ ...thresholds, cpuElevatedPct: parseFloat(e.target.value) || 0 })
+                }
+                className="w-full rounded-[6px] bg-[var(--bg-surface-2)] border border-[var(--border)] px-3 py-2 text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
+              />
             </div>
 
-            <div className="space-y-4 text-xs text-text-secondary max-h-[60vh] overflow-y-auto pr-1">
-              <div>
-                <label className="block text-text-secondary mb-1">CPU elevated threshold (%)</label>
-                <input
-                  type="number"
-                  value={thresholds.cpuElevatedPct}
-                  onChange={(e) =>
-                    setThresholds({ ...thresholds, cpuElevatedPct: parseFloat(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl bg-white/[0.03] border border-border-subtle px-3 py-2 text-text-primary focus:border-accent/40 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-text-secondary mb-1">CPU critical threshold (%)</label>
-                <input
-                  type="number"
-                  value={thresholds.cpuCriticalPct}
-                  onChange={(e) =>
-                    setThresholds({ ...thresholds, cpuCriticalPct: parseFloat(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl bg-white/[0.03] border border-border-subtle px-3 py-2 text-text-primary focus:border-accent/40 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-text-secondary mb-1">Memory available critical (%)</label>
-                <input
-                  type="number"
-                  value={thresholds.memAvailCriticalPct}
-                  onChange={(e) =>
-                    setThresholds({ ...thresholds, memAvailCriticalPct: parseFloat(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl bg-white/[0.03] border border-border-subtle px-3 py-2 text-text-primary focus:border-accent/40 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-text-secondary mb-1">Thermal critical delta (°C)</label>
-                <input
-                  type="number"
-                  value={thresholds.thermalDeltaCritical}
-                  onChange={(e) =>
-                    setThresholds({ ...thresholds, thermalDeltaCritical: parseFloat(e.target.value) || 0 })
-                  }
-                  className="w-full rounded-xl bg-white/[0.03] border border-border-subtle px-3 py-2 text-text-primary focus:border-accent/40 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-text-secondary mb-1">Anti-flapping exit counter (samples)</label>
-                <input
-                  type="number"
-                  value={thresholds.exitConsecutiveSamples}
-                  onChange={(e) =>
-                    setThresholds({
-                      ...thresholds,
-                      exitConsecutiveSamples: parseInt(e.target.value, 10) || 30,
-                    })
-                  }
-                  className="w-full rounded-xl bg-white/[0.03] border border-border-subtle px-3 py-2 text-text-primary focus:border-accent/40 focus:outline-none"
-                />
-              </div>
+            <div>
+              <label className="block mb-1">CPU critical threshold (%)</label>
+              <input
+                type="number"
+                value={thresholds.cpuCriticalPct}
+                onChange={(e) =>
+                  setThresholds({ ...thresholds, cpuCriticalPct: parseFloat(e.target.value) || 0 })
+                }
+                className="w-full rounded-[6px] bg-[var(--bg-surface-2)] border border-[var(--border)] px-3 py-2 text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
+              />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border-subtle">
-              <button
-                onClick={() => setIsSettingsOpen(false)}
-                className="px-4 py-2 rounded-xl text-xs text-text-secondary hover:text-text-primary cursor-pointer transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveThresholds}
-                disabled={savingThresholds}
-                className="px-4 py-2 rounded-xl text-xs font-medium bg-accent hover:bg-accent-hover text-accent-text transition-colors cursor-pointer disabled:opacity-50"
-              >
-                {savingThresholds ? "Saving" : "Save thresholds"}
-              </button>
+            <div>
+              <label className="block mb-1">Memory available critical (%)</label>
+              <input
+                type="number"
+                value={thresholds.memAvailCriticalPct}
+                onChange={(e) =>
+                  setThresholds({ ...thresholds, memAvailCriticalPct: parseFloat(e.target.value) || 0 })
+                }
+                className="w-full rounded-[6px] bg-[var(--bg-surface-2)] border border-[var(--border)] px-3 py-2 text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1">Thermal critical delta (°C)</label>
+              <input
+                type="number"
+                value={thresholds.thermalDeltaCritical}
+                onChange={(e) =>
+                  setThresholds({ ...thresholds, thermalDeltaCritical: parseFloat(e.target.value) || 0 })
+                }
+                className="w-full rounded-[6px] bg-[var(--bg-surface-2)] border border-[var(--border)] px-3 py-2 text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-1">Anti-flapping exit counter (samples)</label>
+              <input
+                type="number"
+                value={thresholds.exitConsecutiveSamples}
+                onChange={(e) =>
+                  setThresholds({
+                    ...thresholds,
+                    exitConsecutiveSamples: parseInt(e.target.value, 10) || 30,
+                  })
+                }
+                className="w-full rounded-[6px] bg-[var(--bg-surface-2)] border border-[var(--border)] px-3 py-2 text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
+              />
             </div>
           </div>
-        </div>
+        </LinearDialog>
       )}
     </div>
   );

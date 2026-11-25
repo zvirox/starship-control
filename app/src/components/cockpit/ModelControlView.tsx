@@ -11,9 +11,8 @@ import {
   AlertCircle,
   Clock,
 } from "lucide-react";
-import { GlassPanel } from "../common/GlassPanel";
+import { LinearCard, LinearButton, LINEAR_COLORS } from "../linear";
 import { LinearTelemetryChart } from "../common/LinearTelemetryChart";
-import { LinearButton } from "../linear/LinearButton";
 import type {
   DownloadCompleteEvent,
   DownloadProgress,
@@ -115,6 +114,13 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
   // Perform search
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    if (
+      typeof window !== "undefined" &&
+      !("__TAURI_INTERNALS__" in window) &&
+      !("__TAURI__" in window)
+    ) {
+      return;
+    }
     setIsSearching(true);
     setStatusMessage(null);
     try {
@@ -162,103 +168,100 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
   };
 
   return (
-    <div className="flex-1 space-y-5 overflow-y-auto p-5 font-sans">
-      {/* Top Header */}
+    <div className="flex-1 space-y-5 overflow-y-auto bg-[var(--bg-app)] p-5 font-sans">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h2 className="text-base font-medium text-text-primary flex items-center gap-2">
-            <Cpu className="h-4 w-4 text-accent" strokeWidth={1.5} />
+          <h2 className="text-[16px] font-semibold text-[var(--text)] flex items-center gap-2">
+            <Cpu className="size-4 text-[var(--accent-blue)]" strokeWidth={1.75} />
             <span>Model control and Hugging Face Hub</span>
           </h2>
-          <p className="text-xs text-text-secondary">
+          <p className="text-[12px] text-[var(--text-muted)]">
             Discover, download, and verify local GGUF quantizations directly on your hardware
           </p>
         </div>
 
         {statusMessage && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-border-subtle bg-white/[0.03] px-3 py-2 text-xs text-text-secondary">
-            <AlertCircle className="h-3.5 w-3.5 text-accent" strokeWidth={1.5} />
+          <div className="flex items-center gap-1.5 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2 text-[12px] text-[var(--text-muted)]">
+            <AlertCircle className="size-3.5 text-[var(--accent-blue)]" strokeWidth={1.75} />
             <span>{statusMessage}</span>
           </div>
         )}
       </div>
 
-      {/* Live Model & Hardware Telemetry Chart */}
-      <GlassPanel recipe="pane" className="p-4 hairline">
+      <LinearCard level={1} className="p-5">
         <LinearTelemetryChart
-          title="Engine Telemetry & Hub Throughput"
-          subtitle="Real-time streaming bandwidth (MB/s) and local inference velocity (tokens/sec)"
+          title="Engine telemetry & Hub throughput"
+          subtitle="Streaming bandwidth (MB/s) and local inference velocity (tokens/sec)"
           unit="MB/s"
           series={[
             {
               name: "Download Throughput (MB/s)",
               data: throughputHistory,
-              color: "#38bdf8",
+              color: LINEAR_COLORS.blue,
             },
             {
               name: "Inference Velocity (tok/s)",
               data: inferenceHistory,
-              color: "#a855f7",
+              color: LINEAR_COLORS.sky,
             },
           ]}
         />
-      </GlassPanel>
+      </LinearCard>
 
-      {/* Installed Models Section */}
       <div className="space-y-3">
-        <h3 className="text-xs font-medium text-text-secondary flex items-center gap-2">
-          <HardDrive className="h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
+        <h3 className="text-[12px] font-medium uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-2">
+          <HardDrive className="size-3.5 text-[var(--text-muted)]" strokeWidth={1.75} />
           <span>Installed and registered models ({installedModels.length})</span>
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {installedModels.map((m) => {
             const isSelected = m.id === activeModelId;
             return (
-              <GlassPanel
+              <LinearCard
                 key={m.id}
-                recipe="pane"
-                className="p-4 space-y-3 hairline transition-colors"
+                level={1}
+                className="p-5 space-y-3"
               >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1 min-w-0">
                     <h4
-                      className={`text-xs font-medium ${
-                        isSelected ? "text-accent" : "text-text-primary"
+                      className={`text-[13px] font-semibold truncate ${
+                        isSelected ? "text-[var(--accent-blue)]" : "text-[var(--text)]"
                       }`}
                     >
                       {m.name}
                     </h4>
                     <span
-                      className={`font-mono text-[11px] block font-medium ${
+                      className={`font-mono text-[12px] block font-medium ${
                         m.provider_type === "local_gguf"
-                          ? "text-signal-local-model"
-                          : "text-text-secondary"
+                          ? "text-[var(--accent-purple)]"
+                          : "text-[var(--text-muted)]"
                       }`}
                     >
                       {m.provider_type === "local_gguf" ? "Local GGUF · Vulkan" : "Cloud remote"}
                     </span>
                   </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-border-subtle bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-text-secondary">
+                  <span className="inline-flex items-center gap-1.5 rounded-[4px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-2 py-0.5 font-mono text-[12px] text-[var(--text-muted)] shrink-0">
                     <span
-                      className={`h-1.5 w-1.5 rounded-full ${
-                        m.download_status === "ready" ? "bg-signal-success" : "bg-signal-thinking"
+                      className={`size-1.5 rounded-full ${
+                        m.download_status === "ready" ? "bg-[var(--accent-green)]" : "bg-[var(--accent-amber)]"
                       }`}
                     />
                     {m.download_status}
                   </span>
                 </div>
 
-                <div className="text-[11px] font-mono text-text-secondary space-y-1">
+                <div className="text-[12px] font-mono text-[var(--text-muted)] space-y-1">
                   <div>Context window: {m.context_window} tokens</div>
                   {m.file_size_bytes && <div>Size: {formatBytes(m.file_size_bytes)}</div>}
                   {m.file_path && (
-                    <div className="truncate text-text-secondary font-mono">Path: {m.file_path}</div>
+                    <div className="truncate">Path: {m.file_path}</div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-border-subtle">
-                  <span className="text-[11px] text-text-secondary font-mono font-medium">
+                <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
+                  <span className="text-[12px] font-mono text-[var(--text-muted)]">
                     {m.is_default ? "Default engine" : "Alternative"}
                   </span>
                   <LinearButton
@@ -266,49 +269,41 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
                     size="sm"
                     onClick={() => onSelectModel?.(m)}
                   >
-                    {isSelected && <Check className="h-3.5 w-3.5 mr-1 text-accent" strokeWidth={1.5} />}
+                    {isSelected && <Check className="size-3.5" strokeWidth={1.75} />}
                     <span>{isSelected ? "Active model" : "Select engine"}</span>
                   </LinearButton>
                 </div>
-              </GlassPanel>
+              </LinearCard>
             );
           })}
         </div>
       </div>
 
-      {/* Hugging Face Hub Search & Download Section */}
-      <div className="space-y-3 pt-2 border-t border-border-subtle">
-        <h3 className="text-xs font-medium text-text-secondary">
+      <div className="space-y-3 pt-3 border-t border-[var(--border)]">
+        <h3 className="text-[12px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
           Discover GGUF models on Hugging Face Hub
         </h3>
 
-        {/* Search Bar */}
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative flex-1">
             <Search
-              className="absolute left-3 top-3 h-4 w-4 text-text-secondary"
-              strokeWidth={1.5}
+              className="absolute left-3 top-2.5 size-3.5 text-[var(--text-muted)]"
+              strokeWidth={1.75}
             />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search GGUF models on Hugging Face..."
-              className="w-full rounded-xl border border-border-subtle bg-surface-solid pl-9 pr-4 py-2 text-xs font-medium text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent font-sans"
+              className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] pl-9 pr-4 py-1.5 text-[13px] text-[var(--text)] placeholder:text-[var(--text-faint)] focus-ring focus:border-[var(--border-strong)]"
             />
           </div>
-          <LinearButton
-            type="submit"
-            variant="primary"
-            size="md"
-            disabled={isSearching}
-          >
+          <LinearButton type="submit" variant="primary" size="md" disabled={isSearching}>
             <span>{isSearching ? "Searching" : "Search hub"}</span>
           </LinearButton>
         </form>
 
-        {/* Search Results Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {searchResults.map((hf) => {
             const jobId = downloadingFiles[hf.filename];
             const progress = jobId ? downloadProgresses[jobId] : undefined;
@@ -318,93 +313,92 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
             );
 
             return (
-              <GlassPanel
+              <LinearCard
                 key={`${hf.repo_id}-${hf.filename}`}
-                recipe="pane"
-                className="p-4 space-y-3 hairline"
+                level={1}
+                className="p-5 space-y-3"
               >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <h4 className="text-xs font-semibold text-text-primary line-clamp-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1 min-w-0">
+                    <h4 className="text-[13px] font-semibold text-[var(--text)] truncate">
                       {hf.filename}
                     </h4>
-                    <span className="font-mono text-[11px] text-text-secondary font-medium truncate block max-w-[200px]">
+                    <span className="font-mono text-[12px] text-[var(--text-muted)] truncate block">
                       {hf.repo_id}
                     </span>
                   </div>
-                  <span className="rounded-lg border border-border-subtle bg-white/[0.03] text-text-secondary font-mono text-[11px] px-2 py-1">
+                  <span className="rounded-[4px] border border-[var(--border)] bg-[var(--bg-surface-2)] text-[var(--text-muted)] font-mono text-[12px] px-2 py-0.5 shrink-0">
                     {hf.quantization}
                   </span>
                 </div>
 
-                {/* Compatibility Badges */}
-                <div className="flex items-center justify-between text-[11px] font-mono">
-                  <span className="text-text-secondary font-medium">Size: {formatBytes(hf.file_size_bytes)}</span>
+                <div className="flex items-center justify-between text-[12px] font-mono">
+                  <span className="text-[var(--text-muted)]">
+                    Size: {formatBytes(hf.file_size_bytes)}
+                  </span>
                   {hf.compatibility === "fits_in_vram" ? (
-                    <span className="text-text-primary font-medium flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-signal-success" />
+                    <span className="text-[var(--text)] font-medium flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-[var(--accent-green)]" />
                       Fits in VRAM
                     </span>
                   ) : hf.compatibility === "partial_offload" ? (
-                    <span className="text-text-primary font-medium flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-signal-thinking" />
+                    <span className="text-[var(--text)] font-medium flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-[var(--accent-amber)]" />
                       Partial offload
                     </span>
                   ) : (
-                    <span className="text-text-primary font-medium flex items-center gap-1.5">
-                      <span className="h-1.5 w-1.5 rounded-full bg-signal-gate" />
+                    <span className="text-[var(--text)] font-medium flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-[var(--accent-red)]" />
                       CPU only
                     </span>
                   )}
                 </div>
 
-                {/* Download Progress Bar if downloading */}
                 {isDownloading && progress && (
-                  <div className="space-y-2 rounded-lg border border-border-subtle bg-surface-solid p-3">
-                    <div className="flex justify-between text-[11px] font-mono text-text-secondary tabular font-medium">
+                  <div className="space-y-2 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3">
+                    <div className="flex justify-between text-[12px] font-mono text-[var(--text-muted)] tabular-nums">
                       <span>{(progress.progressFraction * 100).toFixed(1)}%</span>
                       <span>
                         {(progress.speedBytesPerSec / (1024 * 1024)).toFixed(1)} MB/s · ETA: {progress.etaSeconds}s
                       </span>
                     </div>
-                    <div className="h-1.5 w-full rounded-lg bg-border-subtle overflow-hidden">
+                    <div className="h-1 w-full rounded-[2px] bg-[var(--bg-bar-idle)] overflow-hidden">
                       <div
-                        className="h-full bg-accent"
+                        className="h-full bg-[var(--accent-blue)]"
                         style={{ width: `${Math.round(progress.progressFraction * 100)}%` }}
                       />
                     </div>
-                    <div className="text-[11px] text-text-secondary font-mono flex items-center justify-end gap-1">
-                      <Clock className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    <div className="text-[12px] text-[var(--text-muted)] font-mono flex items-center justify-end gap-1">
+                      <Clock className="size-3.5" strokeWidth={1.75} />
                       <span>Streaming SHA-256 pipeline</span>
                     </div>
                   </div>
                 )}
 
-                {/* Action Buttons */}
-                <div className="flex items-center justify-between pt-3 border-t border-border-subtle">
-                  <span className="text-[11px] font-mono text-text-secondary font-medium">
+                <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
+                  <span className="text-[12px] font-mono text-[var(--text-muted)]">
                     Est. VRAM: ~{(hf.vram_required_mb / 1024).toFixed(1)} GB
                   </span>
 
                   {isInstalled ? (
-                    <span className="flex items-center gap-1.5 text-[11px] font-medium text-signal-success">
-                      <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    <span className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--accent-green)]">
+                      <CheckCircle2 className="size-3.5" strokeWidth={1.75} />
                       <span>Ready</span>
                     </span>
                   ) : isDownloading ? (
-                    <span className="text-[11px] font-mono text-text-secondary">Downloading</span>
+                    <span className="text-[12px] font-mono text-[var(--text-muted)]">Downloading</span>
                   ) : (
                     <LinearButton
                       variant="primary"
                       size="sm"
                       onClick={() => handleDownload(hf)}
                     >
-                      <Download className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                      <Download className="size-3.5" strokeWidth={1.75} />
                       <span>Download GGUF</span>
                     </LinearButton>
                   )}
                 </div>
-              </GlassPanel>
+              </LinearCard>
             );
           })}
         </div>

@@ -2,6 +2,23 @@
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
+/* Self-hosted Inter variable font (OFL-1.1 — see /fonts/OFL-Inter.txt) */
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+}
+
 @theme {
   --color-app: var(--bg-app);
   --color-surface: var(--bg-surface);
@@ -22,43 +39,40 @@
   --color-pink: #EC4899;
   --color-purple: #7C5CE6;
   --color-orange: #F97316;
+  --color-close-hover: #E5484D;
 
-  --color-canvas: var(--color-canvas);
-  --color-raised: var(--color-raised);
-  --color-surface-solid: var(--color-surface-solid);
-  --color-surface-glass: var(--color-surface-glass);
-  --color-surface-glass-strong: var(--color-surface-glass-strong);
-  
-  --color-border-subtle: var(--color-border-subtle);
-  --color-border-glass: var(--color-border-glass);
-  --color-border-focus: var(--color-border-focus);
+  /* Compatibility mappings resolving strictly to solid Linear tokens */
+  --color-canvas: var(--bg-app);
+  --color-raised: var(--bg-surface);
+  --color-surface-solid: var(--bg-surface-2);
 
-  --color-text-primary: var(--color-text-primary);
-  --color-text-secondary: var(--color-text-secondary);
-  --color-text-disabled: var(--color-text-disabled);
+  --color-border-subtle: var(--border);
+  --color-border-focus: #3355FF;
 
-  --color-accent: var(--color-accent);
-  --color-accent-hover: var(--color-accent-hover);
-  --color-accent-active: var(--color-accent-active);
-  --color-accent-muted: var(--color-accent-muted);
-  --color-accent-text: var(--color-accent-text);
+  --color-text-primary: var(--text);
+  --color-text-secondary: var(--text-muted);
+  --color-text-disabled: var(--text-faint);
 
-  --color-signal-thinking: var(--color-signal-thinking);
-  --color-signal-thinking-bg: var(--color-signal-thinking-bg);
-  --color-signal-success: var(--color-signal-success);
-  --color-signal-success-bg: var(--color-signal-success-bg);
-  --color-signal-gate: var(--color-signal-gate);
-  --color-signal-gate-bg: var(--color-signal-gate-bg);
-  --color-signal-local-model: var(--color-signal-local-model);
+  --color-accent: #3355FF;
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-muted: var(--tint-blue);
+  --color-accent-text: #FFFFFF;
 
-  --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --color-signal-thinking: #EAB308;
+  --color-signal-thinking-bg: var(--tint-amber);
+  --color-signal-success: #22C55E;
+  --color-signal-success-bg: var(--tint-green);
+  --color-signal-gate: #F43F5E;
+  --color-signal-gate-bg: var(--tint-red);
+  --color-signal-local-model: #7C5CE6;
+
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 :root,
-[data-theme="light"],
-:root.light {
-  /* Linear Light Theme (Section 3 Screenshot Palette) */
+[data-theme="light"] {
   --bg-app: #F3F4F6;
   --bg-surface: #FFFFFF;
   --bg-surface-2: #F4F5F7;
@@ -69,44 +83,34 @@
   --text-muted: #6B7280;
   --text-faint: #9CA3AF;
 
-  --color-canvas: var(--bg-app);
-  --color-raised: var(--bg-surface);
-  --color-surface-solid: var(--bg-surface);
-  --color-surface-1: var(--bg-surface);
-  --color-surface-2: var(--bg-surface-2);
-  --color-surface-3: #E5E7EB;
-  --color-surface-glass: var(--bg-surface);
-  --color-surface-glass-strong: var(--bg-surface);
-  
-  --color-border-subtle: var(--border);
-  --color-border-active: var(--border-strong);
-  --color-border-glass: var(--border);
-  --color-border-focus: #3355FF;
+  --accent-blue: #3355FF;
+  --accent-hover: #2944CC;
+  --accent-active: #1F3399;
+  --accent-sky: #38B6F0;
+  --accent-green: #22C55E;
+  --accent-red: #F43F5E;
+  --accent-amber: #EAB308;
+  --accent-teal: #1FB5A5;
+  --accent-pink: #EC4899;
+  --accent-purple: #7C5CE6;
+  --accent-orange: #F97316;
+  --color-close-hover: #E5484D;
 
-  --color-text-primary: var(--text);
-  --color-text-secondary: var(--text-muted);
-  --color-text-disabled: var(--text-faint);
+  /* Solid precomputed icon chip & delta pill tints on #FFFFFF */
+  --tint-blue: #EBEEFF;
+  --tint-sky: #EBF7FD;
+  --tint-green: #E9F9EF;
+  --tint-red: #FEECEF;
+  --tint-amber: #FDF7E6;
+  --tint-teal: #E9F8F6;
+  --tint-pink: #FDEDF5;
+  --tint-purple: #F2EFFC;
+  --tint-orange: #FFF1E8;
 
-  --color-accent: #3355FF;
-  --color-accent-hover: #2944CC;
-  --color-accent-active: #1F3399;
-  --color-accent-muted: rgba(51, 85, 255, 0.12);
-  --color-accent-text: #FFFFFF;
-
-  --color-signal-thinking: #EAB308;
-  --color-signal-thinking-bg: rgba(234, 179, 8, 0.12);
-  --color-signal-success: #22C55E;
-  --color-signal-success-bg: rgba(34, 197, 94, 0.12);
-  --color-signal-gate: #F43F5E;
-  --color-signal-gate-bg: rgba(244, 63, 94, 0.12);
-  --color-signal-local-model: #7C5CE6;
-
-  --shadow-linear: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 5%);
 }
 
-[data-theme="dark"],
-:root.dark {
-  /* Linear Dark Theme (Section 3 Screenshot Palette) */
+[data-theme="dark"] {
   --bg-app: #050505;
   --bg-surface: #111213;
   --bg-surface-2: #1A1B1E;
@@ -117,64 +121,46 @@
   --text-muted: #8A8B91;
   --text-faint: #5A5B62;
 
-  --color-canvas: var(--bg-app);
-  --color-raised: var(--bg-surface);
-  --color-surface-solid: var(--bg-surface);
-  --color-surface-1: var(--bg-surface);
-  --color-surface-2: var(--bg-surface-2);
-  --color-surface-3: #202128;
-  --color-surface-glass: var(--bg-surface);
-  --color-surface-glass-strong: var(--bg-surface);
-  
-  --color-border-subtle: var(--border);
-  --color-border-active: var(--border-strong);
-  --color-border-glass: var(--border);
-  --color-border-focus: #3355FF;
+  --accent-blue: #3355FF;
+  --accent-hover: #4D6CFF;
+  --accent-active: #6682FF;
+  --accent-sky: #38B6F0;
+  --accent-green: #22C55E;
+  --accent-red: #F43F5E;
+  --accent-amber: #EAB308;
+  --accent-teal: #1FB5A5;
+  --accent-pink: #EC4899;
+  --accent-purple: #7C5CE6;
+  --accent-orange: #F97316;
+  --color-close-hover: #E5484D;
 
-  --color-text-primary: var(--text);
-  --color-text-secondary: var(--text-muted);
-  --color-text-disabled: var(--text-faint);
+  /* Solid precomputed icon chip & delta pill tints on #111213 */
+  --tint-blue: #15192F;
+  --tint-sky: #15242D;
+  --tint-green: #13261C;
+  --tint-red: #2D161D;
+  --tint-amber: #282212;
+  --tint-teal: #132423;
+  --tint-pink: #291722;
+  --tint-purple: #1D1A2C;
+  --tint-orange: #2A1C13;
 
-  --color-accent: #3355FF;
-  --color-accent-hover: #4D6CFF;
-  --color-accent-active: #6682FF;
-  --color-accent-muted: rgba(51, 85, 255, 0.16);
-  --color-accent-text: #F5F5F6;
-
-  --color-signal-thinking: #EAB308;
-  --color-signal-thinking-bg: rgba(234, 179, 8, 0.16);
-  --color-signal-success: #22C55E;
-  --color-signal-success-bg: rgba(34, 197, 94, 0.16);
-  --color-signal-gate: #F43F5E;
-  --color-signal-gate-bg: rgba(244, 63, 94, 0.16);
-  --color-signal-local-model: #7C5CE6;
-
-  --shadow-linear: none;
+  --shadow-card: none;
 }
 
-/* Linear elevated surface recipes (No Glass, Zero Blur) */
-.glass-pane,
+/* Linear flat solid surfaces (zero blur, zero translucency, zero shadow in dark) */
 .surface-panel {
-  background: var(--bg-surface);
+  background-color: var(--bg-surface);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-linear);
+  box-shadow: var(--shadow-card);
 }
 
-.glass-float,
-.surface-float {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-linear);
+.surface-nested {
+  background-color: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
 }
 
-.glass-modal,
-.surface-modal {
-  background: var(--bg-surface-2);
-  border: 1px solid var(--border-strong);
-  box-shadow: var(--shadow-linear);
-}
-
-/* Quiet primitives shared across both surfaces */
 .hairline {
   border: 1px solid var(--border);
 }
@@ -182,14 +168,14 @@
 .quiet-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  border-radius: 6px;
+  gap: 6px;
+  border-radius: 4px;
   border: 1px solid var(--border);
   padding: 2px 8px;
   font-size: 12px;
   line-height: 16px;
   color: var(--text-muted);
-  background: var(--bg-surface);
+  background-color: var(--bg-surface-2);
   white-space: nowrap;
 }
 
@@ -198,10 +184,10 @@
   align-items: center;
   border-radius: 4px;
   border: 1px solid var(--border);
-  background: var(--bg-surface-2);
+  background-color: var(--bg-surface-2);
   padding: 2px 6px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   color: var(--text-muted);
 }
@@ -211,12 +197,19 @@
 }
 
 .focus-ring:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px var(--bg-app), 0 0 0 4px #3355FF;
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+.close-btn:hover {
+  background-color: var(--color-close-hover);
+  color: #FFFFFF;
 }
 
 /* Base resets */
-html, body, #root {
+html,
+body,
+#root {
   background-color: var(--bg-app);
   color: var(--text);
   font-family: var(--font-sans);
@@ -225,13 +218,15 @@ html, body, #root {
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
-  transition: color 0.15s ease-out;
+  transition: color 150ms ease-out, background-color 150ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.05s !important;
+    transition-duration: 0.01ms !important;
   }
 }

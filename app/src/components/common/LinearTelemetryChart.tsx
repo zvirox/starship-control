@@ -1,6 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import * as echarts from "echarts";
-import { getLinearEChartsOption } from "../linear/echarts-linear-theme";
+import {
+  getLinearEChartsOption,
+  LINEAR_SERIES_ORDER,
+  createLinearAreaGradient,
+} from "../linear/echarts-linear-theme";
+import { useThemeStore } from "../../stores/themeStore";
 
 export interface TelemetrySeries {
   name: string;
@@ -27,8 +32,10 @@ export const LinearTelemetryChart: React.FC<LinearTelemetryChartProps> = ({
   unit = "%",
   height = "h-56",
   className = "",
-  isDark = true,
+  isDark,
 }) => {
+  const storeTheme = useThemeStore((s) => s.theme);
+  const darkMode = isDark ?? storeTheme === "dark";
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
 
@@ -39,13 +46,13 @@ export const LinearTelemetryChart: React.FC<LinearTelemetryChartProps> = ({
       chartInstance.current = echarts.init(chartRef.current);
     }
 
-    const baseOption = getLinearEChartsOption(isDark);
+    const baseOption = getLinearEChartsOption(darkMode);
     const option = {
       ...baseOption,
       tooltip: {
         ...baseOption.tooltip,
         trigger: "axis",
-        valueFormatter: (value: any) => `${value} ${unit}`,
+        valueFormatter: (value: unknown) => `${value} ${unit}`,
       },
       xAxis: {
         ...baseOption.xAxis,
@@ -57,23 +64,29 @@ export const LinearTelemetryChart: React.FC<LinearTelemetryChartProps> = ({
         ...baseOption.yAxis,
         type: "value",
         axisLabel: {
+          ...baseOption.yAxis.axisLabel,
           formatter: `{value}${unit}`,
         },
       },
-      series: series.map((s, idx) => ({
-        name: s.name,
-        type: "line",
-        smooth: true,
-        showSymbol: false,
-        areaStyle: {
-          opacity: 0.15,
-        },
-        data: s.data,
-        color: s.color || (idx === 0 ? "#22d3ee" : idx === 1 ? "#a855f7" : "#10b981"),
-      })),
+      series: series.map((s, idx) => {
+        const seriesColor =
+          s.color || LINEAR_SERIES_ORDER[idx % LINEAR_SERIES_ORDER.length];
+        return {
+          name: s.name,
+          type: "line",
+          smooth: true,
+          showSymbol: false,
+          lineStyle: { width: 2, color: seriesColor },
+          areaStyle: {
+            color: createLinearAreaGradient(seriesColor, 0.2),
+          },
+          data: s.data,
+          color: seriesColor,
+        };
+      }),
     };
 
-    chartInstance.current.setOption(option);
+    chartInstance.current.setOption(option, true);
 
     const handleResize = () => chartInstance.current?.resize();
     window.addEventListener("resize", handleResize);
@@ -81,29 +94,44 @@ export const LinearTelemetryChart: React.FC<LinearTelemetryChartProps> = ({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
-  }, [timestamps, series, unit, isDark]);
+  }, [timestamps, series, unit, darkMode]);
+
+  useEffect(() => {
+    return () => {
+      chartInstance.current?.dispose();
+      chartInstance.current = null;
+    };
+  }, []);
 
   return (
     <div className={`w-full ${className}`}>
       {(title || subtitle) && (
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <div>
-            {title && <h4 className="text-xs font-semibold text-text-primary">{title}</h4>}
-            {subtitle && <p className="text-[11px] text-text-secondary">{subtitle}</p>}
+            {title && (
+              <h4 className="text-[13px] font-semibold text-[var(--text)]">
+                {title}
+              </h4>
+            )}
+            {subtitle && (
+              <p className="text-[12px] text-[var(--text-muted)]">{subtitle}</p>
+            )}
           </div>
-          <div className="flex items-center gap-3 text-xs font-mono">
-            {series.map((s, i) => (
-              <span key={s.name} className="flex items-center gap-1.5">
-                <span
-                  className="size-2 rounded-full"
-                  style={{
-                    backgroundColor:
-                      s.color || (i === 0 ? "#22d3ee" : i === 1 ? "#a855f7" : "#10b981"),
-                  }}
-                />
-                <span className="text-text-secondary text-[11px]">{s.name}</span>
-              </span>
-            ))}
+          <div className="flex items-center gap-3 text-[12px] font-mono">
+            {series.map((s, i) => {
+              const seriesColor =
+                s.color || LINEAR_SERIES_ORDER[i % LINEAR_SERIES_ORDER.length];
+              return (
+                <span key={s.name} className="flex items-center gap-1.5">
+                  <span
+                    className="size-2 rounded-[2px] shrink-0"
+                    style={{ backgroundColor: seriesColor }}
+                    aria-hidden="true"
+                  />
+                  <span className="text-[var(--text-muted)]">{s.name}</span>
+                </span>
+              );
+            })}
           </div>
         </div>
       )}

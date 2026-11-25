@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { X, Check, Key, Shield, Cloud, AlertCircle } from "lucide-react";
-import { GlassPanel } from "../common/GlassPanel";
-import { LinearButton } from "../linear/LinearButton";
+import { Check, Key, Shield, Cloud, AlertCircle } from "lucide-react";
+import { LinearButton, LinearDialog } from "../linear";
 import type { ProviderConfigPayload } from "../../types/ipc";
 
 export interface ModelSettingsModalProps {
@@ -63,98 +62,18 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
   const isStatusError = statusMsg?.startsWith("Failed") ?? false;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 font-sans select-none">
-      <GlassPanel recipe="modal" className="w-full max-w-lg space-y-4 p-5">
-        <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-          <div className="flex items-center gap-2">
-            <Cloud className="h-4 w-4 text-text-secondary" strokeWidth={1.5} />
-            <h3 className="text-sm font-medium text-text-primary">Cloud providers and API keys</h3>
-          </div>
-          <button
-            onClick={onClose}
-            title="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-text-secondary transition-colors duration-150 hover:bg-white/[0.05] hover:text-text-primary focus-ring"
-          >
-            <X className="h-4 w-4" strokeWidth={1.5} />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-4 gap-1 rounded-xl border border-border-subtle bg-black/20 p-1">
-          {[
-            { id: "anthropic", label: "Anthropic" },
-            { id: "openai", label: "OpenAI" },
-            { id: "gemini", label: "Gemini" },
-            { id: "openrouter", label: "OpenRouter" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => handleProviderChange(tab.id as typeof provider)}
-              className={`rounded-lg py-1.5 text-xs transition-colors duration-150 focus-ring ${
-                provider === tab.id
-                  ? "border border-border-glass bg-surface-solid text-text-primary font-medium"
-                  : "border border-transparent text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="space-y-3 text-xs">
-          <div>
-            <label className="mb-1 block text-text-secondary font-medium">Base endpoint URL</label>
-            <input
-              type="text"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              className="w-full rounded-xl border border-border-subtle bg-surface-solid px-3 py-2 font-mono text-xs text-text-primary placeholder:text-text-secondary focus-ring focus:border-border-glass"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 flex items-center justify-between text-text-secondary font-medium">
-              <span>API key</span>
-              <span className="flex items-center gap-1 text-[11px] text-text-secondary font-medium">
-                <Shield className="h-3.5 w-3.5 text-signal-success" strokeWidth={1.5} />
-                <span>Protected (0600 SQLite)</span>
-              </span>
-            </label>
-            <div className="relative">
-              <Key className="absolute left-3 top-2.5 h-3.5 w-3.5 text-text-secondary" strokeWidth={1.5} />
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Paste API key"
-                className="w-full rounded-xl border border-border-subtle bg-surface-solid py-2 pl-9 pr-3 font-mono text-xs text-text-primary placeholder:text-text-secondary focus-ring focus:border-border-glass"
-              />
-            </div>
-          </div>
-        </div>
-
-        {statusMsg && (
-          <div
-            className={`flex items-center gap-2 rounded-xl border p-3 text-xs ${
-              isStatusError
-                ? "border-signal-gate/30 bg-signal-gate-bg text-signal-gate"
-                : "border-border-subtle bg-white/[0.03] text-text-secondary"
-            }`}
-          >
-            <AlertCircle className="h-4 w-4 shrink-0" strokeWidth={1.5} />
-            <span>{statusMsg}</span>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between border-t border-border-subtle pt-3">
-          <span className="font-mono text-[11px] text-text-secondary font-medium">
-            Encrypted storage via provider_configs
+    <LinearDialog
+      open={isOpen}
+      onClose={onClose}
+      title="Cloud providers and API keys"
+      icon={<Cloud className="size-4 text-[var(--text-muted)]" strokeWidth={1.75} />}
+      footer={
+        <>
+          <span className="font-mono text-[12px] text-[var(--text-muted)]">
+            Protected SQLite storage (provider_configs)
           </span>
           <div className="flex items-center gap-2">
-            <LinearButton
-              variant="secondary"
-              size="sm"
-              onClick={onClose}
-            >
+            <LinearButton variant="secondary" size="sm" onClick={onClose}>
               Cancel
             </LinearButton>
             <LinearButton
@@ -163,12 +82,83 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
               disabled={saving}
               onClick={handleSave}
             >
-              <Check className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+              <Check className="size-3.5" strokeWidth={1.75} />
               <span>{saving ? "Saving" : "Save configuration"}</span>
             </LinearButton>
           </div>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div className="grid grid-cols-4 gap-1 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-1">
+          {[
+            { id: "anthropic", label: "Anthropic" },
+            { id: "openai", label: "OpenAI" },
+            { id: "gemini", label: "Gemini" },
+            { id: "openrouter", label: "OpenRouter" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => handleProviderChange(tab.id as typeof provider)}
+              className={`rounded-[4px] py-1.5 text-[12px] transition-colors duration-150 focus-ring cursor-pointer ${
+                provider === tab.id
+                  ? "border border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--text)] font-medium"
+                  : "border border-transparent text-[var(--text-muted)] hover:text-[var(--text)]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      </GlassPanel>
-    </div>
+
+        <div className="space-y-3 text-[12px]">
+          <div>
+            <label className="mb-1 block text-[var(--text-muted)] font-medium">
+              Base endpoint URL
+            </label>
+            <input
+              type="text"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-3 py-2 font-mono text-[12px] text-[var(--text)] placeholder:text-[var(--text-faint)] focus-ring focus:border-[var(--border-strong)]"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 flex items-center justify-between text-[var(--text-muted)] font-medium">
+              <span>API key</span>
+              <span className="flex items-center gap-1 text-[12px] text-[var(--text-muted)]">
+                <Shield className="size-3.5 text-[var(--accent-green)]" strokeWidth={1.75} />
+                <span>Protected (0600 SQLite)</span>
+              </span>
+            </label>
+            <div className="relative">
+              <Key className="absolute left-3 top-2.5 size-3.5 text-[var(--text-muted)]" strokeWidth={1.75} />
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                placeholder="Paste API key"
+                className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] py-2 pl-9 pr-3 font-mono text-[12px] text-[var(--text)] placeholder:text-[var(--text-faint)] focus-ring focus:border-[var(--border-strong)]"
+              />
+            </div>
+          </div>
+        </div>
+
+        {statusMsg && (
+          <div
+            className={`flex items-center gap-2 rounded-[6px] border p-3 text-[12px] ${
+              isStatusError
+                ? "border-[var(--accent-red)] bg-[var(--tint-red)] text-[var(--accent-red)]"
+                : "border-[var(--border)] bg-[var(--bg-surface-2)] text-[var(--text-muted)]"
+            }`}
+          >
+            <AlertCircle className="size-4 shrink-0" strokeWidth={1.75} />
+            <span>{statusMsg}</span>
+          </div>
+        )}
+      </div>
+    </LinearDialog>
   );
 };

@@ -16,7 +16,7 @@ import {
   ShieldAlert,
   Waves,
 } from "lucide-react";
-import { GlassPanel } from "../common/GlassPanel";
+import { LinearCard, LinearButton } from "../linear";
 import { PlanWorkflowViewer } from "./PlanWorkflowViewer";
 import { ActionApprovalCard } from "./ActionApprovalCard";
 import type {
@@ -185,38 +185,39 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
       {/* Header & Sub-Navigation */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-medium text-text-primary flex items-center gap-2">
-            <Layers className="h-4 w-4 text-text-secondary" />
+          <h2 className="text-[16px] font-semibold text-[var(--text)] flex items-center gap-2">
+            <Layers className="size-4 text-[var(--accent-blue)]" />
             Cross-app pipelines and workflows
           </h2>
-          <p className="mt-1 text-xs text-text-secondary">
+          <p className="mt-1 text-[12px] text-[var(--text-muted)]">
             End-to-end multi-app automation orchestrating ScreenStudio Pro, Audio Labs Pro, Easy Edits Pro, Net Watch Pro, and Agentic Tuneup Pro.
           </p>
         </div>
 
-        {/* Pipeline Selector Tabs */}
-        <div className="flex items-center gap-1 rounded-xl border border-border-subtle bg-white/[0.03] p-1 self-start">
+        <div className="flex items-center gap-1 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] p-1 self-start">
           <button
+            type="button"
             onClick={() => setActivePipelineTab("screencast")}
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+            className={`flex items-center gap-2 rounded-[4px] px-3 py-1.5 text-[12px] font-medium transition-colors cursor-pointer ${
               activePipelineTab === "screencast"
-                ? "bg-raised text-text-primary border border-border-subtle"
-                : "text-text-secondary hover:text-text-primary"
+                ? "bg-[var(--bg-surface-2)] text-[var(--text)] border border-[var(--border)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text)] border border-transparent"
             }`}
           >
-            <Film className="h-3.5 w-3.5" />
+            <Film className="size-3.5" />
             Screencast and audio (SSP → ALP → EEP)
           </button>
 
           <button
+            type="button"
             onClick={() => setActivePipelineTab("diagnostics")}
-            className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
+            className={`flex items-center gap-2 rounded-[4px] px-3 py-1.5 text-[12px] font-medium transition-colors cursor-pointer ${
               activePipelineTab === "diagnostics"
-                ? "bg-raised text-text-primary border border-border-subtle"
-                : "text-text-secondary hover:text-text-primary"
+                ? "bg-[var(--bg-surface-2)] text-[var(--text)] border border-[var(--border)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text)] border border-transparent"
             }`}
           >
-            <Activity className="h-3.5 w-3.5" />
+            <Activity className="size-3.5" />
             Diagnostics and cleanup (NWP → ATP)
           </button>
         </div>
@@ -224,62 +225,59 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
 
       {statusMessage && (
         <div
-          className={`flex items-center gap-2 rounded-xl p-3 text-xs border transition-colors ${
+          className={`flex items-center gap-2 rounded-[8px] p-3 text-[12px] border transition-colors ${
             statusMessage.startsWith("Error")
-              ? "border-signal-gate/40 bg-signal-gate-bg text-signal-gate"
-              : "border-signal-success/40 bg-signal-success-bg text-signal-success"
+              ? "border-[var(--accent-red)] bg-[var(--tint-red)] text-[var(--accent-red)]"
+              : "border-[var(--accent-green)] bg-[var(--tint-green)] text-[var(--accent-green)]"
           }`}
         >
           {statusMessage.startsWith("Error") ? (
-            <AlertCircle className="h-4 w-4 shrink-0" />
+            <AlertCircle className="size-4 shrink-0" />
           ) : (
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <CheckCircle2 className="size-4 shrink-0" />
           )}
           <span>{statusMessage}</span>
         </div>
       )}
 
-      {/* Main Studio View */}
       {activePipelineTab === "screencast" ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: Pipeline Configuration */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-7 space-y-4">
-            <GlassPanel recipe="pane" className="p-5 rounded-2xl border border-border-subtle space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+            <LinearCard level={1} className="p-5 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
                 <div className="flex items-center gap-2">
-                  <Film className="h-4 w-4 text-text-secondary" />
-                  <h3 className="text-sm font-medium text-text-primary">
+                  <Film className="size-4 text-[var(--text-muted)]" />
+                  <h3 className="text-[14px] font-semibold text-[var(--text)]">
                     Screencast cut and voice mastering pipeline
                   </h3>
                 </div>
-                <span className="text-[11px] font-mono text-text-secondary bg-white/[0.05] px-2 py-1 rounded-lg border border-border-subtle">
+                <span className="text-[12px] font-mono text-[var(--text-muted)] bg-[var(--bg-surface-2)] px-2 py-0.5 rounded-[4px] border border-[var(--border)]">
                   tasksheet/1 · Kahn DAG
                 </span>
               </div>
 
-              {/* Source Video & CET Sidecar */}
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-text-secondary mb-1">
+                  <label className="block text-[12px] font-medium text-[var(--text-muted)] mb-1">
                     ScreenStudio Pro recording file (.mkv)
                   </label>
                   <input
                     type="text"
                     value={recordingPath}
                     onChange={(e) => setRecordingPath(e.target.value)}
-                    className="w-full rounded-xl border border-border-subtle bg-black/40 px-3 py-2 text-xs font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                    className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-3 py-2 text-[12px] font-mono text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                   />
                 </div>
 
-                {/* CET Telemetry Source */}
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-medium text-text-secondary">
+                    <label className="text-[12px] font-medium text-[var(--text-muted)]">
                       Common event telemetry (.cet.jsonl)
                     </label>
                     <button
+                      type="button"
                       onClick={() => setUseCustomCet(!useCustomCet)}
-                      className="text-[11px] text-accent hover:text-accent/80 transition-colors"
+                      className="text-[12px] text-[var(--accent-blue)] hover:underline cursor-pointer"
                     >
                       {useCustomCet ? "Use file path" : "Edit telemetry JSONL"}
                     </button>
@@ -291,9 +289,9 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                         value={cetContent}
                         onChange={(e) => setCetContent(e.target.value)}
                         rows={5}
-                        className="w-full rounded-xl border border-border-subtle bg-surface-solid p-2.5 text-[11px] font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                        className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-2.5 text-[12px] font-mono text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                       />
-                      <span className="text-[11px] text-text-secondary font-medium">
+                      <span className="text-[12px] text-[var(--text-muted)]">
                         Silence intervals of 1200 ms or more trigger automated ripple cuts in EEP.
                       </span>
                     </div>
@@ -302,18 +300,17 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                       type="text"
                       value={cetPath}
                       onChange={(e) => setCetPath(e.target.value)}
-                      className="w-full rounded-xl border border-border-subtle bg-surface-solid px-3 py-2 text-xs font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-3 py-2 text-[12px] font-mono text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                     />
                   )}
                 </div>
               </div>
 
-              {/* Audio Enhancement Options (ALP) */}
-              <div className="pt-2 border-t border-border-subtle space-y-3">
+              <div className="pt-2 border-t border-[var(--border)] space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Mic className="h-4 w-4 text-text-secondary" />
-                    <span className="text-xs font-medium text-text-primary">
+                    <Mic className="size-4 text-[var(--text-muted)]" />
+                    <span className="text-[12px] font-medium text-[var(--text)]">
                       Audio Labs Pro voice isolation and mastering
                     </span>
                   </div>
@@ -321,18 +318,18 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                     type="checkbox"
                     checked={cleanAudio}
                     onChange={(e) => setCleanAudio(e.target.checked)}
-                    className="rounded border-border-glass bg-black/40 accent-accent"
+                    className="rounded-[4px] border-[var(--border)] bg-[var(--bg-surface-2)] accent-[var(--accent-blue)]"
                   />
                 </div>
 
                 {cleanAudio && (
                   <div className="grid grid-cols-2 gap-3 pl-6">
                     <div>
-                      <label className="block text-[11px] text-text-secondary mb-1">DSP cleanup preset</label>
+                      <label className="block text-[12px] text-[var(--text-muted)] mb-1">DSP cleanup preset</label>
                       <select
                         value={audioPreset}
                         onChange={(e) => setAudioPreset(e.target.value)}
-                        className="w-full rounded-lg border border-border-subtle bg-black/40 px-2 py-2 text-xs text-text-primary focus:outline-none focus:border-accent transition-colors"
+                        className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-2 py-2 text-[12px] text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                       >
                         <option value="voice_isolate">Voice isolate and de-hum</option>
                         <option value="podcast_master">Podcast mastering (-14 LUFS)</option>
@@ -341,11 +338,11 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                     </div>
 
                     <div>
-                      <label className="block text-[11px] text-text-secondary mb-1">Target EEP track</label>
+                      <label className="block text-[12px] text-[var(--text-muted)] mb-1">Target EEP track</label>
                       <select
                         value={timelineTrack}
                         onChange={(e) => setTimelineTrack(Number(e.target.value))}
-                        className="w-full rounded-lg border border-border-subtle bg-black/40 px-2 py-2 text-xs text-text-primary focus:outline-none focus:border-accent transition-colors"
+                        className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-2 py-2 text-[12px] text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                       >
                         <option value={1}>Track 1 (primary vocal)</option>
                         <option value={2}>Track 2 (background music)</option>
@@ -355,12 +352,11 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                 )}
               </div>
 
-              {/* Intro Narration Synthesis (ALP TTS) */}
-              <div className="pt-2 border-t border-border-subtle space-y-3">
+              <div className="pt-2 border-t border-[var(--border)] space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Waves className="h-4 w-4 text-text-secondary" />
-                    <span className="text-xs font-medium text-text-primary">
+                    <Waves className="size-4 text-[var(--text-muted)]" />
+                    <span className="text-[12px] font-medium text-[var(--text)]">
                       Synthesize intro narration via ALP TTS
                     </span>
                   </div>
@@ -368,7 +364,7 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                     type="checkbox"
                     checked={includeIntroScript}
                     onChange={(e) => setIncludeIntroScript(e.target.checked)}
-                    className="rounded border-border-glass bg-black/40 accent-accent"
+                    className="rounded-[4px] border-[var(--border)] bg-[var(--bg-surface-2)] accent-[var(--accent-blue)]"
                   />
                 </div>
 
@@ -378,135 +374,129 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                       value={introScript}
                       onChange={(e) => setIntroScript(e.target.value)}
                       rows={2}
-                      className="w-full rounded-lg border border-border-subtle bg-surface-solid p-2 text-xs text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-2 text-[12px] text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                     />
-                    <span className="text-[11px] text-text-secondary font-medium">
+                    <span className="text-[12px] text-[var(--text-muted)]">
                       Intro aligns at timeline start (00:00:00).
                     </span>
                   </div>
                 )}
               </div>
 
-              {/* Pipeline Launch Button */}
-              <div className="pt-3 border-t border-border-subtle">
-                <button
+              <div className="pt-3 border-t border-[var(--border)]">
+                <LinearButton
+                  variant="primary"
+                  size="lg"
                   onClick={handleRunScreencastPipeline}
                   disabled={isPlanning}
-                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent text-accent-text hover:bg-accent-hover px-4 py-3 text-xs font-semibold disabled:opacity-50 transition-colors active:scale-[0.98] cursor-pointer shadow-sm"
+                  className="w-full"
                 >
-                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <Play className="size-3.5 fill-current" />
                   <span>{isPlanning ? "Resolving DAG pipeline..." : "Generate screencast pipeline plan"}</span>
-                </button>
+                </LinearButton>
               </div>
-            </GlassPanel>
+            </LinearCard>
           </div>
 
-          {/* Right Column: Execution Stages Preview */}
           <div className="lg:col-span-5 space-y-4">
-            <GlassPanel recipe="pane" className="p-5 rounded-2xl border border-border-subtle space-y-4">
-              <h3 className="text-xs font-semibold text-text-primary flex items-center gap-2">
-                <Scissors className="h-3.5 w-3.5 text-accent" />
+            <LinearCard level={1} className="p-5 space-y-4">
+              <h3 className="text-[13px] font-semibold text-[var(--text)] flex items-center gap-2">
+                <Scissors className="size-3.5 text-[var(--accent-blue)]" />
                 Pipeline execution stages
               </h3>
 
-              <div className="space-y-3 font-sans text-xs">
-                {/* Stage 0 */}
-                <div className="rounded-xl border border-border-subtle bg-white/[0.03] p-3 space-y-1">
-                  <div className="flex items-center justify-between text-text-primary font-semibold">
+              <div className="space-y-3 font-sans text-[12px]">
+                <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3 space-y-1">
+                  <div className="flex items-center justify-between text-[var(--text)] font-semibold">
                     <span>Stage 0 · Inspection</span>
-                    <span className="text-[11px] font-mono font-semibold text-signal-success bg-signal-success-bg px-2 py-0.5 rounded-lg border border-signal-success/40">
+                    <span className="text-[12px] font-mono font-semibold text-[var(--accent-green)] bg-[var(--tint-green)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-green)]">
                       Tier 1 · Autonomous
                     </span>
                   </div>
-                  <p className="text-[11px] text-text-secondary font-medium">
-                    <span className="font-mono text-text-primary font-semibold">SSP</span>: Inspects video frames and audio channels in demo recording.
+                  <p className="text-[12px] text-[var(--text-muted)]">
+                    <span className="font-mono text-[var(--text)] font-semibold">SSP</span>: Inspects video frames and audio channels in demo recording.
                   </p>
                 </div>
 
-                <div className="flex justify-center text-text-secondary font-bold">
-                  <ArrowRight className="h-3.5 w-3.5 rotate-90" />
+                <div className="flex justify-center text-[var(--text-muted)]">
+                  <ArrowRight className="size-3.5 rotate-90" />
                 </div>
 
-                {/* Stage 1 */}
-                <div className="rounded-xl border border-border-subtle bg-white/[0.03] p-3 space-y-2">
-                  <div className="flex items-center justify-between text-text-primary font-semibold">
+                <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[var(--text)] font-semibold">
                     <span>Stage 1 · Audio processing</span>
-                    <span className="text-[11px] font-mono font-semibold text-signal-thinking bg-signal-thinking-bg px-2 py-0.5 rounded-lg border border-signal-thinking/40">
+                    <span className="text-[12px] font-mono font-semibold text-[var(--accent-amber)] bg-[var(--tint-amber)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-amber)]">
                       Tier 2 · Signed gate
                     </span>
                   </div>
-                  <div className="space-y-1 text-[11px] text-text-secondary font-medium">
+                  <div className="space-y-1 text-[12px] text-[var(--text-muted)]">
                     <p>
-                      <span className="font-mono text-text-primary font-semibold">ALP</span>: Audio cleanup and vocal isolation preset.
+                      <span className="font-mono text-[var(--text)] font-semibold">ALP</span>: Audio cleanup and vocal isolation preset.
                     </p>
                     {includeIntroScript && (
                       <p>
-                        <span className="font-mono text-text-primary font-semibold">ALP</span>: Synthesizes intro narration via TTS.
+                        <span className="font-mono text-[var(--text)] font-semibold">ALP</span>: Synthesizes intro narration via TTS.
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex justify-center text-text-secondary font-bold">
-                  <ArrowRight className="h-3.5 w-3.5 rotate-90" />
+                <div className="flex justify-center text-[var(--text-muted)]">
+                  <ArrowRight className="size-3.5 rotate-90" />
                 </div>
 
-                {/* Stage 2 */}
-                <div className="rounded-xl border border-border-subtle bg-white/[0.03] p-3 space-y-1">
-                  <div className="flex items-center justify-between text-text-primary font-semibold">
+                <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3 space-y-1">
+                  <div className="flex items-center justify-between text-[var(--text)] font-semibold">
                     <span>Stage 2 · Timeline cuts</span>
-                    <span className="text-[11px] font-mono font-semibold text-signal-thinking bg-signal-thinking-bg px-2 py-0.5 rounded-lg border border-signal-thinking/40">
+                    <span className="text-[12px] font-mono font-semibold text-[var(--accent-amber)] bg-[var(--tint-amber)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-amber)]">
                       Tier 2 · Signed gate
                     </span>
                   </div>
-                  <p className="text-[11px] text-text-secondary font-medium">
-                    <span className="font-mono text-text-primary font-semibold">EEP</span>: Applies automated ripple cuts to delete dead air silence intervals.
+                  <p className="text-[12px] text-[var(--text-muted)]">
+                    <span className="font-mono text-[var(--text)] font-semibold">EEP</span>: Applies automated ripple cuts to delete dead air silence intervals.
                   </p>
                 </div>
 
-                <div className="flex justify-center text-text-secondary font-bold">
-                  <ArrowRight className="h-3.5 w-3.5 rotate-90" />
+                <div className="flex justify-center text-[var(--text-muted)]">
+                  <ArrowRight className="size-3.5 rotate-90" />
                 </div>
 
-                {/* Stage 3 */}
-                <div className="rounded-xl border border-border-subtle bg-white/[0.03] p-3 space-y-1">
-                  <div className="flex items-center justify-between text-text-primary font-medium">
+                <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3 space-y-1">
+                  <div className="flex items-center justify-between text-[var(--text)] font-semibold">
                     <span>Stage 3 · Audio alignment</span>
-                    <span className="text-[11px] font-mono text-signal-thinking bg-signal-thinking-bg px-2 py-1 rounded-lg border border-signal-thinking/40">
+                    <span className="text-[12px] font-mono font-semibold text-[var(--accent-amber)] bg-[var(--tint-amber)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-amber)]">
                       Tier 2 · Signed gate
                     </span>
                   </div>
-                  <p className="text-[11px] text-text-secondary">
-                    <span className="font-mono text-text-primary">EEP</span>: Imports mastered audio and synchronizes intro narration to playhead.
+                  <p className="text-[12px] text-[var(--text-muted)]">
+                    <span className="font-mono text-[var(--text)] font-semibold">EEP</span>: Imports mastered audio and synchronizes intro narration to playhead.
                   </p>
                 </div>
               </div>
-            </GlassPanel>
+            </LinearCard>
           </div>
         </div>
       ) : (
-        /* Diagnostics Pipeline View */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-7 space-y-4">
-            <GlassPanel recipe="pane" className="p-5 rounded-2xl border border-border-subtle space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+            <LinearCard level={1} className="p-5 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
                 <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-text-secondary" />
-                  <h3 className="text-sm font-medium text-text-primary">
+                  <Activity className="size-4 text-[var(--text-muted)]" />
+                  <h3 className="text-[14px] font-semibold text-[var(--text)]">
                     System health and storage optimization
                   </h3>
                 </div>
-                <span className="text-[11px] font-mono text-signal-gate bg-signal-gate-bg px-2 py-1 rounded-lg border border-signal-gate/40">
+                <span className="text-[12px] font-mono text-[var(--accent-red)] bg-[var(--tint-red)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-red)]">
                   Tier 3 · Destructive gate
                 </span>
               </div>
 
-              {/* Live Telemetry Overview Cards */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-border-subtle bg-black/40 p-3 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-text-secondary">
+                <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[12px] font-mono text-[var(--text-muted)]">
                     <span>Network sockets (NWP)</span>
-                    <span className="text-accent">{liveConnections} active</span>
+                    <span className="text-[var(--accent-blue)]">{liveConnections} active</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -515,27 +505,27 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                       max={200}
                       value={liveConnections}
                       onChange={(e) => setLiveConnections(Number(e.target.value))}
-                      className="w-20 rounded-lg border border-border-subtle bg-black/40 px-2 py-1 text-xs font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-20 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] px-2 py-1 text-[12px] font-mono text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                     />
-                    <span className="text-[11px] text-text-secondary font-mono">sockets</span>
+                    <span className="text-[12px] text-[var(--text-muted)] font-mono">sockets</span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-text-secondary font-mono pt-1 border-t border-border-subtle font-medium">
+                  <div className="flex items-center justify-between text-[12px] text-[var(--text-muted)] font-mono pt-1 border-t border-[var(--border)]">
                     <span>Bandwidth:</span>
                     <input
                       type="number"
                       value={totalBandwidth}
                       step={10}
                       onChange={(e) => setTotalBandwidth(Number(e.target.value))}
-                      className="w-24 rounded-lg border border-border-subtle bg-surface-solid px-2 py-1 text-[11px] font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-24 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] px-2 py-1 text-[12px] font-mono text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                     />
                     <span>kbps</span>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-border-subtle bg-surface-solid p-3 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-text-secondary font-medium">
+                <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[12px] font-mono text-[var(--text-muted)]">
                     <span>Storage space (ATP)</span>
-                    <span className="text-text-primary font-semibold">{diskFreeGb} GB free</span>
+                    <span className="text-[var(--text)] font-semibold">{diskFreeGb} GB free</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <input
@@ -543,29 +533,28 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                       value={diskFreeGb}
                       step={1}
                       onChange={(e) => setDiskFreeGb(Number(e.target.value))}
-                      className="w-20 rounded-lg border border-border-subtle bg-surface-solid px-2 py-1 text-xs font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-20 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] px-2 py-1 text-[12px] font-mono text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                     />
-                    <span className="text-[11px] text-text-secondary font-mono font-medium">GB free</span>
+                    <span className="text-[12px] text-[var(--text-muted)] font-mono">GB free</span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-text-secondary font-mono pt-1 border-t border-border-subtle font-medium">
+                  <div className="flex items-center justify-between text-[12px] text-[var(--text-muted)] font-mono pt-1 border-t border-[var(--border)]">
                     <span>Used /home:</span>
                     <input
                       type="number"
                       value={diskUsedGb}
                       step={1}
                       onChange={(e) => setDiskUsedGb(Number(e.target.value))}
-                      className="w-20 rounded-lg border border-border-subtle bg-surface-solid px-2 py-1 text-[11px] font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-20 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] px-2 py-1 text-[12px] font-mono text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                     />
                     <span>GB</span>
                   </div>
                 </div>
               </div>
 
-              {/* Detected Reclaimable Caches */}
-              <div className="space-y-2 pt-2 border-t border-border-subtle">
+              <div className="space-y-2 pt-2 border-t border-[var(--border)]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-text-primary flex items-center gap-2">
-                    <Trash2 className="h-3.5 w-3.5" />
+                  <span className="text-[12px] font-medium text-[var(--text)] flex items-center gap-2">
+                    <Trash2 className="size-3.5" />
                     Reclaimable build artifacts and package caches
                   </span>
                   <div className="flex items-center gap-2">
@@ -574,89 +563,86 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
                       value={cacheBloatMb}
                       step={100}
                       onChange={(e) => setCacheBloatMb(Number(e.target.value))}
-                      className="w-20 rounded-lg border border-border-subtle bg-black/40 px-2 py-1 text-xs font-medium font-mono text-text-primary focus:outline-none focus:border-accent transition-colors"
+                      className="w-20 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-2 py-1 text-[12px] font-mono text-[var(--text)] focus-ring focus:border-[var(--border-strong)]"
                     />
-                    <span className="text-xs font-medium text-text-secondary font-mono">MB bloat</span>
+                    <span className="text-[12px] text-[var(--text-muted)] font-mono">MB bloat</span>
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-border-subtle bg-black/40 p-3 space-y-2">
+                <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3 space-y-2">
                   {reclaimableItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-xs font-mono text-text-secondary">
+                    <div key={idx} className="flex items-center justify-between text-[12px] font-mono text-[var(--text-muted)]">
                       <span>{item}</span>
-                      <span className="text-[11px] text-signal-success">Purgeable</span>
+                      <span className="text-[var(--accent-green)]">Purgeable</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Safety Arbiter Tier 3 Notice */}
-              <div className="rounded-xl border border-signal-gate/30 bg-signal-gate-bg p-3 flex items-start gap-3">
-                <ShieldAlert className="h-4 w-4 text-signal-gate shrink-0" />
-                <div className="text-xs text-text-secondary">
-                  <span className="font-medium text-signal-gate">Tier 3 safety policy:</span> Parallel scans run autonomously, but cache purge strictly halts execution until a signed confirmation token is authorized.
+              <div className="rounded-[8px] border border-[var(--accent-red)] bg-[var(--tint-red)] p-3 flex items-start gap-3">
+                <ShieldAlert className="size-4 text-[var(--accent-red)] shrink-0" />
+                <div className="text-[12px] text-[var(--text-muted)]">
+                  <span className="font-medium text-[var(--accent-red)]">Tier 3 safety policy:</span> Parallel scans run autonomously, but cache purge strictly halts execution until a signed confirmation token is authorized.
                 </div>
               </div>
 
-              {/* Action Button */}
-              <button
+              <LinearButton
+                variant="primary"
+                size="lg"
                 onClick={handleRunDiagnosticsPipeline}
                 disabled={isPlanning}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-accent text-accent-text hover:bg-accent/90 px-4 py-3 text-xs font-medium disabled:opacity-50 transition-colors active:scale-[0.98] cursor-pointer"
+                className="w-full"
               >
-                <Play className="h-3.5 w-3.5 fill-current" />
+                <Play className="size-3.5 fill-current" />
                 <span>{isPlanning ? "Planning diagnostic DAG" : "Execute health and cache diagnostic plan"}</span>
-              </button>
-            </GlassPanel>
+              </LinearButton>
+            </LinearCard>
           </div>
 
-          {/* Right Column: Parallel DAG Topology */}
           <div className="lg:col-span-5 space-y-4">
-            <GlassPanel recipe="pane" className="p-5 rounded-2xl border border-border-subtle space-y-4">
-              <h3 className="text-xs font-medium text-text-secondary flex items-center gap-2">
-                <Sliders className="h-3.5 w-3.5 text-text-secondary" />
+            <LinearCard level={1} className="p-5 space-y-4">
+              <h3 className="text-[13px] font-semibold text-[var(--text)] flex items-center gap-2">
+                <Sliders className="size-3.5 text-[var(--text-muted)]" />
                 Parallel execution topology
               </h3>
 
-              <div className="space-y-3 font-sans text-xs">
-                {/* Stage 0 Parallel */}
-                <div className="rounded-xl border border-border-subtle bg-white/[0.03] p-3 space-y-2">
-                  <div className="flex items-center justify-between text-text-primary font-medium">
+              <div className="space-y-3 font-sans text-[12px]">
+                <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[var(--text)] font-medium">
                     <span>Stage 0 · Parallel scans</span>
-                    <span className="text-[11px] font-mono text-signal-success bg-signal-success-bg px-2 py-1 rounded-lg border border-signal-success/40">
+                    <span className="text-[12px] font-mono text-[var(--accent-green)] bg-[var(--tint-green)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-green)]">
                       Tier 1 · Autonomous
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-2 text-[11px] text-text-secondary">
-                    <div className="rounded-lg bg-black/40 p-2 border border-border-subtle">
-                      <span className="font-mono text-text-primary font-medium block">NWP</span>
+                  <div className="grid grid-cols-2 gap-2 text-[12px] text-[var(--text-muted)]">
+                    <div className="rounded-[6px] bg-[var(--bg-surface)] p-2 border border-[var(--border)]">
+                      <span className="font-mono text-[var(--text)] font-medium block">NWP</span>
                       Scan live sockets and resolve peer hosts
                     </div>
-                    <div className="rounded-lg bg-black/40 p-2 border border-border-subtle">
-                      <span className="font-mono text-text-primary font-medium block">ATP</span>
+                    <div className="rounded-[6px] bg-[var(--bg-surface)] p-2 border border-[var(--border)]">
+                      <span className="font-mono text-[var(--text)] font-medium block">ATP</span>
                       Scan disk bloat and directory trees
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-center text-text-secondary font-bold">
-                  <ArrowRight className="h-3.5 w-3.5 rotate-90" />
+                <div className="flex justify-center text-[var(--text-muted)]">
+                  <ArrowRight className="size-3.5 rotate-90" />
                 </div>
 
-                {/* Stage 1 Destructive Gate */}
-                <div className="rounded-xl border border-signal-gate/40 bg-signal-gate-bg p-3 space-y-2">
-                  <div className="flex items-center justify-between text-signal-gate font-medium">
+                <div className="rounded-[8px] border border-[var(--accent-red)] bg-[var(--tint-red)] p-3 space-y-2">
+                  <div className="flex items-center justify-between text-[var(--accent-red)] font-medium">
                     <span>Stage 1 · Cache purge gate</span>
-                    <span className="text-[11px] font-mono text-signal-gate bg-signal-gate-bg px-2 py-1 rounded-lg border border-signal-gate/40">
+                    <span className="text-[12px] font-mono text-[var(--accent-red)] bg-[var(--tint-red)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-red)]">
                       Tier 3 · Signed token
                     </span>
                   </div>
-                  <p className="text-[11px] text-text-secondary leading-relaxed">
-                    <span className="font-mono text-text-primary">ATP</span>: Purges {(cacheBloatMb / 1024).toFixed(1)} GB of build caches after human signature verification.
+                  <p className="text-[12px] text-[var(--text-muted)] leading-relaxed">
+                    <span className="font-mono text-[var(--text)]">ATP</span>: Purges {(cacheBloatMb / 1024).toFixed(1)} GB of build caches after human signature verification.
                   </p>
                 </div>
               </div>
-            </GlassPanel>
+            </LinearCard>
           </div>
         </div>
       )}

@@ -16,7 +16,7 @@ import {
   Activity,
   ShieldAlert,
 } from "lucide-react";
-import { GlassPanel } from "../common/GlassPanel";
+import { LinearCard, LinearButton } from "../linear";
 import type { MissionHistorySummary, ReplayMissionResponse } from "../../types/ipc";
 
 interface MissionHistoryViewProps {
@@ -95,38 +95,37 @@ export const MissionHistoryView: React.FC<MissionHistoryViewProps> = ({
       {/* Top Header & Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-medium text-text-primary flex items-center gap-2">
-            <History className="h-4 w-4" />
+          <h2 className="text-[16px] font-semibold text-[var(--text)] flex items-center gap-2">
+            <History className="size-4 text-[var(--accent-blue)]" />
             <span>Mission history and event replay</span>
           </h2>
-          <p className="text-xs text-text-secondary mt-1">
+          <p className="text-[12px] text-[var(--text-muted)] mt-1">
             Event-sourced audit trail and deterministic state reconstruction from SQLite run logs
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Search Input */}
           <div className="relative">
-            <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-secondary" />
+            <Search className="size-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search past missions..."
-              className="bg-surface-solid border border-border-subtle rounded-xl pl-8 pr-3 py-2 text-xs font-medium text-text-primary placeholder:text-text-secondary focus:outline-none focus:border-accent w-48 transition-colors"
+              className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-[6px] pl-8 pr-3 py-1.5 text-[12px] text-[var(--text)] placeholder:text-[var(--text-faint)] focus-ring focus:border-[var(--border-strong)] w-48"
             />
           </div>
 
-          {/* Status Filter */}
-          <div className="flex items-center rounded-xl bg-white/[0.03] border border-border-subtle p-0.5 text-xs font-medium">
+          <div className="flex items-center rounded-[6px] bg-[var(--bg-surface)] border border-[var(--border)] p-0.5 text-[12px] font-medium">
             {["all", "completed", "failed"].map((st) => (
               <button
                 key={st}
+                type="button"
                 onClick={() => setStatusFilter(st)}
-                className={`px-2 py-1 rounded-lg transition-colors cursor-pointer ${
+                className={`px-2 py-1 rounded-[4px] transition-colors cursor-pointer ${
                   statusFilter === st
-                    ? "bg-accent-muted text-accent font-semibold"
-                    : "text-text-secondary hover:text-text-primary"
+                    ? "bg-[var(--tint-blue)] text-[var(--accent-blue)] font-semibold"
+                    : "text-[var(--text-muted)] hover:text-[var(--text)]"
                 }`}
               >
                 {st.charAt(0).toUpperCase() + st.slice(1)}
@@ -134,29 +133,23 @@ export const MissionHistoryView: React.FC<MissionHistoryViewProps> = ({
             ))}
           </div>
 
-          {/* Refresh Button */}
-          <button
-            onClick={fetchHistory}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border-subtle bg-white/[0.03] hover:bg-white/[0.06] text-xs font-semibold text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-          >
-            <RotateCcw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+          <LinearButton variant="secondary" size="sm" onClick={fetchHistory}>
+            <RotateCcw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
             <span>Refresh</span>
-          </button>
+          </LinearButton>
         </div>
       </div>
 
-      {/* Main Content Grid: Mission Cards List (Left) + Selected Replay Overview (Right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Mission History Cards (2 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-3">
           {loading && missions.length === 0 ? (
-            <div className="flex items-center justify-center p-12 text-xs font-medium text-text-secondary">
+            <div className="flex items-center justify-center p-12 text-[12px] text-[var(--text-muted)]">
               Loading mission records...
             </div>
           ) : filteredMissions.length === 0 ? (
-            <GlassPanel recipe="pane" className="p-8 text-center text-xs font-medium text-text-secondary rounded-2xl">
+            <LinearCard level={1} className="p-8 text-center text-[12px] text-[var(--text-muted)]">
               No missions found matching your filter
-            </GlassPanel>
+            </LinearCard>
           ) : (
             filteredMissions.map((m) => {
               const isSelected = selectedMission?.id === m.id;
@@ -164,103 +157,98 @@ export const MissionHistoryView: React.FC<MissionHistoryViewProps> = ({
               const isFailed = m.status === "failed" || m.status === "failed_final";
 
               return (
-                <GlassPanel
+                <LinearCard
                   key={m.id}
-                  recipe="pane"
-                  className={`p-4 rounded-2xl border transition-colors cursor-pointer ${
+                  level={1}
+                  className={`p-5 cursor-pointer ${
                     isSelected
-                      ? "border-accent/30 bg-accent-muted"
-                      : "border-border-subtle hover:border-border-glass"
+                      ? "border-[var(--accent-blue)] bg-[var(--tint-blue)]"
+                      : ""
                   }`}
                   onClick={() => handleInspectReplay(m)}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-2 min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-[11px] font-semibold text-text-secondary">
+                        <span className="font-mono text-[12px] font-semibold text-[var(--text-muted)]">
                           #{m.id}
                         </span>
-                        <h3 className="text-sm font-semibold text-text-primary truncate">
+                        <h3 className="text-[14px] font-semibold text-[var(--text)] truncate">
                           {m.title || "Untitled Mission"}
                         </h3>
 
-                        {/* Status Chip */}
                         <span
-                          className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-semibold border ${
+                          className={`flex items-center gap-1 px-2 py-0.5 rounded-[4px] text-[12px] font-semibold border ${
                             isSuccess
-                              ? "bg-signal-success-bg text-signal-success border-signal-success/30"
+                              ? "bg-[var(--tint-green)] text-[var(--accent-green)] border-[var(--accent-green)]"
                               : isFailed
-                              ? "bg-signal-gate-bg text-signal-gate border-signal-gate/30"
-                              : "bg-accent-muted text-accent border-accent/30"
+                              ? "bg-[var(--tint-red)] text-[var(--accent-red)] border-[var(--accent-red)]"
+                              : "bg-[var(--tint-blue)] text-[var(--accent-blue)] border-[var(--accent-blue)]"
                           }`}
                         >
                           {isSuccess ? (
-                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <CheckCircle2 className="size-3.5" />
                           ) : isFailed ? (
-                            <XCircle className="h-3.5 w-3.5" />
+                            <XCircle className="size-3.5" />
                           ) : (
-                            <Clock className="h-3.5 w-3.5" />
+                            <Clock className="size-3.5" />
                           )}
                           <span className="capitalize">{m.status.replace("_", " ")}</span>
                         </span>
                       </div>
 
-                      <p className="text-xs text-text-secondary font-medium line-clamp-2 leading-relaxed">
+                      <p className="text-[12px] text-[var(--text-muted)] line-clamp-2 leading-relaxed">
                         {m.userGoal}
                       </p>
 
-                      {/* Metadata Row */}
-                      <div className="flex flex-wrap items-center gap-3 pt-1 text-[11px] font-mono text-text-secondary font-medium">
-                        <span className="flex items-center gap-1 text-text-secondary">
-                          <Clock className="h-3 w-3" />
+                      <div className="flex flex-wrap items-center gap-3 pt-1 text-[12px] font-mono text-[var(--text-muted)]">
+                        <span className="flex items-center gap-1">
+                          <Clock className="size-3" />
                           <span>{formatDuration(m.durationMs)}</span>
                         </span>
 
-                        <span className="flex items-center gap-1 text-text-secondary">
-                          <Layers className="h-3 w-3" />
+                        <span className="flex items-center gap-1">
+                          <Layers className="size-3" />
                           <span>{m.outcome}</span>
                         </span>
 
                         {m.fallbackCount > 0 ? (
-                          <span className="flex items-center gap-1 text-signal-thinking bg-signal-thinking-bg px-2 py-0.5 rounded-lg border border-signal-thinking/30">
-                            <AlertTriangle className="h-3.5 w-3.5" />
+                          <span className="flex items-center gap-1 text-[var(--accent-amber)] bg-[var(--tint-amber)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-amber)]">
+                            <AlertTriangle className="size-3.5" />
                             <span>
                               {m.fallbackCount} fallback{m.fallbackCount === 1 ? "" : "s"}
                             </span>
                           </span>
                         ) : (
-                          <span className="text-text-secondary">0 fallbacks</span>
+                          <span>0 fallbacks</span>
                         )}
 
                         <span className="flex items-center gap-1">
-                          <Cpu className="h-3 w-3" />
+                          <Cpu className="size-3" />
                           <span>{m.activeModelId}</span>
                         </span>
 
-                        {/* Health Summary Metrics (GAP-CLOSURE-PLAN.md §14.11) */}
                         {m.peakCpuPct > 0 && (
-                          <span className="flex items-center gap-1 text-accent bg-accent-muted px-2 py-0.5 rounded-lg border border-accent/30 font-semibold">
-                            <Activity className="h-3.5 w-3.5" />
+                          <span className="flex items-center gap-1 text-[var(--accent-blue)] bg-[var(--tint-blue)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-blue)] font-semibold">
+                            <Activity className="size-3.5" />
                             <span>{Math.round(m.peakCpuPct)}% CPU</span>
                           </span>
                         )}
 
                         {m.peakRamBytes > 0 && (
-                          <span className="text-text-secondary">
-                            {(m.peakRamBytes / 1024 / 1024).toFixed(0)} MB RAM
-                          </span>
+                          <span>{(m.peakRamBytes / 1024 / 1024).toFixed(0)} MB RAM</span>
                         )}
 
                         {m.peakTempCelsius > 0 && (
-                          <span className="flex items-center gap-1 text-signal-gate bg-signal-gate-bg px-2 py-0.5 rounded-lg border border-signal-gate/30 font-semibold">
-                            <Flame className="h-3.5 w-3.5" />
+                          <span className="flex items-center gap-1 text-[var(--accent-red)] bg-[var(--tint-red)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-red)] font-semibold">
+                            <Flame className="size-3.5" />
                             <span>{Math.round(m.peakTempCelsius)}°C</span>
                           </span>
                         )}
 
                         {m.governorInterventions > 0 && (
-                          <span className="flex items-center gap-1 text-signal-thinking bg-signal-thinking-bg px-2 py-0.5 rounded-lg border border-signal-thinking/30">
-                            <ShieldAlert className="h-3.5 w-3.5" />
+                          <span className="flex items-center gap-1 text-[var(--accent-amber)] bg-[var(--tint-amber)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-amber)]">
+                            <ShieldAlert className="size-3.5" />
                             <span>
                               {m.governorInterventions} governor action
                               {m.governorInterventions === 1 ? "" : "s"}
@@ -270,35 +258,34 @@ export const MissionHistoryView: React.FC<MissionHistoryViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Replay Timeline Button */}
-                    <button
-                      type="button"
+                    <LinearButton
+                      variant="secondary"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         onReplayMission(m.id);
                       }}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-accent-muted hover:bg-accent/20 text-accent border border-accent/30 text-xs font-medium transition-colors cursor-pointer shrink-0 mt-0.5"
+                      className="shrink-0 mt-0.5"
                     >
-                      <Play className="h-3 w-3 fill-current" />
+                      <Play className="size-3 fill-current" />
                       <span>Timeline</span>
-                    </button>
+                    </LinearButton>
                   </div>
-                </GlassPanel>
+                </LinearCard>
               );
             })
           )}
         </div>
 
-        {/* Right Column: Deterministic Replay Inspector Card (1 col) */}
         <div>
-          <GlassPanel recipe="pane" className="p-5 rounded-2xl border border-border-subtle space-y-4 sticky top-6">
-            <div className="flex items-center justify-between border-b border-border-subtle pb-3">
+          <LinearCard level={1} className="p-5 space-y-4 sticky top-6">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
               <div className="flex items-center gap-2">
-                <RotateCcw className={`h-4 w-4 ${replaying ? "animate-spin" : ""}`} />
-                <h3 className="text-sm font-medium text-text-primary">Event replay state</h3>
+                <RotateCcw className={`size-4 ${replaying ? "animate-spin" : ""}`} />
+                <h3 className="text-[14px] font-semibold text-[var(--text)]">Event replay state</h3>
               </div>
               {selectedMission && (
-                <span className="font-mono text-xs text-text-secondary">
+                <span className="font-mono text-[12px] text-[var(--text-muted)]">
                   Mission #{selectedMission.id}
                 </span>
               )}
@@ -307,77 +294,78 @@ export const MissionHistoryView: React.FC<MissionHistoryViewProps> = ({
             {selectedMission ? (
               <div className="space-y-4">
                 <div>
-                  <h4 className="text-xs font-medium text-text-primary">{selectedMission.title}</h4>
-                  <p className="text-[11px] text-text-secondary mt-1">{selectedMission.userGoal}</p>
+                  <h4 className="text-[13px] font-semibold text-[var(--text)]">{selectedMission.title}</h4>
+                  <p className="text-[12px] text-[var(--text-muted)] mt-1">{selectedMission.userGoal}</p>
                 </div>
 
-                <div className="rounded-xl bg-black/30 border border-border-subtle p-3 space-y-2 text-xs">
-                  <div className="flex justify-between items-center text-text-secondary">
+                <div className="rounded-[6px] bg-[var(--bg-surface-2)] border border-[var(--border)] p-3 space-y-2 text-[12px]">
+                  <div className="flex justify-between items-center text-[var(--text-muted)]">
                     <span>Rebuilt mission state</span>
-                    <span className="font-mono font-medium text-signal-success">
+                    <span className="font-mono font-medium text-[var(--accent-green)]">
                       {replayData?.missionState || selectedMission.status}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center text-text-secondary">
+                  <div className="flex justify-between items-center text-[var(--text-muted)]">
                     <span>Event log depth</span>
-                    <span className="font-mono text-text-primary">
+                    <span className="font-mono text-[var(--text)]">
                       {replayData?.events.length ?? 0} events
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center text-text-secondary">
+                  <div className="flex justify-between items-center text-[var(--text-muted)]">
                     <span>Execution duration</span>
-                    <span className="font-mono text-text-primary">
+                    <span className="font-mono text-[var(--text)]">
                       {formatDuration(selectedMission.durationMs)}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center text-text-secondary">
+                  <div className="flex justify-between items-center text-[var(--text-muted)]">
                     <span>Fallback recoveries</span>
-                    <span className="font-mono text-signal-thinking">
+                    <span className="font-mono text-[var(--accent-amber)]">
                       {selectedMission.fallbackCount}
                     </span>
                   </div>
                 </div>
 
-                {/* Health & Governor Summary Box (GAP-CLOSURE-PLAN.md §14.11) */}
-                <div className="rounded-xl bg-black/30 border border-border-subtle p-3 space-y-2 text-xs">
-                  <div className="text-[11px] font-medium text-text-secondary flex items-center gap-1.5 pb-1 border-b border-border-subtle">
-                    <Activity className="h-3.5 w-3.5" />
+                <div className="rounded-[6px] bg-[var(--bg-surface-2)] border border-[var(--border)] p-3 space-y-2 text-[12px]">
+                  <div className="text-[12px] font-medium text-[var(--text-muted)] flex items-center gap-1.5 pb-1 border-b border-[var(--border)]">
+                    <Activity className="size-3.5" />
                     <span>Resource and governor footprint</span>
                   </div>
 
-                  <div className="flex justify-between items-center text-text-secondary">
+                  <div className="flex justify-between items-center text-[var(--text-muted)]">
                     <span>Peak CPU</span>
-                    <span className="font-mono text-text-primary tabular">
+                    <span className="font-mono text-[var(--text)] tabular-nums">
                       {selectedMission.peakCpuPct > 0 ? `${selectedMission.peakCpuPct.toFixed(1)}%` : "0.0%"}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center text-text-secondary">
+                  <div className="flex justify-between items-center text-[var(--text-muted)]">
                     <span>Peak RAM</span>
-                    <span className="font-mono text-text-primary tabular">
+                    <span className="font-mono text-[var(--text)] tabular-nums">
                       {selectedMission.peakRamBytes > 0
                         ? `${(selectedMission.peakRamBytes / 1024 / 1024).toFixed(0)} MB`
                         : "0 MB"}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center text-text-secondary">
+                  <div className="flex justify-between items-center text-[var(--text-muted)]">
                     <span>Peak temperature</span>
-                    <span className="font-mono text-text-primary tabular">
+                    <span className="font-mono text-[var(--text)] tabular-nums">
                       {selectedMission.peakTempCelsius > 0
                         ? `${selectedMission.peakTempCelsius.toFixed(1)}°C`
                         : "N/A"}
                     </span>
                   </div>
 
-                  <div className="flex justify-between items-center text-text-secondary">
+                  <div className="flex justify-between items-center text-[var(--text-muted)]">
                     <span>Governor interventions</span>
                     <span
-                      className={`font-mono font-medium tabular ${
-                        selectedMission.governorInterventions > 0 ? "text-signal-thinking" : "text-signal-success"
+                      className={`font-mono font-medium tabular-nums ${
+                        selectedMission.governorInterventions > 0
+                          ? "text-[var(--accent-amber)]"
+                          : "text-[var(--accent-green)]"
                       }`}
                     >
                       {selectedMission.governorInterventions}
@@ -385,22 +373,22 @@ export const MissionHistoryView: React.FC<MissionHistoryViewProps> = ({
                   </div>
                 </div>
 
-                {/* Open Full Timeline */}
-                <button
-                  type="button"
+                <LinearButton
+                  variant="secondary"
+                  size="md"
                   onClick={() => onReplayMission(selectedMission.id)}
-                  className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] text-text-primary text-xs font-medium border border-border-subtle transition-colors cursor-pointer"
+                  className="w-full"
                 >
                   <span>Open full DAG timeline</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
+                  <ArrowRight className="size-3.5" />
+                </LinearButton>
               </div>
             ) : (
-              <div className="py-8 text-center text-xs font-medium text-text-secondary">
+              <div className="py-8 text-center text-[12px] text-[var(--text-muted)]">
                 Select a mission from the list to inspect its event replay.
               </div>
             )}
-          </GlassPanel>
+          </LinearCard>
         </div>
       </div>
     </div>

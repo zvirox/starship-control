@@ -1,6 +1,30 @@
-import React from 'react';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { LinearCard } from './LinearCard';
+import React from "react";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { LinearCard } from "./LinearCard";
+import { Sparkline } from "./Sparkline";
+
+export type AccentTone =
+  | "blue"
+  | "sky"
+  | "green"
+  | "red"
+  | "amber"
+  | "teal"
+  | "pink"
+  | "purple"
+  | "orange";
+
+const TONE_CLASSES: Record<AccentTone, { bg: string; fg: string }> = {
+  blue: { bg: "bg-[var(--tint-blue)]", fg: "text-[var(--accent-blue)]" },
+  sky: { bg: "bg-[var(--tint-sky)]", fg: "text-[var(--accent-sky)]" },
+  green: { bg: "bg-[var(--tint-green)]", fg: "text-[var(--accent-green)]" },
+  red: { bg: "bg-[var(--tint-red)]", fg: "text-[var(--accent-red)]" },
+  amber: { bg: "bg-[var(--tint-amber)]", fg: "text-[var(--accent-amber)]" },
+  teal: { bg: "bg-[var(--tint-teal)]", fg: "text-[var(--accent-teal)]" },
+  pink: { bg: "bg-[var(--tint-pink)]", fg: "text-[var(--accent-pink)]" },
+  purple: { bg: "bg-[var(--tint-purple)]", fg: "text-[var(--accent-purple)]" },
+  orange: { bg: "bg-[var(--tint-orange)]", fg: "text-[var(--accent-orange)]" },
+};
 
 export interface StatCardProps {
   title: string;
@@ -11,9 +35,9 @@ export interface StatCardProps {
     positive?: boolean;
     comparison?: string;
   };
+  sparkline?: number[];
   icon?: React.ReactNode;
-  iconBgColor?: string;
-  iconColor?: string;
+  tone?: AccentTone;
   className?: string;
 }
 
@@ -22,58 +46,69 @@ export const StatCard: React.FC<StatCardProps> = ({
   value,
   unit,
   delta,
+  sparkline,
   icon,
-  iconBgColor = 'bg-[#3355FF]/10',
-  iconColor = 'text-[#3355FF]',
-  className = '',
+  tone = "blue",
+  className = "",
 }) => {
+  const chipTone = TONE_CLASSES[tone];
+  const deltaPositive = delta?.positive ?? true;
+
   return (
-    <LinearCard level={1} className={`p-5 flex flex-col justify-between ${className}`}>
-      {/* Top row: Title and Icon Chip */}
+    <LinearCard
+      level={1}
+      className={`p-5 flex flex-col justify-between gap-3 ${className}`}
+    >
+      {/* Top row: 12px uppercase label + solid precomputed icon chip */}
       <div className="flex items-center justify-between gap-2">
-        <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)] select-none">
+        <span className="text-[12px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
           {title}
         </span>
         {icon && (
           <div
-            className={`size-8 rounded-full flex items-center justify-center shrink-0 ${iconBgColor} ${iconColor}`}
+            className={`size-7 rounded-[6px] flex items-center justify-center shrink-0 ${chipTone.bg} ${chipTone.fg}`}
           >
             {icon}
           </div>
         )}
       </div>
 
-      {/* Middle row: Big Metric + Unit */}
-      <div className="mt-3 flex items-baseline gap-1.5">
-        <span className="text-[28px] font-semibold tracking-tight text-[var(--text)] tabular-nums font-sans leading-none">
-          {value}
-        </span>
-        {unit && (
-          <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
-            {unit}
+      {/* Middle row: 28px semibold tabular figure + 12px muted unit + sparkline */}
+      <div className="flex items-end justify-between gap-2 min-w-0">
+        <div className="flex items-baseline gap-1.5 min-w-0 flex-wrap">
+          <span className="text-[28px] font-semibold tracking-tight text-[var(--text)] tabular-nums leading-none shrink-0">
+            {value}
           </span>
+          {unit && (
+            <span className="text-[12px] font-medium text-[var(--text-muted)] whitespace-nowrap">
+              {unit}
+            </span>
+          )}
+        </div>
+        {sparkline && sparkline.length > 1 && (
+          <Sparkline data={sparkline} positive={deltaPositive} width={60} height={24} />
         )}
       </div>
 
-      {/* Bottom row: Delta Pill + Comparison */}
+      {/* Bottom row: solid delta pill (4px radius) + comparison */}
       {delta && (
-        <div className="mt-4 flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <span
-            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium tabular-nums ${
-              delta.positive
-                ? 'bg-[#22C55E]/10 text-[#22C55E]'
-                : 'bg-[#F43F5E]/10 text-[#F43F5E]'
+            className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-[4px] text-[12px] font-medium tabular-nums whitespace-nowrap shrink-0 ${
+              deltaPositive
+                ? "bg-[var(--tint-green)] text-[var(--accent-green)]"
+                : "bg-[var(--tint-red)] text-[var(--accent-red)]"
             }`}
           >
-            {delta.positive ? (
-              <ArrowUpRight className="size-3 shrink-0" />
+            {deltaPositive ? (
+              <ArrowUpRight className="size-3 shrink-0" aria-hidden="true" />
             ) : (
-              <ArrowDownRight className="size-3 shrink-0" />
+              <ArrowDownRight className="size-3 shrink-0" aria-hidden="true" />
             )}
             {delta.value}
           </span>
           {delta.comparison && (
-            <span className="text-xs text-[var(--text-muted)] truncate">
+            <span className="text-[12px] text-[var(--text-muted)] truncate">
               {delta.comparison}
             </span>
           )}

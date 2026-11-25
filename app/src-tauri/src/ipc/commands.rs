@@ -225,10 +225,10 @@ pub async fn cmd_toggle_hud(app: AppHandle) -> Result<bool, CoreError> {
 #[tauri::command]
 pub async fn cmd_resize_hud(app: AppHandle, expanded: bool) -> Result<(), CoreError> {
     if let Some(hud_window) = app.get_webview_window("hud") {
-        let target_height = if expanded { 240.0 } else { 76.0 };
+        let target_height = if expanded { 240.0 } else { 64.0 };
         hud_window
             .set_size(Size::Logical(LogicalSize {
-                width: 520.0,
+                width: 420.0,
                 height: target_height,
             }))
             .map_err(|e| {

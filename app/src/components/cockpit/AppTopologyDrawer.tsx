@@ -124,25 +124,26 @@ export const AppTopologyDrawer: React.FC = () => {
   };
 
   return (
-    <aside className="flex w-[280px] shrink-0 flex-col justify-between border-l border-border-subtle bg-raised/60 p-3 select-none">
+    <aside className="hidden xl:flex w-[250px] shrink-0 flex-col justify-between border-l border-[var(--border)] bg-[var(--bg-surface)] p-3 select-none">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-text-primary">Connected apps</span>
-            <p className="text-[11px] font-medium text-text-secondary">Desktop integrations</p>
+            <span className="text-[12px] font-semibold text-[var(--text)]">Connected apps</span>
+            <p className="text-[12px] text-[var(--text-muted)]">Desktop integrations</p>
           </div>
           <button
+            type="button"
             onClick={fetchApps}
             title="Refresh app connections"
-            className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/[0.03] text-text-secondary transition-colors duration-150 hover:bg-white/[0.05] hover:text-text-primary focus-ring cursor-pointer"
+            className="flex size-7 items-center justify-center rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] text-[var(--text-muted)] transition-colors duration-150 hover:border-[var(--border-strong)] hover:text-[var(--text)] focus-ring cursor-pointer"
           >
-            <RotateCw className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <RotateCw className="size-3.5" strokeWidth={1.75} />
           </button>
         </div>
 
         <div className="space-y-2">
           {loading ? (
-            <div className="p-4 text-center text-[11px] font-medium text-text-secondary">Checking connections...</div>
+            <div className="p-4 text-center text-[12px] text-[var(--text-muted)]">Checking connections...</div>
           ) : (
             apps.map((app) => {
               const isLive = app.mode === "live_gui";
@@ -151,26 +152,26 @@ export const AppTopologyDrawer: React.FC = () => {
               return (
                 <div
                   key={app.appId}
-                  className="hairline rounded-xl bg-white/[0.03] p-3 transition-colors duration-150 hover:border-border-glass"
+                  className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3 transition-colors duration-150 hover:border-[var(--border-strong)]"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <div className="truncate text-xs font-semibold text-text-primary">{app.displayName}</div>
-                      <div className="mt-1 flex items-center gap-2 text-[11px] font-medium">
+                      <div className="truncate text-[12px] font-semibold text-[var(--text)]">{app.displayName}</div>
+                      <div className="mt-1 flex items-center gap-2 text-[12px]">
                         {isLive ? (
                           <>
-                            <span className="h-1.5 w-1.5 rounded-full bg-signal-success" />
-                            <span className="text-signal-success font-semibold">Active GUI</span>
+                            <span className="size-1.5 rounded-full bg-[var(--accent-green)]" />
+                            <span className="text-[var(--accent-green)] font-medium">Active GUI</span>
                           </>
                         ) : isHeadless ? (
                           <>
-                            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                            <span className="text-accent font-semibold">Service</span>
+                            <span className="size-1.5 rounded-full bg-[var(--accent-blue)]" />
+                            <span className="text-[var(--accent-blue)] font-medium">Service</span>
                           </>
                         ) : (
                           <>
-                            <span className="h-1.5 w-1.5 rounded-full bg-text-secondary" />
-                            <span className="text-text-secondary">Standby</span>
+                            <span className="size-1.5 rounded-full bg-[var(--text-faint)]" />
+                            <span className="text-[var(--text-muted)]">Standby</span>
                           </>
                         )}
                       </div>
@@ -178,14 +179,15 @@ export const AppTopologyDrawer: React.FC = () => {
 
                     <div className="shrink-0 text-right">
                       {app.latencyMs !== null ? (
-                        <span className="font-mono text-[11px] tabular text-text-secondary font-medium">
+                        <span className="font-mono text-[12px] tabular-nums text-[var(--text-muted)]">
                           {app.latencyMs.toFixed(1)}ms
                         </span>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => handleLaunch(app.appId)}
                           disabled={launchingAppId === app.appId}
-                          className="rounded-lg border border-border-subtle bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-text-secondary transition-colors duration-150 hover:bg-white/[0.05] hover:text-text-primary focus-ring cursor-pointer"
+                          className="rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface)] px-2 py-1 text-[12px] font-medium text-[var(--text-muted)] transition-colors duration-150 hover:border-[var(--border-strong)] hover:text-[var(--text)] focus-ring cursor-pointer"
                         >
                           {launchingAppId === app.appId ? "Launching" : "Launch"}
                         </button>
@@ -198,35 +200,35 @@ export const AppTopologyDrawer: React.FC = () => {
           )}
         </div>
 
-        <div className="space-y-2 border-t border-border-subtle pt-3">
-          <span className="text-xs font-semibold text-text-primary">System resources</span>
+        <div className="space-y-2 border-t border-[var(--border)] pt-3">
+          <span className="text-[12px] font-semibold text-[var(--text)]">System resources</span>
           <div className="grid grid-cols-2 gap-2">
-            <div className="hairline rounded-xl bg-white/[0.03] p-2.5">
-              <span className="block text-[11px] font-medium text-text-secondary">VRAM usage</span>
-              <span className="font-mono text-[11px] font-semibold tabular text-text-primary">5.4 / 12 GB</span>
+            <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-2.5">
+              <span className="block text-[12px] text-[var(--text-muted)]">VRAM usage</span>
+              <span className="font-mono text-[12px] font-semibold tabular-nums text-[var(--text)]">5.4 / 12 GB</span>
             </div>
-            <div className="hairline rounded-xl bg-white/[0.03] p-2.5">
-              <span className="block text-[11px] font-medium text-text-secondary">CPU load</span>
-              <span className="font-mono text-[11px] font-semibold tabular text-sky-400">12%</span>
+            <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-2.5">
+              <span className="block text-[12px] text-[var(--text-muted)]">CPU load</span>
+              <span className="font-mono text-[12px] font-semibold tabular-nums text-[var(--accent-sky)]">12%</span>
             </div>
-            <div className="hairline rounded-xl bg-white/[0.03] p-2.5">
-              <span className="block text-[11px] font-medium text-text-secondary">Session tokens</span>
-              <span className="font-mono text-[11px] font-semibold tabular text-text-primary">1,420</span>
+            <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-2.5">
+              <span className="block text-[12px] text-[var(--text-muted)]">Session tokens</span>
+              <span className="font-mono text-[12px] font-semibold tabular-nums text-[var(--text)]">1,420</span>
             </div>
-            <div className="hairline rounded-xl bg-white/[0.03] p-2.5">
-              <span className="block text-[11px] font-medium text-text-secondary">Estimated cost</span>
-              <span className="font-mono text-[11px] font-semibold tabular text-signal-success">$0.00</span>
+            <div className="rounded-[8px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-2.5">
+              <span className="block text-[12px] text-[var(--text-muted)]">Est. cost</span>
+              <span className="font-mono text-[12px] font-semibold tabular-nums text-[var(--accent-green)]">$0.00</span>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border-subtle pt-2.5 text-[11px] text-text-secondary font-medium">
+      <div className="flex items-center justify-between border-t border-[var(--border)] pt-2.5 text-[12px] text-[var(--text-muted)]">
         <span className="flex items-center gap-2">
-          <Shield className="h-3.5 w-3.5 text-signal-success" strokeWidth={1.5} />
-          <span>Local execution verified</span>
+          <Shield className="size-3.5 text-[var(--accent-green)]" strokeWidth={1.75} />
+          <span>Local verified</span>
         </span>
-        <span className="font-mono text-text-primary font-medium">Isolated</span>
+        <span className="font-mono text-[var(--text)] font-medium">Isolated</span>
       </div>
     </aside>
   );

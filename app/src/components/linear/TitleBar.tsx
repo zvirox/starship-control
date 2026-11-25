@@ -1,58 +1,54 @@
-import React, { useEffect, useState } from 'react';
-import { Minus, Square, Copy, X, Sun, Moon } from 'lucide-react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import React, { useEffect, useState } from "react";
+import { Minus, Square, Copy, X } from "lucide-react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { ThemeToggle } from "./ThemeToggle";
 
 export interface TitleBarProps {
   title?: string;
   version?: string;
   icon?: React.ReactNode;
-  compact?: boolean;
   className?: string;
-  onThemeToggle?: (theme: 'dark' | 'light') => void;
-  children?: React.ReactNode;
 }
 
 export const TitleBar: React.FC<TitleBarProps> = ({
-  title = 'Starship Control',
-  version = 'v0.1.0-beta.1',
+  title = "Starship Control",
+  version = "0.1.0-beta.1",
   icon,
-  compact = false,
-  className = '',
-  onThemeToggle,
-  children,
+  className = "",
 }) => {
   const [isMaximized, setIsMaximized] = useState(false);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
-    // Sync initial theme
-    const currentTheme =
-      (document.documentElement.getAttribute('data-theme') as 'dark' | 'light') ||
-      (document.documentElement.classList.contains('light') ? 'light' : 'dark');
-    setTheme(currentTheme);
-
     try {
-      if (typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window)) {
+      if (
+        typeof window !== "undefined" &&
+        ("__TAURI_INTERNALS__" in window || "__TAURI__" in window)
+      ) {
         const appWindow = getCurrentWindow();
-        appWindow.isMaximized().then(setIsMaximized).catch(() => {});
+        appWindow
+          .isMaximized()
+          .then(setIsMaximized)
+          .catch(() => {});
         const unlisten = appWindow.onResized(() => {
-          appWindow.isMaximized().then(setIsMaximized).catch(() => {});
+          appWindow
+            .isMaximized()
+            .then(setIsMaximized)
+            .catch(() => {});
         });
         return () => {
           unlisten.then((fn) => fn()).catch(() => {});
         };
       }
     } catch {
-      // Running outside Tauri runtime
+      // Running in standalone browser preview
     }
   }, []);
 
   const handleMinimize = async () => {
     try {
-      const appWindow = getCurrentWindow();
-      await appWindow.minimize();
+      await getCurrentWindow().minimize();
     } catch {
-      // fallback
+      // Ignore outside Tauri runtime
     }
   };
 
@@ -60,8 +56,7 @@ export const TitleBar: React.FC<TitleBarProps> = ({
     try {
       const appWindow = getCurrentWindow();
       await appWindow.toggleMaximize();
-      const maximized = await appWindow.isMaximized();
-      setIsMaximized(maximized);
+      setIsMaximized(await appWindow.isMaximized());
     } catch {
       setIsMaximized((prev) => !prev);
     }
@@ -69,133 +64,93 @@ export const TitleBar: React.FC<TitleBarProps> = ({
 
   const handleClose = async () => {
     try {
-      const appWindow = getCurrentWindow();
-      await appWindow.close();
+      await getCurrentWindow().close();
     } catch {
-      // fallback
+      // Ignore outside Tauri runtime
     }
   };
 
-  const toggleTheme = () => {
-    const nextTheme: 'dark' | 'light' = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    document.documentElement.setAttribute('data-theme', nextTheme);
-    if (nextTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
-    }
-    localStorage.setItem('theme', nextTheme);
-    window.dispatchEvent(new CustomEvent('theme-changed', { detail: { theme: nextTheme } }));
-    onThemeToggle?.(nextTheme);
-  };
-
-  if (compact) {
-    return (
-      <div
-        role="region"
-        aria-label="Window Title Bar"
-        data-tauri-drag-region
-        className={`h-8 w-full select-none bg-[var(--bg-app)] border-b border-[var(--border)] flex items-center justify-between px-2.5 text-[var(--text)] ${className}`}
-      >
-        <div data-tauri-drag-region className="flex items-center gap-2">
-          {icon && <span className="size-4 shrink-0 flex items-center justify-center">{icon}</span>}
-          <span className="text-xs font-semibold tracking-tight">{title}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="size-6 inline-flex items-center justify-center rounded text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-surface-2)] transition-colors cursor-pointer"
-          >
-            {theme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
-          </button>
-          <button
-            onClick={handleClose}
-            aria-label="Close window"
-            className="size-6 inline-flex items-center justify-center rounded text-[var(--text-muted)] hover:bg-[#F43F5E] hover:text-white transition-colors cursor-pointer"
-          >
-            <X className="size-3.5" />
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const displayVersion = version.startsWith("v") ? version : `v${version}`;
 
   return (
-    <div
+    <header
       role="region"
       aria-label="Window Title Bar"
       data-tauri-drag-region
       className={`h-10 w-full select-none bg-[var(--bg-app)] border-b border-[var(--border)] flex items-center justify-between px-3 text-[var(--text)] shrink-0 z-50 ${className}`}
     >
-      {/* Left branding */}
-      <div data-tauri-drag-region className="flex items-center gap-2 shrink-0">
-        {icon && <span className="size-5 shrink-0 flex items-center justify-center">{icon}</span>}
-        <span className="text-[13px] font-semibold tracking-tight text-[var(--text)]">{title}</span>
+      {/* Left: 20px logo, app name, 11px 4px-radius version tag */}
+      <div
+        data-tauri-drag-region
+        className="flex items-center gap-2 shrink-0"
+      >
+        <span className="size-5 shrink-0 flex items-center justify-center">
+          {icon ?? (
+            <img
+              src="/logo.png"
+              alt=""
+              className="size-5 object-contain"
+              aria-hidden="true"
+            />
+          )}
+        </span>
+        <span className="text-[13px] font-semibold tracking-tight text-[var(--text)]">
+          {title}
+        </span>
         {version && (
-          <span className="px-1.5 py-0.5 text-[11px] font-mono rounded bg-[var(--bg-surface-2)] border border-[var(--border)] text-[var(--text-muted)] select-none">
-            {version}
+          <span className="px-1.5 py-0.5 text-[11px] leading-none font-mono rounded-[4px] bg-[var(--bg-surface-2)] border border-[var(--border)] text-[var(--text-muted)]">
+            {displayVersion}
           </span>
         )}
       </div>
 
-      {/* Center empty drag region */}
+      {/* Center: empty drag region (double-click toggles maximize) */}
       <div
         data-tauri-drag-region
         onDoubleClick={handleToggleMaximize}
-        className="flex-1 h-full min-w-8 flex items-center justify-center cursor-default"
+        className="flex-1 h-full min-w-8 cursor-default"
       />
 
-      {/* Right controls */}
+      {/* Right: theme toggle, divider, minimize, maximize/restore, close (#E5484D on hover) */}
       <div className="flex items-center gap-1 shrink-0">
-        {children}
-        {children && <div className="w-px h-3.5 bg-[var(--border)] mx-1" />}
-        {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-          title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          className="size-7 inline-flex items-center justify-center rounded-md text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-surface-2)] transition-colors cursor-pointer"
-        >
-          {theme === 'dark' ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
-        </button>
+        <ThemeToggle />
 
-        {/* Thin divider */}
-        <div className="w-px h-3.5 bg-[var(--border)] mx-1" />
+        <div className="w-px h-3.5 bg-[var(--border)] mx-1" aria-hidden="true" />
 
-        {/* Minimize */}
         <button
+          type="button"
           onClick={handleMinimize}
           aria-label="Minimize window"
           title="Minimize"
-          className="size-7 inline-flex items-center justify-center rounded-md text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-surface-2)] transition-colors cursor-pointer"
+          className="size-7 inline-flex items-center justify-center rounded-[6px] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-surface-2)] transition-colors duration-150 ease-out focus-ring cursor-pointer"
         >
-          <Minus className="size-3.5" />
+          <Minus className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
         </button>
 
-        {/* Maximize / Restore */}
         <button
+          type="button"
           onClick={handleToggleMaximize}
-          aria-label={isMaximized ? 'Restore window' : 'Maximize window'}
-          title={isMaximized ? 'Restore' : 'Maximize'}
-          className="size-7 inline-flex items-center justify-center rounded-md text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-surface-2)] transition-colors cursor-pointer"
+          aria-label={isMaximized ? "Restore window" : "Maximize window"}
+          title={isMaximized ? "Restore" : "Maximize"}
+          className="size-7 inline-flex items-center justify-center rounded-[6px] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--bg-surface-2)] transition-colors duration-150 ease-out focus-ring cursor-pointer"
         >
-          {isMaximized ? <Copy className="size-3" /> : <Square className="size-3" />}
+          {isMaximized ? (
+            <Copy className="size-3" strokeWidth={1.75} aria-hidden="true" />
+          ) : (
+            <Square className="size-3" strokeWidth={1.75} aria-hidden="true" />
+          )}
         </button>
 
-        {/* Close */}
         <button
+          type="button"
           onClick={handleClose}
           aria-label="Close window"
           title="Close"
-          className="size-7 inline-flex items-center justify-center rounded-md text-[var(--text-muted)] hover:bg-[#F43F5E] hover:text-white transition-colors cursor-pointer"
+          className="close-btn size-7 inline-flex items-center justify-center rounded-[6px] text-[var(--text-muted)] transition-colors duration-150 ease-out focus-ring cursor-pointer"
         >
-          <X className="size-3.5" />
+          <X className="size-3.5" strokeWidth={1.75} aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </header>
   );
 };

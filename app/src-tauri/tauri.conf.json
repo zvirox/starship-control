@@ -14,10 +14,10 @@
       {
         "label": "main",
         "title": "Starship Control — Cockpit",
-        "width": 1200,
+        "width": 1280,
         "height": 800,
-        "minWidth": 960,
-        "minHeight": 600,
+        "minWidth": 1024,
+        "minHeight": 640,
         "resizable": true,
         "decorations": false,
         "transparent": false,
@@ -27,11 +27,12 @@
       {
         "label": "hud",
         "title": "Starship Control — HUD",
-        "width": 520,
-        "height": 76,
+        "width": 420,
+        "height": 64,
         "resizable": false,
         "decorations": false,
-        "transparent": true,
+        "transparent": false,
+        "shadow": true,
         "alwaysOnTop": true,
         "skipTaskbar": true,
         "visible": false,
@@ -39,7 +40,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: asset: https:; connect-src 'self' ipc: http://localhost:* ws://localhost:*"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: asset: https:; connect-src 'self' ipc: http://localhost:* ws://localhost:*"
     }
   },
   "bundle": {

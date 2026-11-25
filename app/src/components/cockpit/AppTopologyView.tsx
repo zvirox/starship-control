@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Activity, Play, RotateCw, Wifi, X } from "lucide-react";
-import { GlassPanel } from "../common/GlassPanel";
+import { LinearCard, LinearButton, StatusPill } from "../linear";
 import type {
   AppTopologyEntry,
   ListAppsResponse,
@@ -189,58 +189,53 @@ export const AppTopologyView: React.FC<AppTopologyViewProps> = ({ onLaunchSucces
   };
 
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto p-6 gap-6 font-sans">
-      {/* Header Banner */}
+    <div className="flex-1 flex flex-col overflow-y-auto bg-[var(--bg-app)] p-5 gap-5 font-sans">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <Activity className="h-4 w-4 text-accent" strokeWidth={1.5} />
-            <h1 className="text-lg font-medium text-text-primary">
+            <Activity className="size-4 text-[var(--accent-blue)]" strokeWidth={1.75} />
+            <h1 className="text-[16px] font-semibold text-[var(--text)]">
               Ecosystem app topology matrix
             </h1>
           </div>
-          <p className="text-xs text-text-secondary">
+          <p className="text-[12px] text-[var(--text-muted)]">
             Zero-configuration discovery via{" "}
-            <code className="font-mono text-text-primary">
-              $XDG_DATA_HOME/starship/plugins/
-            </code>{" "}
-            with kernel <code className="font-mono text-text-primary">SO_PEERCRED</code> validation
+            <code className="font-mono text-[var(--text)]">$XDG_DATA_HOME/starship/plugins/</code>{" "}
+            with kernel <code className="font-mono text-[var(--text)]">SO_PEERCRED</code> validation
           </p>
         </div>
 
-        <button
+        <LinearButton
+          variant="secondary"
+          size="sm"
           onClick={() => {
             setRefreshing(true);
             fetchApps();
           }}
           disabled={refreshing}
-          className="flex items-center gap-2 rounded-lg border border-border-subtle bg-white/[0.03] hover:bg-white/10 px-3 py-2 text-xs text-text-secondary transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:text-accent"
         >
-          <RotateCw
-            className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`}
-            strokeWidth={1.5}
-          />
+          <RotateCw className={`size-3.5 ${refreshing ? "animate-spin" : ""}`} strokeWidth={1.75} />
           <span>Scan plugins</span>
-        </button>
+        </LinearButton>
       </div>
 
       {errorMsg && (
-        <div className="flex items-center justify-between rounded-xl border border-signal-gate/30 bg-signal-gate-bg p-3 text-xs text-text-primary">
+        <div className="flex items-center justify-between rounded-[8px] border border-[var(--accent-red)] bg-[var(--tint-red)] p-3 text-[12px] text-[var(--text)]">
           <span>{errorMsg}</span>
           <button
+            type="button"
             onClick={() => setErrorMsg(null)}
             aria-label="Dismiss error"
-            className="text-signal-gate hover:text-text-primary transition-colors focus-visible:outline-none focus-visible:text-accent"
+            className="text-[var(--accent-red)] hover:text-[var(--text)] transition-colors focus-ring cursor-pointer"
           >
-            <X className="h-4 w-4" strokeWidth={1.5} />
+            <X className="size-4" strokeWidth={1.75} />
           </button>
         </div>
       )}
 
-      {/* Grid of Apps */}
       {loading ? (
-        <div className="flex items-center justify-center p-12 text-text-secondary text-xs">
-          <RotateCw className="h-4 w-4 animate-spin mr-2 text-accent" strokeWidth={1.5} />
+        <div className="flex items-center justify-center p-12 text-[var(--text-muted)] text-[12px]">
+          <RotateCw className="size-4 animate-spin mr-2 text-[var(--accent-blue)]" strokeWidth={1.75} />
           <span>Scanning XDG manifests and active sockets</span>
         </div>
       ) : (
@@ -251,114 +246,94 @@ export const AppTopologyView: React.FC<AppTopologyViewProps> = ({ onLaunchSucces
             const isOffline = app.mode === "offline";
 
             return (
-              <GlassPanel
+              <LinearCard
                 key={app.appId}
-                recipe="pane"
-                className="p-5 flex flex-col justify-between gap-4 hover:border-border-glass transition-colors"
+                level={1}
+                className="p-5 flex flex-col justify-between gap-4"
               >
-                {/* Header */}
                 <div className="space-y-3">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-text-primary">
+                        <span className="text-[14px] font-semibold text-[var(--text)]">
                           {app.displayName}
                         </span>
-                        <span className="quiet-chip font-mono font-medium">v{app.version}</span>
+                        <span className="quiet-chip font-mono">v{app.version}</span>
                       </div>
-                      <span className="text-[11px] font-mono text-text-secondary font-medium">
+                      <span className="text-[12px] font-mono text-[var(--text-muted)]">
                         appId: {app.appId}
                       </span>
                     </div>
 
-                    {/* Mode Badge */}
-                    <div className="flex items-center gap-1.5">
-                      {isLiveGui ? (
-                        <span className="quiet-chip font-semibold text-signal-success border-signal-success/30">
-                          <span className="h-1.5 w-1.5 rounded-full bg-signal-success" />
-                          Live GUI
-                        </span>
-                      ) : isHeadless ? (
-                        <span className="quiet-chip font-semibold text-accent border-accent/30">
-                          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
-                          Headless CLI
-                        </span>
-                      ) : (
-                        <span className="quiet-chip font-semibold text-signal-gate border-signal-gate/30">
-                          <span className="h-1.5 w-1.5 rounded-full bg-signal-gate" />
-                          Offline
-                        </span>
-                      )}
-                    </div>
+                    <StatusPill
+                      label={isLiveGui ? "Live GUI" : isHeadless ? "Headless" : "Offline"}
+                      status={isLiveGui ? "online" : isHeadless ? "active" : "alert"}
+                    />
                   </div>
 
-                  {/* Latency & Transport Details */}
-                  <div className="rounded-xl border border-border-subtle bg-surface-solid p-3 gap-2 font-mono text-xs">
-                    <div className="flex items-center justify-between text-text-secondary">
-                      <span className="text-[11px] text-text-secondary font-medium">Transport:</span>
-                      <span className="text-text-primary font-medium">
+                  <div className="rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] p-3 space-y-1 font-mono text-[12px]">
+                    <div className="flex items-center justify-between text-[var(--text-muted)]">
+                      <span>Transport:</span>
+                      <span className="text-[var(--text)] font-medium">
                         {isLiveGui ? "Unix socket (SO_PEERCRED)" : "Stdio MCP pipe"}
                       </span>
                     </div>
                     {app.latencyMs !== null && (
-                      <div className="flex items-center justify-between text-text-secondary">
-                        <span className="text-[11px] text-text-secondary font-medium">Round-trip ping:</span>
-                        <span className="text-accent tabular font-semibold">{app.latencyMs.toFixed(2)} ms</span>
+                      <div className="flex items-center justify-between text-[var(--text-muted)]">
+                        <span>Round-trip ping:</span>
+                        <span className="text-[var(--accent-blue)] tabular-nums font-semibold">
+                          {app.latencyMs.toFixed(2)} ms
+                        </span>
                       </div>
                     )}
                     {app.socketPath && (
-                      <div
-                        className="text-[11px] text-text-secondary font-medium truncate"
-                        title={app.socketPath}
-                      >
+                      <div className="text-[var(--text-muted)] truncate" title={app.socketPath}>
                         Socket: {app.socketPath}
                       </div>
                     )}
                   </div>
 
-                  {/* Capabilities Chips */}
                   <div className="space-y-2">
-                    <span className="block text-[11px] font-semibold text-text-primary">
+                    <span className="block text-[12px] font-medium text-[var(--text)]">
                       Exposed MCP capabilities
                     </span>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {Object.keys(app.capabilities).length > 0 ? (
                         Object.keys(app.capabilities).map((cap) => (
                           <span
                             key={cap}
-                            className="inline-flex items-center rounded-lg border border-border-subtle bg-white/[0.03] px-2 py-1 font-mono text-[11px] text-text-primary font-medium"
+                            className="inline-flex items-center rounded-[4px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-2 py-0.5 font-mono text-[12px] text-[var(--text)]"
                           >
                             {cap}
                           </span>
                         ))
                       ) : (
-                        <span className="text-[11px] text-text-secondary font-medium">Standard tools</span>
+                        <span className="text-[12px] text-[var(--text-muted)]">Standard tools</span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="pt-3 border-t border-border-subtle flex items-center gap-2">
-                  <button
+                <div className="pt-3 border-t border-[var(--border)] flex items-center gap-2">
+                  <LinearButton
+                    variant="secondary"
+                    size="sm"
                     onClick={() => handlePing(app.appId)}
                     disabled={pingingAppId === app.appId || isOffline}
-                    className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-border-subtle bg-white/[0.03] hover:bg-white/10 px-3 py-2 text-xs text-text-secondary transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:text-accent"
+                    className="flex-1"
                   >
-                    <Wifi className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    <Wifi className="size-3.5" strokeWidth={1.75} />
                     <span>Ping socket</span>
-                  </button>
+                  </LinearButton>
 
-                  <button
+                  <LinearButton
+                    variant={isLiveGui ? "secondary" : "primary"}
+                    size="sm"
                     onClick={() => handleLaunch(app.appId)}
                     disabled={launchingAppId === app.appId}
-                    className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors focus-visible:outline-none disabled:opacity-40 ${
-                      isLiveGui
-                        ? "border border-border-subtle bg-white/[0.03] hover:bg-white/10 text-text-primary"
-                        : "bg-accent hover:bg-accent-hover text-accent-text"
-                    }`}
+                    className="flex-1"
                   >
-                    <Play className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    <Play className="size-3.5" strokeWidth={1.75} />
                     <span>
                       {launchingAppId === app.appId
                         ? "Connecting"
@@ -366,9 +341,9 @@ export const AppTopologyView: React.FC<AppTopologyViewProps> = ({ onLaunchSucces
                         ? "Focus GUI"
                         : "Launch GUI"}
                     </span>
-                  </button>
+                  </LinearButton>
                 </div>
-              </GlassPanel>
+              </LinearCard>
             );
           })}
         </div>

@@ -9,7 +9,7 @@ import {
   Layers,
   ArrowRight,
 } from "lucide-react";
-import { GlassPanel } from "../common/GlassPanel";
+import { LinearCard } from "../linear";
 import type { PlanActiveResponse, PlanStepDetail } from "../../types/ipc";
 
 export interface PlanWorkflowViewerProps {
@@ -22,29 +22,28 @@ export const PlanWorkflowViewer: React.FC<PlanWorkflowViewerProps> = ({
   onSelectStep,
 }) => {
   return (
-    <GlassPanel recipe="pane" className="p-4 rounded-2xl border border-border-subtle mb-4">
-      {/* Plan Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+    <LinearCard level={1} className="p-5 mb-4">
+      <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
         <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-text-secondary" />
-          <h4 className="font-sans text-xs font-medium text-text-primary">
+          <Layers className="size-4 text-[var(--text-muted)]" />
+          <h4 className="font-sans text-[13px] font-semibold text-[var(--text)]">
             {plan.title || "Execution plan (tasksheet/1)"}
           </h4>
-          <span className="text-[11px] font-mono text-text-secondary bg-white/[0.05] px-2 py-1 rounded-lg border border-border-subtle">
+          <span className="text-[12px] font-mono text-[var(--text-muted)] bg-[var(--bg-surface-2)] px-2 py-0.5 rounded-[4px] border border-[var(--border)]">
             v{plan.version}
           </span>
         </div>
 
-        <div className="flex items-center gap-2 text-[11px] font-mono text-text-secondary">
+        <div className="flex items-center gap-2 text-[12px] font-mono text-[var(--text-muted)]">
           <span className="flex items-center gap-1">
             Status
             <span
               className={`font-medium ${
                 plan.status === "completed"
-                  ? "text-signal-success"
+                  ? "text-[var(--accent-green)]"
                   : plan.status === "pending_approval"
-                  ? "text-signal-gate"
-                  : "text-signal-thinking"
+                  ? "text-[var(--accent-red)]"
+                  : "text-[var(--accent-amber)]"
               }`}
             >
               {plan.status.replace("_", " ")}
@@ -53,13 +52,12 @@ export const PlanWorkflowViewer: React.FC<PlanWorkflowViewerProps> = ({
         </div>
       </div>
 
-      <p className="mt-2 text-xs text-text-secondary font-sans leading-relaxed">
+      <p className="mt-2 text-[12px] text-[var(--text-muted)] font-sans leading-relaxed">
         {plan.summary}
       </p>
 
-      {/* Steps Pipeline Visualizer */}
       <div className="mt-4 space-y-2">
-        <div className="text-[11px] font-medium text-text-secondary">
+        <div className="text-[12px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
           Plan steps
         </div>
 
@@ -75,37 +73,36 @@ export const PlanWorkflowViewer: React.FC<PlanWorkflowViewerProps> = ({
               <div
                 key={step.stepId}
                 onClick={() => onSelectStep?.(step)}
-                className={`flex items-center justify-between rounded-xl p-3 border transition-colors cursor-pointer ${
+                className={`flex items-center justify-between rounded-[8px] p-3 border transition-colors cursor-pointer ${
                   isPendingApproval
-                    ? "border-signal-gate/40 bg-signal-gate-bg"
+                    ? "border-[var(--accent-red)] bg-[var(--tint-red)]"
                     : isRunning
-                    ? "border-accent/40 bg-accent-muted"
+                    ? "border-[var(--accent-blue)] bg-[var(--tint-blue)]"
                     : isCompleted
-                    ? "border-signal-success/30 bg-signal-success-bg"
+                    ? "border-[var(--border)] bg-[var(--tint-green)]"
                     : isFailed
-                    ? "border-signal-gate/30 bg-signal-gate-bg"
-                    : "border-border-subtle bg-white/[0.03] hover:bg-white/[0.05]"
+                    ? "border-[var(--accent-red)] bg-[var(--tint-red)]"
+                    : "border-[var(--border)] bg-[var(--bg-surface-2)] hover:border-[var(--border-strong)]"
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  {/* Step Index Badge */}
                   <div
-                    className={`flex h-6 w-6 items-center justify-center rounded-lg font-mono text-xs font-medium ${
+                    className={`flex size-6 items-center justify-center rounded-[6px] font-mono text-[12px] font-medium ${
                       isCompleted
-                        ? "bg-signal-success-bg text-signal-success"
+                        ? "bg-[var(--tint-green)] text-[var(--accent-green)]"
                         : isRunning
-                        ? "bg-accent-muted text-accent"
+                        ? "bg-[var(--tint-blue)] text-[var(--accent-blue)]"
                         : isPendingApproval
-                        ? "bg-signal-gate-bg text-signal-gate"
-                        : "bg-raised text-text-secondary"
+                        ? "bg-[var(--tint-red)] text-[var(--accent-red)]"
+                        : "bg-[var(--bg-surface)] text-[var(--text-muted)]"
                     }`}
                   >
                     {isCompleted ? (
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <CheckCircle2 className="size-3.5" />
                     ) : isRunning ? (
-                      <Play className="h-3.5 w-3.5" />
+                      <Play className="size-3.5" />
                     ) : isFailed ? (
-                      <XCircle className="h-3.5 w-3.5" />
+                      <XCircle className="size-3.5" />
                     ) : (
                       idx + 1
                     )}
@@ -113,52 +110,50 @@ export const PlanWorkflowViewer: React.FC<PlanWorkflowViewerProps> = ({
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-semibold text-text-primary">
+                      <span className="font-mono text-[12px] font-semibold text-[var(--text)]">
                         {step.appId}
                       </span>
-                      <ArrowRight className="h-3.5 w-3.5 text-text-secondary" />
-                      <span className="font-mono text-xs font-medium text-text-secondary">
+                      <ArrowRight className="size-3.5 text-[var(--text-muted)]" />
+                      <span className="font-mono text-[12px] text-[var(--text-muted)]">
                         {step.toolName}
                       </span>
                     </div>
-                    <div className="text-[11px] text-text-secondary mt-1 line-clamp-1 font-medium">
+                    <div className="text-[12px] text-[var(--text-muted)] mt-1 line-clamp-1">
                       {step.diffSummary || "Autonomous inspection or action execution"}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Risk Badge */}
                   <span
-                    className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded-lg border ${
+                    className={`text-[12px] font-mono font-semibold px-2 py-0.5 rounded-[4px] border ${
                       step.riskTier === 3
-                        ? "bg-signal-gate-bg text-signal-gate border-signal-gate/40"
+                        ? "bg-[var(--tint-red)] text-[var(--accent-red)] border-[var(--accent-red)]"
                         : step.riskTier === 2
-                        ? "bg-signal-thinking-bg text-signal-thinking border-signal-thinking/40"
-                        : "bg-signal-success-bg text-signal-success border-signal-success/40"
+                        ? "bg-[var(--tint-amber)] text-[var(--accent-amber)] border-[var(--accent-amber)]"
+                        : "bg-[var(--tint-green)] text-[var(--accent-green)] border-[var(--accent-green)]"
                     }`}
                   >
                     Tier {step.riskTier}
                   </span>
 
-                  {/* Status Indicator */}
                   {isPendingApproval ? (
-                    <span className="flex items-center gap-1 text-[11px] font-semibold text-signal-gate bg-signal-gate-bg px-2 py-0.5 rounded-lg border border-signal-gate/40">
-                      <AlertTriangle className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-1 text-[12px] font-semibold text-[var(--accent-red)] bg-[var(--tint-red)] px-2 py-0.5 rounded-[4px] border border-[var(--accent-red)]">
+                      <AlertTriangle className="size-3.5" />
                       Approval gate
                     </span>
                   ) : isRunning ? (
-                    <span className="flex items-center gap-1 text-[11px] font-mono font-medium text-accent">
-                      <Clock className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-1 text-[12px] font-mono font-medium text-[var(--accent-blue)]">
+                      <Clock className="size-3.5" />
                       Running
                     </span>
                   ) : isCompleted ? (
-                    <span className="flex items-center gap-1 text-[11px] font-mono font-medium text-signal-success">
-                      <Shield className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-1 text-[12px] font-mono font-medium text-[var(--accent-green)]">
+                      <Shield className="size-3.5" />
                       Passed
                     </span>
                   ) : (
-                    <span className="text-[11px] font-mono text-text-secondary font-medium">
+                    <span className="text-[12px] font-mono text-[var(--text-muted)]">
                       Pending
                     </span>
                   )}
@@ -168,6 +163,6 @@ export const PlanWorkflowViewer: React.FC<PlanWorkflowViewerProps> = ({
           })}
         </div>
       </div>
-    </GlassPanel>
+    </LinearCard>
   );
 };
