@@ -1,0 +1,42 @@
+TASK 16.4 — Security test suite + mutation checks
+Date: 2026-11-25
+
+TEST TARGETS
+- Rust: crates/starship-mcp/tests/security_suite.rs (6 tests)
+- Renderer: app/src/lib/sanitize.test.mjs (4 Node tests, `npm run test:security`)
+- CI: new `security-suite` job in .github/workflows/ci.yml runs both targets
+
+COVERAGE
+1. Tier floor — host policy cannot be lowered by an app declaration; destructive
+   keyword pattern forces Tier 3, unknown tool forces Tier 2.
+2. Approval binding/replay — argument-bound nonce is single-use; replay and
+   changed arguments both fail with safety.invalid_signature_token.
+3. Manifest pinning — tampered binary fails SHA-256 pin check with
+   mcp.manifest_untrusted.
+4. Peer executable — wrong /proc/<pid>/exe rejected with mcp.so_peercred_failed.
+5. CSP/XSS — tauri.conf.json enforces default-src/script-src 'self' with no
+   unsafe-eval; renderer sanitizer strips <script> and blocks javascript: and
+   data:text/html; output stays an escaped React text node.
+6. Secret scrubbing + audit chain — canary removed from audit payload output;
+   3-entry hash chain verifies; payload mutation changes the chain hash.
+
+MUTATION PROOF
+The renderer test disables the `javascript:` check in a temporary copy of
+sanitize.js (located by the CHECK:javascript-scheme marker), imports the mutant
+and asserts the payload survives. The unmodified sanitizer still blocks it, so
+a disabled check makes the suite fail as required.
+The Rust suite includes a hash mutation assertion (same audit fields, different
+payload => different hash).
+
+VERIFICATION
+$ cargo fmt --check                                   clean
+$ cargo clippy --workspace --all-targets -D warnings   clean
+$ cargo test --workspace                               182 passed; 0 failed
+$ cargo test -p starship-mcp --test security_suite     6 passed; 0 failed
+$ npm run lint && npm run typecheck && npm run check:linear && npm run build   clean
+$ npm run test:security                                4 passed; 0 failed
+
+NOTE
+The sanitizer logic moved into app/src/lib/sanitize.js (with sanitize.d.ts) so
+the same function is used by the React renderer and the Node test suite; no new
+runtime dependency was introduced.

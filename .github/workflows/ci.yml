@@ -208,3 +208,32 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
+
+  security-suite:
+    name: Security Mutation Suite
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run Rust security suite
+        run: cargo test -p starship-mcp --test security_suite --verbose
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Run renderer XSS + mutation suite
+        run: |
+          cd app
+          npm ci
+          npm run test:security

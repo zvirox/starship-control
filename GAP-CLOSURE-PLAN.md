@@ -339,8 +339,8 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* each scenario asserts final mission state, audit entries, no leaked locks, no orphan processes (`docs/evidence/16.2.txt`: 12 tests, 176 workspace tests green).
 - [x] **16.3 End-to-end pipelines against real apps** — manual+scripted run of `pipeline_screencast`, `pipeline_record_and_edit`, `pipeline_diagnostics` with real EEP/SSP/ALP/NWP/ATP builds; record versions, logs, short screen capture in `docs/evidence/e2e/`. Any app lacking a working `--mcp` mode is listed as a **blocker**, and the corresponding pipeline step is marked `MOCK-ONLY` in README until fixed.
   * *Verify:* evidence folder present; README support table reflects reality (`docs/evidence/16.3.txt`).
-- [ ] **16.4 Security test suite** — tests for: tier floor, approval binding/replay, manifest pinning, peer exe check, CSP/XSS render, secret scrubbing, audit chain. Wire into CI.
-  * *Verify:* all pass; a mutation (disable one check) makes a test fail.
+- [x] **16.4 Security test suite** — tests for: tier floor, approval binding/replay, manifest pinning, peer exe check, CSP/XSS render, secret scrubbing, audit chain. Wire into CI.
+  * *Verify:* all pass; a mutation (disable one check) makes a test fail (`docs/evidence/16.4.txt`).
 - [ ] **16.5 Compositor matrix** — manually verify HUD always-on-top, solid opaque rendering (`transparent: false`), and global shortcut on GNOME, KDE Plasma 6, Sway, Hyprland, X11; table in `docs/COMPAT.md` (`works / degraded / not supported` + fallback used). README "tested on" mirrors this file only.
   * *Verify:* `COMPAT.md` filled with dated test notes and versions.
 - [ ] **16.6 Packaging verification** — install/uninstall/upgrade on Ubuntu LTS, Fedora, Arch; publish AUR package (or remove README AUR instructions); checksums + signature (minisign or GPG) for releases.
