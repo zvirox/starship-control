@@ -1,0 +1,212 @@
+{
+  "generated_at": "2026-11-25",
+  "workspace_version": "0.1.0-beta.1",
+  "apps": [
+    {
+      "app_id": "ssp",
+      "name": "Screen Studio Pro",
+      "binary": "/usr/bin/screenstudio-pro",
+      "support": "missing",
+      "status": "MOCK-ONLY",
+      "hello_response": "",
+      "stderr_excerpt": "binary not found on PATH"
+    },
+    {
+      "app_id": "eep",
+      "name": "Easy Edits Pro",
+      "binary": "/home/zvirox/.local/bin/easy-edits-pro",
+      "support": "socket_bridge_non_mcp",
+      "status": "MOCK-ONLY",
+      "hello_response": "",
+      "stderr_excerpt": "[dmabuf] enabled=true policy=enabled-default webkit=None gpu=Intel Intel Corporation TigerLake-LP GT2 [Iris Xe Graphics] [8086:9a49] [i915] reason=DMA-BUF is enabled by default | (easy-edits-pro:182958): Gtk-WARNING **: 13:08:47.195: gtk_window_set_titlebar() called on a realized window | Easy Edits Pro MCP bridge listening at /run/user/1000/easy-edits-pro-mcp.sock"
+    },
+    {
+      "app_id": "alp",
+      "name": "Audio Labs Pro",
+      "binary": "/usr/bin/audio-labs-pro",
+      "support": "no_mcp",
+      "status": "MOCK-ONLY",
+      "hello_response": "",
+      "stderr_excerpt": "(audio-labs-pro:183053): Gtk-WARNING **: 13:08:48.825: gtk_window_set_titlebar() called on a realized window"
+    },
+    {
+      "app_id": "nwp",
+      "name": "Net Watch Pro",
+      "binary": "/usr/bin/net-watch-pro",
+      "support": "no_mcp",
+      "status": "MOCK-ONLY",
+      "hello_response": "",
+      "stderr_excerpt": "(net-watch-pro:183150): Gtk-WARNING **: 13:08:50.851: gtk_window_set_titlebar() called on a realized window | (net-watch-pro:183150): libayatana-appindicator-WARNING **: 13:08:50.912: libayatana-appindicator is deprecated. Please use libayatana-appindicator-glib in newly written code."
+    },
+    {
+      "app_id": "atp",
+      "name": "Agentic Tuneup Pro",
+      "binary": "/usr/bin/agentic-tuneup-pro",
+      "support": "stdio_mcp",
+      "status": "REAL",
+      "hello_response": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"appId\":\"atp\",\"name\":\"Agentic Tuneup Pro\",\"tools\":[{\"description\":\"Returns System Health Score (0-100), telemetry status, and storage breakdown\",\"name\":\"tuneup.get_health\",\"parameters\":{\"properties\":{},\"type\":\"object\"},\"riskTier\":1},{\"description\":\"Scans system, browser, package, and dev caches; returns reclaimable bytes\",\"name\":\"tuneup.scan_junk\",\"parameters\":{\"properties\":{\"categories\":{\"items\":{\"enum\":[\"system\",\"browser\",\"package_cache\",\"dev\",\"app\"],\"type\":\"string\"},\"type\":\"array\"}},\"type\":\"object\"},\"riskTier\":1},{\"description\":\"Moves selected rule targets to quarantine. Generates an undo session ID.\",\"name\":\"tuneup.clean_junk\",\"parameters\":{\"properties\":{\"ruleIds\":{\"items\":{\"type\":\"string\"},\"type\":\"array\"}},\"required\":[\"ruleIds\"],\"type\":\"object\"},\"riskTier\":2},{\"description\":\"Restores a previous quarantine session's files back to original paths\",\"name\":\"tuneup.restore_quarantine\",\"parameters\":{\"properties\":{\"sessionId\":{\"type\":\"string\"}},\"required\":[\"sessionId\"],\"type\":\"object\"},\"riskTier\":2},{\"description\":\"Permanently deletes quarantined files for a specific session or older than N days\",\"name\":\"tuneup.purge_quarantine\",\"parameters\":{\"properties\":{\"sessionId\":{\"type\":\"string\"},\"signatureToken\":{\"type\":\"string\"}},\"type\":\"object\"},\"riskTier\":3},{\"description\":\"Lists installed packages across active backends (flatpak, native, appimage)\",\"name\":\"tuneup.list_packages\",\"parameters\":{\"properties\":{\"backendFilter\":{\"type\":\"string\"}},\"type\":\"object\"},\"riskTier\":1},{\"description\":\"Scans package managers for unused dependencies and flatpak runtimes\",\"name\":\"tuneup.list_orphans\",\"parameters\":{\"properties\":{},\"type\":\"object\"},\"riskTier\":1},{\"description\":\"Removes packages from system (Requires confirmation/root helper)\",\"name\":\"tuneup.remove_packages\",\"parameters\":{\"properties\":{\"backend\":{\"type\":\"string\"},\"packageIds\":{\"items\":{\"type\":\"string\"},\"type\":\"array\"}},\"required\":[\"packageIds\"],\"type\":\"object\"},\"riskTier\":3},{\"description\":\"Removes unused package dependencies and unused Flatpak runtimes (Root action)\",\"name\":\"tuneup.purge_orphans\",\"parameters\":{\"properties\":{\"backend\":{\"enum\":[\"flatpak\",\"native\",\"all\"],\"type\":\"string\"}},\"required\":[\"backend\"],\"type\":\"object\"},\"riskTier\":3},{\"description\":\"Purges obsolete package caches and orphaned libraries to reclaim disk space.\",\"name\":\"atp.system.clean_package_cache\",\"parameters\":{\"properties\":{\"aggressive\":{\"default\":false,\"type\":\"boolean\"}},\"type\":\"object\"},\"riskTier\":3},{\"description\":\"Lists running processes sorted by resource consumption\",\"name\":\"tuneup.list_processes\",\"parameters\":{\"properties\":{\"limit\":{\"type\":\"integer\"},\"sortBy\":{\"enum\":[\"cpu\",\"memory\",\"disk\"],\"type\":\"string\"}},\"type\":\"object\"},\"riskTier\":1},{\"description\":\"Terminates a runaway process or process tree\",\"name\":\"tuneup.kill_process\",\"parameters\":{\"properties\":{\"killTree\":{\"type\":\"boolean\"},\"pid\":{\"type\":\"integer\"}},\"required\":[\"pid\"],\"type\":\"object\"},\"riskTier\":3},{\"description\":\"Retrieves recent audit log entries of cleaner and administrative actions\",\"name\":\"tuneup.get_audit_log\",\"parameters\":{\"properties\":{\"limit\":{\"type\":\"integer\"}},\"type\":\"object\"},\"riskTier\":1}],\"version\":\"0.1.0\"}}",
+      "stderr_excerpt": "[ATP] Launching in headless MCP stdio mode... | [ATP-MCP] Headless stdio loop initialized. Ready for JSON-RPC 2.0 messages."
+    }
+  ],
+  "pipelines": [
+    {
+      "name": "pipeline_screencast",
+      "plan_title": "Screencast Assembly & Mastered Timeline Edit",
+      "steps": [
+        {
+          "app_id": "ssp",
+          "tool_name": "recording.inspect_take",
+          "risk_tier": 1,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "alp",
+          "tool_name": "audio.cleanup",
+          "risk_tier": 2,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "alp",
+          "tool_name": "tts.synthesize",
+          "risk_tier": 2,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "eep",
+          "tool_name": "timeline.apply_cuts",
+          "risk_tier": 2,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "eep",
+          "tool_name": "timeline.align_audio",
+          "risk_tier": 2,
+          "status": "MOCK-ONLY"
+        }
+      ]
+    },
+    {
+      "name": "pipeline_record_and_edit",
+      "plan_title": "Record, Denoise & Auto-Trim Pipeline",
+      "steps": [
+        {
+          "app_id": "ssp",
+          "tool_name": "ssp.recording.start",
+          "risk_tier": 1,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "ssp",
+          "tool_name": "ssp.recording.stop",
+          "risk_tier": 1,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "ssp",
+          "tool_name": "ssp.recording.start",
+          "risk_tier": 1,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "alp",
+          "tool_name": "alp.denoise.spectral",
+          "risk_tier": 2,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "eep",
+          "tool_name": "eep.timeline.cut_interval",
+          "risk_tier": 2,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "eep",
+          "tool_name": "eep.timeline.auto_trim_silence",
+          "risk_tier": 2,
+          "status": "MOCK-ONLY"
+        }
+      ]
+    },
+    {
+      "name": "pipeline_diagnostics",
+      "plan_title": "System Maintenance & Cache Optimization",
+      "steps": [
+        {
+          "app_id": "nwp",
+          "tool_name": "network.scan",
+          "risk_tier": 1,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "atp",
+          "tool_name": "disk.scan",
+          "risk_tier": 1,
+          "status": "MOCK-ONLY"
+        },
+        {
+          "app_id": "atp",
+          "tool_name": "cache.purge_all",
+          "risk_tier": 3,
+          "status": "MOCK-ONLY"
+        }
+      ]
+    }
+  ],
+  "real_step_execution": {
+    "app": "atp",
+    "response": {
+      "id": 2,
+      "jsonrpc": "2.0",
+      "result": {
+        "deductions": [],
+        "rating": "good",
+        "score": 100,
+        "snapshot": {
+          "cpu": {
+            "aggregate_usage_percent": 0.0,
+            "core_count": 8,
+            "core_usages": [
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "frequency_mhz": 3643,
+            "temperature_celsius": 74.0
+          },
+          "disk": {
+            "mount_point": "/",
+            "read_bytes_per_sec": 0,
+            "total_bytes": 251763412992,
+            "used_bytes": 180311928832,
+            "write_bytes_per_sec": 0
+          },
+          "memory": {
+            "available_bytes": 7102009344,
+            "swap_total_bytes": 12270432256,
+            "swap_used_bytes": 4370489344,
+            "total_bytes": 12271161344,
+            "used_bytes": 5169152000
+          },
+          "network": {
+            "download_bytes_per_sec": 0,
+            "interface_name": "virbr0",
+            "upload_bytes_per_sec": 0
+          },
+          "timestamp": 1795592333
+        }
+      }
+    },
+    "tool": "tuneup.get_health"
+  },
+  "blockers": [
+    "ssp: not installed (binary: /usr/bin/screenstudio-pro)",
+    "eep: custom socket bridge, not MCP-compatible (binary: /home/zvirox/.local/bin/easy-edits-pro)",
+    "alp: no working --mcp stdio mode (binary: /usr/bin/audio-labs-pro)",
+    "nwp: no working --mcp stdio mode (binary: /usr/bin/net-watch-pro)"
+  ]
+}

@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Real-app E2E matrix</title><style>
+        body{background:#050505;color:#e6e6e6;font-family:Inter,system-ui,sans-serif;margin:0;padding:32px}
+        h1{font-size:24px;font-weight:500;margin:0 0 8px} h2{font-size:15px;font-weight:500;margin:28px 0 8px}
+        p{color:#9a9a9a;font-size:13px} table{border-collapse:collapse;width:100%;font-size:12px}
+        td,th{border-bottom:1px solid #26272a;padding:8px;text-align:left} th{color:#8a8a8a;font-weight:500}
+        .mono{font-family:monospace;color:#b8b8b8} .badge{padding:2px 8px;border-radius:4px;font-size:11px}
+        .ok{background:#12301f;color:#4cc38a} .warn{background:#332511;color:#e5a94b} li{font-size:12px;margin:4px 0}
+        </style></head><body><h1>Real-app E2E matrix</h1><p>Generated 2026-11-25 · version 0.1.0-beta.1</p>
+        <table><tr><th>App</th><th>Binary</th><th>MCP support</th><th>Status</th></tr><tr><td>Screen Studio Pro</td><td class="mono">/usr/bin/screenstudio-pro</td><td>Missing</td><td><span class="badge warn">MOCK-ONLY</span></td></tr>
+<tr><td>Easy Edits Pro</td><td class="mono">/home/zvirox/.local/bin/easy-edits-pro</td><td>SocketBridgeNonMcp</td><td><span class="badge warn">MOCK-ONLY</span></td></tr>
+<tr><td>Audio Labs Pro</td><td class="mono">/usr/bin/audio-labs-pro</td><td>NoMcp</td><td><span class="badge warn">MOCK-ONLY</span></td></tr>
+<tr><td>Net Watch Pro</td><td class="mono">/usr/bin/net-watch-pro</td><td>NoMcp</td><td><span class="badge warn">MOCK-ONLY</span></td></tr>
+<tr><td>Agentic Tuneup Pro</td><td class="mono">/usr/bin/agentic-tuneup-pro</td><td>StdioMcp</td><td><span class="badge ok">REAL</span></td></tr></table>
+        <h2>Blockers</h2><ul><li>ssp: not installed (binary: /usr/bin/screenstudio-pro)</li>
+<li>eep: custom socket bridge, not MCP-compatible (binary: /home/zvirox/.local/bin/easy-edits-pro)</li>
+<li>alp: no working --mcp stdio mode (binary: /usr/bin/audio-labs-pro)</li>
+<li>nwp: no working --mcp stdio mode (binary: /usr/bin/net-watch-pro)</li></ul></body></html>

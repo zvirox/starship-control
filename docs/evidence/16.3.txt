@@ -1,0 +1,51 @@
+TASK 16.3 — End-to-end pipelines against real apps
+Date: 2026-11-25
+
+REPRODUCE
+$ cargo run -p xtask --bin e2e_real_apps
+  -> docs/evidence/e2e/report.json
+  -> docs/evidence/e2e/report.md
+  -> docs/evidence/e2e/report.html + report.png
+  -> <pipeline>-plan.json and <pipeline>.log for all three pipelines
+
+REAL-APP PROBES (measured on this host)
+- ssp / Screen Studio Pro: binary /usr/bin/screenstudio-pro MISSING -> MOCK-ONLY
+- eep / Easy Edits Pro: /home/zvirox/.local/bin/easy-edits-pro exposes a custom
+  socket bridge (`MCP bridge listening at ...`) with non-standard methods
+  (`command_list`, `doc_inspect`); `starship/hello` and `initialize` are
+  rejected -> MOCK-ONLY
+- alp / Audio Labs Pro: binary present, no `--mcp` stdio response -> MOCK-ONLY
+- nwp / Net Watch Pro: binary present, no `--mcp` stdio response -> MOCK-ONLY
+- atp / Agentic Tuneup Pro: binary present, `--mcp` stdio handshake succeeds and
+  advertises 13 tools -> REAL
+
+REAL STEP EXECUTION
+`tools/call tuneup.get_health` against ATP returned a live JSON result with
+score 100, 8 CPU cores and current disk totals. Captured in report.json under
+`real_step_execution`.
+
+PIPELINE PLANS (generated with the no-LLM planner)
+- pipeline_screencast: 5 steps (ssp, alp, alp, eep, eep) -> all MOCK-ONLY
+- pipeline_record_and_edit: 6 steps (ssp x3, alp, eep x2) -> all MOCK-ONLY
+- pipeline_diagnostics: 3 steps (nwp, atp, atp) -> all MOCK-ONLY because the
+  planner emits `disk.scan` and `cache.purge_all`, which are not in ATP's
+  advertised tool catalog (`tuneup.scan_junk`, `atp.system.clean_package_cache`).
+
+Blockers are therefore recorded per app and per step, as required. No pipeline
+step was falsely marked REAL. Unsupported steps are exercised against the mock
+harness by tasks 16.1/16.2, not against a real application.
+
+VERIFICATION
+- report.json, report.md, report.png and all six pipeline artifacts present
+- README support tables updated with measured MCP bridge status and MOCK-ONLY
+  markers; evidence linked from the Connected App Suite section
+- cargo fmt --check, cargo clippy --workspace --all-targets -D warnings,
+  cargo test --workspace (176 passed), npm lint/typecheck/check:linear/build
+  all clean. One full-workspace run flaked in the pre-existing
+  starship-health sampler-overhead timing benchmark while an external EEP
+  build saturated the CPU; the targeted `cargo test -p starship-health` run
+  passed 11/11 afterwards.
+
+NOTE
+Probing `--mcp` on ALP/NWP/EEP briefly starts their GUI process; the harness
+kills each probe process after a 2 second timeout. No app window was left open.

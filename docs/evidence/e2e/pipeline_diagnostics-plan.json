@@ -1,0 +1,54 @@
+{
+  "goal": "System Health Inspection & Cache Cleanup",
+  "steps": [
+    {
+      "app_id": "nwp",
+      "arguments": {
+        "inspectSockets": true,
+        "resolveGeoIp": false
+      },
+      "depends_on": [],
+      "diff_summary": "Inspects 14 active network sockets and bandwidth telemetry",
+      "risk_tier": 1,
+      "step_index": 0,
+      "tool_name": "network.scan"
+    },
+    {
+      "app_id": "atp",
+      "arguments": {
+        "targets": [
+          "package_cache",
+          "build_artifacts",
+          "temp_files"
+        ]
+      },
+      "depends_on": [],
+      "diff_summary": "Scans disk utilization (38.6 GB free) and identifies obsolete caches",
+      "risk_tier": 1,
+      "step_index": 1,
+      "tool_name": "disk.scan"
+    },
+    {
+      "app_id": "atp",
+      "arguments": {
+        "createRestorePoint": true,
+        "olderThanDays": 7,
+        "targets": [
+          "~/.cache/cargo/registry",
+          "~/.cache/npm"
+        ]
+      },
+      "depends_on": [
+        0,
+        1
+      ],
+      "diff_summary": "Purges 4.2 GB of obsolete build artifacts, package caches, and temporary files",
+      "risk_tier": 3,
+      "step_index": 2,
+      "tool_name": "cache.purge_all"
+    }
+  ],
+  "summary": "Inspects live network sockets, analyzes disk usage, and cleans 4.2 GB of temporary build caches upon confirmation",
+  "title": "System Maintenance & Cache Optimization",
+  "version": 1
+}
