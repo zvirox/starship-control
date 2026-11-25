@@ -25,6 +25,13 @@ contents:
     dst: /usr/share/icons/hicolor/512x512/apps/starship-control.png
   - src: LICENSE
     dst: /usr/share/doc/starship-control/LICENSE
+    packager: deb
+  - src: LICENSE
+    dst: /usr/share/doc/starship-control/LICENSE
+    packager: rpm
+  - src: LICENSE
+    dst: /usr/share/licenses/starship-control/LICENSE
+    packager: archlinux
 
 scripts:
   postinstall: packaging/scripts/postinstall.sh

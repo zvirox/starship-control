@@ -12,9 +12,10 @@ jobs:
   release:
     uses: zvirox/release-workflows/.github/workflows/linux-release.yml@v1
     with:
-      app_name: starship-control
+      app_name: ${{ github.event.repository.name }}
       frontend_dir: app
       build_cmd: cargo build --release --locked -p starship-control
       binary_path: target/release/starship-control
       nfpm_config: packaging/nfpm.yaml
+      check_version_flag: true
     secrets: inherit

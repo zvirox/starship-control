@@ -44,7 +44,7 @@
 | G13 | No mission progress model, ETA, stall detection, or crash-safe event log | Medium | 13 |
 | G14 | No system health monitoring, overload detection, or resource-aware scheduling | Medium | 14, 15 |
 | G15 | No fault-injection / mock-app / e2e test harness; Wayland HUD + global-shortcut claims unverified per compositor | Medium | 16 |
-| G16 | Release/AUR/deb/rpm install commands in README unverified | Medium | 16 |
+| G16 | Release package install commands and locked manifest verification | Medium | 16 |
 
 ---
 
@@ -59,11 +59,11 @@
   * *Verify:* `AUDIT.md` covers all PLAN.md items; counts of VERIFIED/PARTIAL/MISSING at the top.
 - [x] **9.1 CI workflow** — `.github/workflows/ci.yml`: fmt, clippy `-D warnings`, `cargo test --workspace`, `tsc --noEmit`, `npm run build`, `cargo deny`/`cargo audit`. Cache cargo + npm.
   * *Verify:* green run linked in `docs/evidence/9.1.txt`.
-- [x] **9.2 Release workflow** — `.github/workflows/release.yml` building `.deb`, `.rpm`, `.tar.gz` + SHA256SUMS on tag push.
-  * *Verify:* tag `v0.1.0-alpha.2` produces all three artifacts + checksums.
-- [x] **9.3 Install smoke test in CI** — containers (ubuntu:24.04, fedora:latest, archlinux) install the package and run `starship-control --version` and `--self-test` (new flag: opens DB, runs migrations, exits 0).
+- [x] **9.2 Release workflow** — `.github/workflows/release.yml` calling shared `zvirox/release-workflows` (`nfpm`) to build exclusively `.deb`, `.rpm`, and `.pkg.tar.zst` + `SHA256SUMS` on tag push (legacy tarballs, Flatpak, AppImage, and AUR retired).
+  * *Verify:* tagged release produces exclusively those three packages + checksums.
+- [x] **9.3 Install smoke test in CI** — containers (ubuntu:22.04, ubuntu:24.04, fedora:latest, archlinux:latest) install each locked package, verify binary + desktop file, run `--version`, and uninstall cleanly (`docs/evidence/9.3.txt`).
   * *Verify:* matrix green (tested via `docs/evidence/9.3.txt`).
-- [x] **9.4 README truth pass** — correct "encrypted SQLite" claim (see 10.7), "tested on" compositor list (only list what Phase 16 verifies), remove "zero latency" marketing, mark AUR as "planned" until published.
+- [x] **9.4 README truth pass** — correct "encrypted SQLite" claim (see 10.7), "tested on" compositor list (only list what Phase 16 verifies), remove "zero latency" marketing, mark legacy AUR/Flatpak/AppImage/tarballs retired.
   * *Verify:* every factual README claim has a link to a test, doc section, or evidence file.
 - [x] **9.5 Coverage & test baseline** — `cargo llvm-cov` report in CI; record baseline for `starship-core`, `starship-mcp`, `starship-db`.
   * *Verify:* coverage summary posted as CI artifact.
@@ -343,8 +343,8 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* all pass; a mutation (disable one check) makes a test fail (`docs/evidence/16.4.txt`).
 - [x] **16.5 Compositor matrix** — manually verify HUD always-on-top, solid opaque rendering (`transparent: false`), and global shortcut on GNOME, KDE Plasma 6, Sway, Hyprland, X11; table in `docs/COMPAT.md` (`works / degraded / not supported` + fallback used). README "tested on" mirrors this file only.
   * *Verify:* `COMPAT.md` filled with dated test notes and versions (`docs/evidence/16.5.txt`).
-- [ ] **16.6 Packaging verification** — install/uninstall/upgrade on Ubuntu LTS, Fedora, Arch; publish AUR package (or remove README AUR instructions); checksums + signature (minisign or GPG) for releases.
-  * *Verify:* clean-VM install logs in evidence.
+- [ ] **16.6 Packaging verification** — CI clean-container install/uninstall verification across Ubuntu 22.04/24.04, Fedora, and Arch for the locked `.deb`, `.rpm`, and `.pkg.tar.zst` manifest (`nfpm`) + `SHA256SUMS` and GPG signature (`SHA256SUMS.sig`). *(No AUR publishing; no VM package test requirement.)*
+  * *Verify:* CI container smoke logs in `release-workflows` run + GPG signature verification.
 - [ ] **16.7 Threat model doc** — `docs/THREAT_MODEL.md` (assets, trust boundaries: LLM, sub-apps, webview, same-user processes; mitigations mapped to task IDs 10.x).
   * *Verify:* every High gap in §1 maps to a mitigation + test.
 - [ ] **16.8 Performance budgets** — idle core < 150 MB RSS and < 1 % CPU; HUD toggle < 150 ms; event latency core→UI < 50 ms at 1 Hz health + 4 Hz progress.

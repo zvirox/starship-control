@@ -37,7 +37,7 @@
     <img src="https://img.shields.io/badge/stack-Rust_%C2%B7_Tauri_2_%C2%B7_React_19-6366f1?style=flat-square&labelColor=17171c" alt="Stack: Rust, Tauri 2, React 19" />
   </p>
 
-  **Tested on:** KDE Plasma 6 (Wayland, kwin 6.8.3). Other compositors are unverified; the full matrix and evidence live in [`docs/COMPAT.md`](docs/COMPAT.md).
+  **Tested on:** KDE Plasma 6 (Wayland, kwin 6.8.3). Other compositors are unverified. The full matrix and evidence live in [`docs/COMPAT.md`](docs/COMPAT.md).
 
   <table>
     <tr>
@@ -177,7 +177,7 @@ Starship Control is optional. Every companion app works completely on its own. W
 | **Agentic Tuneup Pro** | Scans junk files safely into reversible quarantine | Ask why your laptop fan is spinning or safely quarantine stale build folders | Working `--mcp` stdio bridge · REAL | [GitHub](https://github.com/zvirox/agentic-tuneup-pro) · [Releases](https://github.com/zvirox/agentic-tuneup-pro/releases) |
 | **Net Watch Pro** | Tracks real-time speed and per-app bandwidth | Ask which app is eating bandwidth today and inspect active endpoints *(MOCK-ONLY until `--mcp` lands)* | No working `--mcp` stdio mode · MOCK-ONLY | [GitHub](https://github.com/zvirox/net-watch-pro) · [Releases](https://github.com/zvirox/net-watch-pro/releases) |
 
-Measured on 2026-11-25 by `cargo run -p xtask --bin e2e_real_apps`. Full matrix, generated pipeline plans and the real ATP `tuneup.get_health` response are in [`docs/evidence/e2e/`](docs/evidence/e2e/report.md); the screenshot is [`report.png`](docs/evidence/e2e/report.png). Pipeline steps targeting an app without a compatible MCP bridge are marked **MOCK-ONLY** in the generated plans and are executed against the mock harness in CI, not against a real app.
+Measured on 2026-11-25 by `cargo run -p xtask --bin e2e_real_apps`. Full matrix, generated pipeline plans and the real ATP `tuneup.get_health` response are in [`docs/evidence/e2e/`](docs/evidence/e2e/report.md). The screenshot is [`report.png`](docs/evidence/e2e/report.png). Pipeline steps targeting an app without a compatible MCP bridge are marked **MOCK-ONLY** in the generated plans and are executed against the mock harness in CI, not against a real app.
 
 ### Real-World Examples
 
@@ -216,6 +216,8 @@ cargo build --release -p starship-control
 ```
 
 </details>
+
+Official Linux releases ship exclusively as native `.deb`, `.rpm`, and `.pkg.tar.zst` packages alongside `SHA256SUMS`. Legacy AppImage, Flatpak, tarball, and AUR packages are retired and no longer updated.
 
 ---
 
@@ -292,7 +294,7 @@ All six applications in the Zvirox desktop suite work standalone and connect tog
 | <img src="https://raw.githubusercontent.com/zvirox/audio-labs-pro/main/packaging/branding/audio-labs-pro-logo.png" alt="Audio Labs Pro logo" width="32" height="32" /> | **[Audio Labs Pro](https://zvirox.in/projects/alp/)** | Offline voice studio and multitrack audio editor · **MOCK-ONLY** | [github.com/zvirox/audio-labs-pro](https://github.com/zvirox/audio-labs-pro) | [Download](https://zvirox.in/downloads/alp/) · [Releases](https://github.com/zvirox/audio-labs-pro/releases) |
 | <img src="https://raw.githubusercontent.com/zvirox/agentic-tuneup-pro/main/.github/assets/logo.png" alt="Agentic Tuneup Pro logo" width="32" height="32" /> | **[Agentic Tuneup Pro](https://zvirox.in/projects/atp/)** | Safety-first disk cleaner and system optimizer · **REAL** | [github.com/zvirox/agentic-tuneup-pro](https://github.com/zvirox/agentic-tuneup-pro) | [Download](https://zvirox.in/downloads/atp/) · [Releases](https://github.com/zvirox/agentic-tuneup-pro/releases) |
 | <img src="https://raw.githubusercontent.com/zvirox/net-watch-pro/main/docs/assets/net-watch-pro-logo.png" alt="Net Watch Pro logo" width="32" height="32" /> | **[Net Watch Pro](https://zvirox.in/projects/nwp/)** | Real-time network speed and per-app data tracker · **MOCK-ONLY** | [github.com/zvirox/net-watch-pro](https://github.com/zvirox/net-watch-pro) | [Download](https://zvirox.in/downloads/nwp/) · [Releases](https://github.com/zvirox/net-watch-pro/releases) |
-| — | **[Your TV Friend](https://zvirox.in/projects/ytf/)** | Android TV non-destructive debloater and Your UI launcher | [github.com/zvirox/your-tv-friend](https://github.com/zvirox/your-tv-friend) | [Download APK](https://zvirox.in/downloads/ytf/) · [Releases](https://github.com/zvirox/your-tv-friend/releases) |
+| - | **[Your TV Friend](https://zvirox.in/projects/ytf/)** | Android TV non-destructive debloater and Your UI launcher | [github.com/zvirox/your-tv-friend](https://github.com/zvirox/your-tv-friend) | [Download APK](https://zvirox.in/downloads/ytf/) · [Releases](https://github.com/zvirox/your-tv-friend/releases) |
 
 ---
 
