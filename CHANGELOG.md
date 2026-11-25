@@ -7,9 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-beta.2] - 2026-11-25
+
 ### Changed
 - **Finalized & Locked Linear Design System (`DESIGN.md` v2.1)**: Standardized on opaque Linear surfaces (`#050505`/`#111213`/`#1A1B1E` dark and `#F3F4F6`/`#FFFFFF`/`#F4F5F7` light), `#3355FF` primary accent, self-hosted `Inter` + `JetBrains Mono` typography, `1280×800` Cockpit (`40px` TitleBar, collapsible `240px → 56px` Sidebar, `36px` Breadcrumb), and solid opaque `420×64` Floating HUD with live dark/light theme synchronization and zero blur regressions (`npm run check:linear`).
 - **Documentation & Roadmap Sync**: Aligned `PRD.md`, `ARCHITECTURE.md`, `DATABASE.md`, `API.md`, `PLAN.md`, `GAP-CLOSURE-PLAN.md`, `AGENTS.md`, `README.md`, `docs/release-audit.md`, and `docs/evidence/AUDIT.md` with actual crate implementations (`starship-health`, `xtask`, migrations `0001`–`0006`, Phases 9–15 complete, Phase 16 & native `llama-cpp-2` bindings remaining open).
+- **Packaging & Release Signing**: Locked `nfpm` `.deb`/`.rpm`/`.pkg.tar.zst` distribution policy, retired AUR/VM plans, and enabled GPG `SHA256SUMS.sig` release signing.
 
 ## [0.1.0-beta.1] - 2026-11-24
 
