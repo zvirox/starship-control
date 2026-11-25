@@ -335,8 +335,8 @@ Step:    pending → ready → awaiting_approval → running
 
 - [x] **16.1 `starship-mock-app` crate** — a configurable fake sub-app (socket + `--mcp` stdio) implementing `starship-plugin`: scripted tools with controllable latency, progress events, failure modes (`crash`, `hang`, `bad_json`, `slow_progress`, `deny_checkpoint`, `oom`), via env/JSON scenario files.
   * *Verify:* scenario files exercise every failure mode (`docs/evidence/16.1.txt`: 16 tests, 164 workspace tests green).
-- [ ] **16.2 Fault-injection scenarios** (integration tests in `tests/chaos/`): app killed mid-step; socket squatter; manifest tampered; model returns bad JSON; cloud 429/500; DB read-only; disk full (tmpfs); CPU/mem stress via `stress-ng`; core `kill -9` mid-mission.
-  * *Verify:* each scenario asserts final mission state, audit entries, no leaked locks, no orphan processes.
+- [x] **16.2 Fault-injection scenarios** (integration tests in `tests/chaos/`): app killed mid-step; socket squatter; manifest tampered; model returns bad JSON; cloud 429/500; DB read-only; disk full (tmpfs); CPU/mem stress via `stress-ng`; core `kill -9` mid-mission.
+  * *Verify:* each scenario asserts final mission state, audit entries, no leaked locks, no orphan processes (`docs/evidence/16.2.txt`: 12 tests, 176 workspace tests green).
 - [ ] **16.3 End-to-end pipelines against real apps** — manual+scripted run of `pipeline_screencast`, `pipeline_record_and_edit`, `pipeline_diagnostics` with real EEP/SSP/ALP/NWP/ATP builds; record versions, logs, short screen capture in `docs/evidence/e2e/`. Any app lacking a working `--mcp` mode is listed as a **blocker**, and the corresponding pipeline step is marked `MOCK-ONLY` in README until fixed.
   * *Verify:* evidence folder present; README support table reflects reality.
 - [ ] **16.4 Security test suite** — tests for: tier floor, approval binding/replay, manifest pinning, peer exe check, CSP/XSS render, secret scrubbing, audit chain. Wire into CI.

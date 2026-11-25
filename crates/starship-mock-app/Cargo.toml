@@ -15,4 +15,11 @@ serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
+starship-core = { path = "../starship-core" }
+starship-db = { path = "../starship-db" }
+starship-health = { path = "../starship-health" }
+starship-infer = { path = "../starship-infer" }
+starship-mcp = { path = "../starship-mcp" }
 tempfile.workspace = true
+tokio.workspace = true
+rusqlite.workspace = true

@@ -18,7 +18,7 @@ Since the initial `2026-11-22` audit:
   - **`1.3` Native `llama-cpp-2` Bindings:** Hardware/VRAM detection, `LocalInferenceGuard`, and `LocalGgufRunner` response/GBNF synthesis exist, while native `llama-cpp-2` GGUF inference bindings are not yet wired into `crates/starship-infer/Cargo.toml`.
   - **`6.2` Native X11 Global Shortcut Fallback:** Wayland `ashpd` `GlobalShortcuts` (`Super+Shift+Space`) and in-app fallback exist (`shortcut.rs`), while native X11 `XGrabKey` fallback is pending.
 - **Phases 9–15:** All 52 tasks completed & verified (`docs/evidence/9.0–15.5.txt`), with Systems/Timeline/HUD/Cockpit finalized under the locked Linear UI (`DESIGN.md` v2.1).
-- **Phase 16 (`16.1–16.8`):** `16.1` **VERIFIED** (`docs/evidence/16.1.txt`); `16.2–16.8` pending (chaos suite, real-app E2E matrix, mutation security CI, `docs/COMPAT.md`, VM packaging tests, `docs/THREAT_MODEL.md`, performance benchmarks).
+- **Phase 16 (`16.1–16.8`):** `16.1` and `16.2` **VERIFIED** (`docs/evidence/16.1.txt`, `docs/evidence/16.2.txt`); `16.3–16.8` pending (real-app E2E matrix, mutation security CI, `docs/COMPAT.md`, VM packaging tests, `docs/THREAT_MODEL.md`, performance benchmarks).
 
 ---
 

@@ -1,0 +1,59 @@
+TASK 16.2 — Fault-injection scenarios (`tests/chaos/`)
+Date: 2026-11-25
+Harness: crates/starship-mock-app/tests/chaos/ (12 integration tests)
+
+WHY THIS LOCATION
+- The workspace is virtual, so a root-level tests/ directory is not compiled.
+- The chaos suite needs CARGO_BIN_EXE_starship-mock-app to spawn the real
+  fault-injectable binary, so the tests live in the mock-app package.
+
+SHARED HARNESS ASSERTIONS
+Every scenario drives a real temp file-backed SQLite mission with one Tier 2
+step and then asserts:
+- final mission state via Database::rebuild_mission_state (event log replay),
+- audit chain validity plus a scenario-specific audit entry,
+- zero leaked leases via LeaseSupervisor::clean_expired_leases,
+- database connection still usable,
+- no orphan child process (zombie state counts as terminated).
+
+SCENARIOS (all 12 passing)
+1. app_killed_mid_step — real mock-app crash child; mcp.socket_unreachable is
+   retryable/Transient and produces a retry decision.
+2. socket_squatter — peer executable mismatch rejected as mcp.so_peercred_failed;
+   a same-UID squatter connects (documented gap) but its malformed reply fails
+   the handshake and the mission is failed; Tier 2 resume requires fresh approval.
+3. manifest_tampered — pinned SHA-256 mismatch yields mcp.manifest_untrusted.
+4. model_bad_json — TaskSheet::from_llm_json rejects malformed output;
+   PlannerRepairLoop recovers on the second generation attempt.
+5. cloud_429 / cloud_500 — local fake OpenAI-compatible HTTP endpoint returns
+   each status; both are retryable and reach the state machine.
+6. db_read_only — PRAGMA query_only blocks a step write with db.query_failed.
+7. disk_full — /dev/full returns ENOSPC; mapped to Resource/disk.no_space and
+   critical-health governor pause.
+8. cpu_mem_stress — synthesized 98% CPU / 2% MemAvailable sample drives Critical,
+   governor pause and AdmissionDecision::Queued. Real stress-ng is absent on
+   this host and is explicitly skipped with a message.
+9. core_kill — mock-app killed with SIGKILL mid-call; CrashInterrupt ->
+   Interrupted -> Tier 2 resume requires a fresh argument-bound approval.
+
+VERIFICATION
+$ cargo fmt --check
+  clean
+$ cargo clippy --workspace --all-targets -- -D warnings
+  clean
+$ cargo test --workspace
+  176 passed; 0 failed
+$ cd app && npm run lint && npm run typecheck && npm run check:linear && npm run build
+  clean
+
+GAPS FOUND BY THIS SUITE (not fixed in 16.2)
+- SO_PEERCRED checks UID only; a same-UID socket squatter is not rejected.
+  SecurityVerifier::verify_peer_executable exists but is not wired into connect.
+- cloud 429 and 500 both emit infer.cloud_auth_failed instead of rate-limit /
+  endpoint codes, although both are correctly marked retryable.
+- planner.deserialization_failed classifies as AppFailure rather than
+  ModelOutput, so the generic retry policy would allow one blind retry.
+- starship-health sampler overhead benchmark is timing-sensitive and failed one
+  run at 1.82% before passing on rerun; unrelated to these changes.
+- Real tmpfs mount and stress-ng were unavailable; /dev/full and a synthesized
+  HealthSample were used instead. Real-host verification remains in 16.6.

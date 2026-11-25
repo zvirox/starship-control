@@ -1,0 +1,10 @@
+mod app_killed;
+mod cloud_http;
+mod core_kill;
+mod cpu_mem_stress;
+mod db_read_only;
+mod disk_full;
+mod harness;
+mod manifest_tampered;
+mod model_bad_json;
+mod socket_squatter;
