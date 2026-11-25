@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-11-25",
+  "hud_config": {
+    "always_on_top": true,
+    "decorations": false,
+    "height": 64,
+    "transparent": false,
+    "width": 420
+  },
+  "runtime_checks": {
+    "config_always_on_top": true,
+    "config_opaque": true,
+    "note": "agent-desktop cannot capture displays on KDE Wayland; pixel-level opacity and keep-above layering were not measured here",
+    "pixel_screenshot_available": false
+  },
+  "session": {
+    "desktop": "KDE",
+    "display": ":0",
+    "key": "kde-plasma-kwin-6.8.3",
+    "label": "KDE Plasma 6 (Wayland)",
+    "type": "wayland",
+    "version": "kwin 6.8.3",
+    "wayland_display": "wayland-1"
+  },
+  "shortcut": {
+    "binding": "Super+Shift+Space",
+    "portal_registered": true,
+    "x11_native_fallback": false
+  }
+}

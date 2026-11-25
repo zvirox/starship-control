@@ -1,0 +1,34 @@
+TASK 16.5 — Compositor compatibility matrix
+Date: 2026-11-25
+
+DELIVERABLES
+- docs/COMPAT.md — status matrix for KDE Plasma 6, GNOME, Sway, Hyprland and X11
+- docs/evidence/compat/kde-plasma-kwin-6.8.3/probe.json — machine-readable session,
+  HUD config and shortcut capability probe
+- docs/evidence/compat/kde-plasma-kwin-6.8.3/portal.log — runtime portal registration
+- crates/xtask/src/bin/compat_probe.rs — repeatable probe for any compositor
+
+MEASURED HOST
+- XDG_SESSION_TYPE=wayland, XDG_CURRENT_DESKTOP=KDE, kwin 6.8.3, wayland-1
+- HUD config: 420x64, transparent=false, alwaysOnTop=true, decorations=false
+- Global shortcut: portal registered `toggle_hud` for Super+Shift+Space at runtime
+- Pixel-level opacity / keep-above layer: NOT MEASURED. agent-desktop returns
+  PLATFORM_NOT_SUPPORTED for display capture on KDE Wayland, and the WebKit
+  window is absent from AT-SPI window enumeration. These cells are `degraded`.
+
+UNMEASURED COMPOSITORS
+GNOME (Wayland), Sway, Hyprland and X11 are marked `not supported` in this
+evidence set, meaning "no verification evidence gathered here", not a product
+incompatibility claim. X11 additionally has no native XGrabKey fallback
+(PLAN.md 6.2), so its only shortcut path is the in-app Cockpit toggle.
+
+VERIFICATION
+$ cargo run -p xtask --bin compat_probe
+  -> docs/evidence/compat/kde-plasma-kwin-6.8.3/probe.json
+$ cargo fmt --check
+$ cargo clippy --workspace --all-targets -- -D warnings
+$ cargo test --workspace (182 passed)
+$ cd app && npm run lint && npm run typecheck && npm run check:linear && npm run build
+  all clean
+
+README "Tested on" now mirrors docs/COMPAT.md and names only the measured host.

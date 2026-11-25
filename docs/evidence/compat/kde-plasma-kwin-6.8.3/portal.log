@@ -1,0 +1,4 @@
+2026-11-25T08:01:50.903940Z  INFO starship_control: Starting Starship Control...
+2026-11-25T08:01:50.906157Z  INFO starship_control: SQLite database initialized successfully at Some("/home/zvirox/.local/share/starship-control/library.db")
+2026-11-25T08:01:51.696744Z  INFO starship_portal: Binding global shortcut 'Super+Shift+Space' for HUD toggle via XDG Desktop Portal
+2026-11-25T08:01:58.496120Z  INFO starship_portal: Registered shortcuts via portal: [Shortcut("toggle_hud", ShortcutInfo { description: "Toggle Starship Control Floating HUD", trigger_description: "" })]

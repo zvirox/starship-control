@@ -341,8 +341,8 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* evidence folder present; README support table reflects reality (`docs/evidence/16.3.txt`).
 - [x] **16.4 Security test suite** — tests for: tier floor, approval binding/replay, manifest pinning, peer exe check, CSP/XSS render, secret scrubbing, audit chain. Wire into CI.
   * *Verify:* all pass; a mutation (disable one check) makes a test fail (`docs/evidence/16.4.txt`).
-- [ ] **16.5 Compositor matrix** — manually verify HUD always-on-top, solid opaque rendering (`transparent: false`), and global shortcut on GNOME, KDE Plasma 6, Sway, Hyprland, X11; table in `docs/COMPAT.md` (`works / degraded / not supported` + fallback used). README "tested on" mirrors this file only.
-  * *Verify:* `COMPAT.md` filled with dated test notes and versions.
+- [x] **16.5 Compositor matrix** — manually verify HUD always-on-top, solid opaque rendering (`transparent: false`), and global shortcut on GNOME, KDE Plasma 6, Sway, Hyprland, X11; table in `docs/COMPAT.md` (`works / degraded / not supported` + fallback used). README "tested on" mirrors this file only.
+  * *Verify:* `COMPAT.md` filled with dated test notes and versions (`docs/evidence/16.5.txt`).
 - [ ] **16.6 Packaging verification** — install/uninstall/upgrade on Ubuntu LTS, Fedora, Arch; publish AUR package (or remove README AUR instructions); checksums + signature (minisign or GPG) for releases.
   * *Verify:* clean-VM install logs in evidence.
 - [ ] **16.7 Threat model doc** — `docs/THREAT_MODEL.md` (assets, trust boundaries: LLM, sub-apps, webview, same-user processes; mitigations mapped to task IDs 10.x).

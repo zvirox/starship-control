@@ -37,6 +37,8 @@
     <img src="https://img.shields.io/badge/stack-Rust_%C2%B7_Tauri_2_%C2%B7_React_19-6366f1?style=flat-square&labelColor=17171c" alt="Stack: Rust, Tauri 2, React 19" />
   </p>
 
+  **Tested on:** KDE Plasma 6 (Wayland, kwin 6.8.3). Other compositors are unverified; the full matrix and evidence live in [`docs/COMPAT.md`](docs/COMPAT.md).
+
   <table>
     <tr>
       <td align="right"><b>Start</b></td>
