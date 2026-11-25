@@ -1,0 +1,45 @@
+TASK 16.1 — starship-mock-app crate
+Date: 2026-11-25
+Branch: feat/linear-ui
+
+DELIVERABLE
+- New workspace crate `crates/starship-mock-app` with binary + library.
+- Implements `starship-plugin` PluginBridge, publishes manifest in socket mode,
+  serves newline-delimited JSON-RPC over Unix socket (`--socket`, default) and
+  stdio (`--mcp`).
+- Scenario-driven tools with configurable latency and progress notifications.
+- Failure modes: none, crash, hang, bad_json, slow_progress, deny_checkpoint, oom.
+- Scenario files under `crates/starship-mock-app/scenarios/` cover every mode.
+- Env overrides: STARSHIP_MOCK_SCENARIO, STARSHIP_MOCK_APP_ID,
+  STARSHIP_MOCK_FAILURE_MODE, STARSHIP_MOCK_LATENCY_MS,
+  STARSHIP_MOCK_PROGRESS_STEPS, STARSHIP_MOCK_DENY_CHECKPOINTS.
+
+VERIFICATION
+$ cargo fmt --check
+  clean
+
+$ cargo clippy --workspace --all-targets -- -D warnings
+  Finished `dev` profile; 0 warnings
+
+$ cargo test --workspace
+  164 passed; 0 failed
+  - starship-mock-app lib: 7 passed (scenario parsing, fatal modes, bad JSON)
+  - starship-mock-app tests/scenarios.rs: 9 passed
+    * scenario catalog covers all seven failure modes
+    * healthy tool streams 3 progress events + deterministic result
+    * bad_json emits an unparseable response line
+    * crash exits with code 70 after progress
+    * oom exits with simulated kill code 137 after progress
+    * hang stays alive after progress and is killed by the harness
+    * deny_checkpoint returns JSON-RPC error -32001
+    * socket mode publishes the manifest and serves a tool call
+    * slow_progress spreads 4 notifications over >= 80 ms
+
+$ cd app && npm run lint && npm run typecheck && npm run check:linear && npm run build
+  clean; check:linear gate PASSED
+
+NOTES
+- `oom` is a simulated OOM kill (bounded allocation + exit 137), not a real
+  host-wide memory exhaustion, so chaos suites can run safely on a dev machine.
+- Fatal faults are injected through `FaultRuntime`; `RecordingFaults` lets unit
+  tests exercise them without terminating the test process.

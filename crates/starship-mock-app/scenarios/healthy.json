@@ -1,0 +1,16 @@
+{
+  "appId": "mock",
+  "name": "Starship Mock App",
+  "version": "0.1.0",
+  "progressSteps": 3,
+  "tools": [
+    {
+      "name": "mock.inspect",
+      "description": "Returns a deterministic inspection result",
+      "riskTier": 1,
+      "failureMode": "none",
+      "latencyMs": 0,
+      "result": { "status": "ok", "items": 3 }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "appId": "mock",
+  "name": "Starship Mock App",
+  "version": "0.1.0",
+  "oomBytes": 1048576,
+  "progressSteps": 1,
+  "tools": [
+    {
+      "name": "mock.inspect",
+      "description": "Simulates an OOM kill after the first progress event",
+      "riskTier": 1,
+      "failureMode": "oom",
+      "result": { "status": "never_returned" }
+    }
+  ]
+}

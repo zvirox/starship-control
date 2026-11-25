@@ -6,6 +6,7 @@ members = [
     "crates/starship-infer",
     "crates/starship-mcp",
     "crates/starship-plugin",
+    "crates/starship-mock-app",
     "crates/starship-db",
     "crates/starship-health",
     "crates/xtask",

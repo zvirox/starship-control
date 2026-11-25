@@ -4054,6 +4054,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "starship-mock-app"
+version = "0.1.0-beta.1"
+dependencies = [
+ "serde",
+ "serde_json",
+ "starship-plugin",
+ "tempfile",
+]
+
+[[package]]
 name = "starship-plugin"
 version = "0.1.0-beta.1"
 dependencies = [

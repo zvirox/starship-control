@@ -1,0 +1,16 @@
+{
+  "appId": "mock",
+  "name": "Starship Mock App",
+  "version": "0.1.0",
+  "progressSteps": 4,
+  "progressIntervalMs": 40,
+  "tools": [
+    {
+      "name": "mock.inspect",
+      "description": "Streams progress slowly before returning",
+      "riskTier": 1,
+      "failureMode": "slow_progress",
+      "result": { "status": "ok", "items": 4 }
+    }
+  ]
+}

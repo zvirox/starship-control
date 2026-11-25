@@ -1,0 +1,15 @@
+{
+  "appId": "mock",
+  "name": "Starship Mock App",
+  "version": "0.1.0",
+  "progressSteps": 1,
+  "tools": [
+    {
+      "name": "mock.inspect",
+      "description": "Exits abruptly after the first progress event",
+      "riskTier": 1,
+      "failureMode": "crash",
+      "result": { "status": "never_returned" }
+    }
+  ]
+}

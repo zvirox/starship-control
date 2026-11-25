@@ -1,0 +1,16 @@
+{
+  "appId": "mock",
+  "name": "Starship Mock App",
+  "version": "0.1.0",
+  "denyCheckpoints": true,
+  "progressSteps": 1,
+  "tools": [
+    {
+      "name": "mock.mutate",
+      "description": "Mutating tool that requires a checkpoint",
+      "riskTier": 2,
+      "failureMode": "none",
+      "result": { "status": "mutated" }
+    }
+  ]
+}

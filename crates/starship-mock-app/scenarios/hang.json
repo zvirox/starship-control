@@ -1,0 +1,15 @@
+{
+  "appId": "mock",
+  "name": "Starship Mock App",
+  "version": "0.1.0",
+  "progressSteps": 1,
+  "tools": [
+    {
+      "name": "mock.inspect",
+      "description": "Stops responding after the first progress event",
+      "riskTier": 1,
+      "failureMode": "hang",
+      "result": { "status": "never_returned" }
+    }
+  ]
+}
