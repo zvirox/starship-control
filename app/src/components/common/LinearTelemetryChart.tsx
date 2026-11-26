@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import * as echarts from "echarts";
 import {
   getLinearEChartsOption,
-  LINEAR_SERIES_ORDER,
+  getLinearSeriesOrder,
   createLinearAreaGradient,
 } from "../linear/echarts-linear-theme";
 import { useThemeStore } from "../../stores/themeStore";
@@ -69,8 +69,8 @@ export const LinearTelemetryChart: React.FC<LinearTelemetryChartProps> = ({
         },
       },
       series: series.map((s, idx) => {
-        const seriesColor =
-          s.color || LINEAR_SERIES_ORDER[idx % LINEAR_SERIES_ORDER.length];
+        const seriesOrder = getLinearSeriesOrder();
+        const seriesColor = s.color || seriesOrder[idx % seriesOrder.length];
         return {
           name: s.name,
           type: "line",
@@ -119,8 +119,8 @@ export const LinearTelemetryChart: React.FC<LinearTelemetryChartProps> = ({
           </div>
           <div className="flex items-center gap-3 text-[12px] font-mono">
             {series.map((s, i) => {
-              const seriesColor =
-                s.color || LINEAR_SERIES_ORDER[i % LINEAR_SERIES_ORDER.length];
+              const seriesOrder = getLinearSeriesOrder();
+              const seriesColor = s.color || seriesOrder[i % seriesOrder.length];
               return (
                 <span key={s.name} className="flex items-center gap-1.5">
                   <span

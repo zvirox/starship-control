@@ -289,7 +289,7 @@ export const McpToolInspector: React.FC = () => {
                     type="button"
                     onClick={handleExecute}
                     disabled={executing}
-                    className="flex items-center gap-2 rounded-[6px] bg-[var(--accent-blue)] hover:bg-[var(--accent-hover)] px-4 py-2 text-[12px] font-semibold text-[var(--accent-text)] transition-colors disabled:opacity-40 focus-ring cursor-pointer"
+                    className="flex items-center gap-2 rounded-[6px] bg-[var(--btn-primary-bg)] px-4 py-2 text-[12px] font-semibold text-[var(--btn-primary-text)] transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-40 focus-ring cursor-pointer"
                   >
                     <Play className="size-3.5" strokeWidth={2} />
                     <span>{executing ? "Dispatching via MCP..." : "Execute tool call"}</span>

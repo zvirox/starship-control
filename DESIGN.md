@@ -16,36 +16,43 @@
 
 ---
 
-## 2. Color Tokens (`app/src/tailwind.css` & `echarts-linear-theme.ts`)
+## 2. Color Tokens (`app/src/styles/linear-theme.css`)
 
-| Token | Dark (`[data-theme="dark"]`) | Light (`[data-theme="light"]`) | Semantic Role |
+The shared token file is byte-identical across the companion apps and is mapped into Tailwind by `@theme inline` in `app/src/tailwind.css`. No other source file may contain a hex, `rgb()`, `hsl()`, Tailwind palette class or arbitrary color value. Charts read the same variables at runtime through `echarts-linear-theme.ts`.
+
+| Token | Dark | Light | Semantic Role |
 |---|---|---|---|
-| `--bg-app` | `#050505` | `#F3F4F6` | Window base and sidebar |
-| `--bg-surface` | `#111213` | `#FFFFFF` | Primary cards, panels, HUD surface |
-| `--bg-surface-2` | `#1A1B1E` | `#F4F5F7` | Active nav, inputs, chips, nested cards |
-| `--bg-bar-idle` | `#202128` | `#EAF0FF` | Idle chart bars and progress tracks |
-| `--border` | `#1F2125` | `#E5E7EB` | 1px card boundaries, dividers, table hairlines |
-| `--border-strong` | `#2C2E33` | `#D1D5DB` | Hover card borders, active inputs, dialog borders |
-| `--text` | `#F5F5F6` | `#0F1115` | Primary headings and metric values |
-| `--text-muted` | `#8A8B91` | `#6B7280` | Secondary labels, inactive nav, axis labels |
-| `--text-faint` | `#5A5B62` | `#9CA3AF` | Placeholders, disabled captions |
+| `--bg-app` | `#1C1C1C` | `#F8F9FA` | Window, title bar, breadcrumb bar, main area |
+| `--bg-sidebar` | `#1C1C1C` | `#F3F4F6` | Sidebar and left rail |
+| `--bg-surface` | `#1C1C1C` | `#FFFFFF` | Cards, panels, dialogs, HUD bar |
+| `--bg-surface-2` | `#292929` | `#F3F4F6` | Inputs, tags, chips, nested boxes |
+| `--bg-active` | `#292929` | `#E5E7EB` | Active nav item, selected range tab |
+| `--bg-hover` | `#232323` | `#EEF0F2` | Hovered nav and title bar buttons |
+| `--bg-track` / `--bg-bar-idle` | `#333333` | `#E5E7EB` | Switch off, progress track, idle chart bars |
+| `--border` | `#2E2E2E` | `#E5E7EB` | 1px hairlines and dividers |
+| `--border-strong` | `#363636` | `#D1D5DB` | Card hover, dialog and tooltip borders |
+| `--chart-grid` | `#2E2E2E` | `#D1D5DB` | Dotted chart gridlines |
+| `--text` | `#FFFFFF` | `#111827` | Headings, numbers, active tab |
+| `--text-secondary` | `#CBCBCB` | `#111827` | Body text, labels, table rows |
+| `--text-muted` | `#B4B4B4` | `#5B6370` | Units, timestamps, table headers |
+| `--text-faint` | `#939393` | `#868E9C` | Hints, expand icons, idle dots |
 
-### Shared Accent Palette (Both Themes)
+### Shared Series Palette (Both Themes)
 
-| Accent | Hex | Semantic Role |
-|---|---|---|
-| Blue | `#3355FF` | Primary button, main chart series, focus ring |
-| Sky | `#38B6F0` | Second series, active stack bar |
-| Green | `#22C55E` | Positive delta, healthy status, sparkline up |
-| Red | `#F43F5E` | Negative delta, error, approval gate, sparkline down |
-| Amber | `#EAB308` | Warning, third series |
-| Teal | `#1FB5A5` | Fourth series |
-| Pink | `#EC4899` | Fifth series |
-| Purple | `#7C5CE6` | Sixth series, local GGUF inference |
-| Orange | `#F97316` | Seventh series |
-| Close Hover | `#E5484D` | Window close button hover background |
+| Token | Dark | Light | Semantic Role |
+|---|---|---|---|
+| `--blue` / `--blue-text` | `#346AFE` / `#3483FF` | `#2563EB` | Series 1, fills / links, focus ring, active dot |
+| `--sky` | `#2FADFF` | `#0284C7` | Series 2, waveform |
+| `--green` / `--green-text` | `#1A9942` / `#38C84F` | `#059669` / `#15803D` | Series 3, healthy / positive delta |
+| `--amber` | `#F6940F` | `#D97706` | Series 4, warning |
+| `--teal` | `#0ACC8A` | `#0D9488` | Series 5 |
+| `--pink` | `#FC669B` | `#DB2777` | Series 6 |
+| `--purple` | `#6D59F9` | `#6D28D9` | Series 7, local GGUF |
+| `--orange` | `#FB6801` | `#EA580C` | Series 8 |
+| `--red` / `--red-text` | `#FC4232` / `#FF6B5E` | `#DC2626` / `#B91C1C` | Error, critical / negative delta |
+| `--gray` | `#4F4F4F` | `#868E9C` | Neutral labelled bars only |
 
-Icon chips and delta pills use solid precomputed theme tints (`--tint-blue`, `--tint-sky`, `--tint-green`, `--tint-red`, `--tint-amber`, `--tint-teal`, `--tint-pink`, `--tint-purple`, `--tint-orange`), never translucent overlays.
+Chip fills are solid (`--chip-green`, `--chip-red`, `--chip-blue`). Primary buttons use `--btn-primary-bg` / `--btn-primary-text` (dark: white with dark text; light: blue with white text). The only allowed shadow is `--shadow-card`; dark mode keeps it by explicit decision. Scrim and chart fades are the only translucent definitions.
 
 ---
 

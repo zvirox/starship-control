@@ -53,8 +53,8 @@ When implementing features or fixing bugs, consult the governing specification f
 5. **Prompt Injection Defense:**
    - Strings originating from external applications, file names, window titles, or CET sidecars must be wrapped inside `<untrusted_context>` blocks in prompt templates.
 6. **Design Law & Token Fidelity:**
-   - Use only tokens defined in `DESIGN.md`. Never introduce arbitrary hex codes or custom font families.
-   - Surfaces must implement the Linear-Style solid opaque specifications (`--bg-app`, `--bg-surface`, `--bg-surface-2`) with 1px hairlines, zero dark-theme shadows, zero translucency, and zero `backdrop-filter: blur()`.
+   - Use only tokens defined in `app/src/styles/linear-theme.css` and mirrored in `DESIGN.md`. Never introduce arbitrary hex codes or custom font families outside that file.
+   - Surfaces must implement the Linear solid opaque specifications (`--bg-app`, `--bg-sidebar`, `--bg-surface`, `--bg-surface-2`) with 1px hairlines, zero translucency except `--scrim` and chart fades, zero blur, and the single allowed `--shadow-card`.
 7. **Verification Before Completion:**
    - Before claiming any task is done, run and verify:
      - `cargo fmt --check`
@@ -73,7 +73,7 @@ When implementing features or fixing bugs, consult the governing specification f
 4. **Do NOT bypass `SO_PEERCRED`:** Every Unix domain socket connection to a sub-application must verify peer credentials to ensure the connecting process belongs to the host user.
 5. **Do NOT duplicate sub-application engines:** Starship Control orchestrates and commands; it does not implement raw video rendering, audio mixing, or network packet capture.
 6. **Do NOT execute destructive file operations silently:** Wiping caches (ATP), modifying timelines (EEP), or deleting audio takes (ALP) requires explicit user confirmation.
-7. **Do NOT skip accessibility:** All controls must support keyboard navigation with the universal focus ring (`0 0 0 2px <bg>, 0 0 0 4px #3355FF`), ARIA labels, and reduced-motion compliance.
+7. **Do NOT skip accessibility:** All controls must support keyboard navigation with the universal focus ring (`0 0 0 2px <bg>, 0 0 0 4px var(--blue-text)`), ARIA labels, and reduced-motion compliance.
 
 ---
 

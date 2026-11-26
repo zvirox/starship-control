@@ -1,40 +1,73 @@
 import * as echarts from "echarts";
 
-export const LINEAR_COLORS = {
-  blue: "#3355FF",
-  sky: "#38B6F0",
-  green: "#22C55E",
-  amber: "#EAB308",
-  teal: "#1FB5A5",
-  pink: "#EC4899",
-  purple: "#7C5CE6",
-  orange: "#F97316",
-  red: "#F43F5E",
-  idleDark: "#202128",
-  idleLight: "#EAF0FF",
-  borderDark: "#1F2125",
-  borderStrongDark: "#2C2E33",
-  borderLight: "#E5E7EB",
-  borderStrongLight: "#D1D5DB",
-  textDark: "#F5F5F6",
-  textMutedDark: "#8A8B91",
-  textLight: "#0F1115",
-  textMutedLight: "#6B7280",
-  surfaceDark: "#111213",
-  surfaceLight: "#FFFFFF",
+const COLOR_VARIABLES = {
+  blue: "--blue",
+  blueText: "--blue-text",
+  sky: "--sky",
+  green: "--green",
+  greenText: "--green-text",
+  amber: "--amber",
+  teal: "--teal",
+  pink: "--pink",
+  purple: "--purple",
+  orange: "--orange",
+  red: "--red",
+  redText: "--red-text",
+  gray: "--gray",
+  idle: "--bg-bar-idle",
+  border: "--border",
+  borderStrong: "--border-strong",
+  grid: "--chart-grid",
+  text: "--text",
+  textSecondary: "--text-secondary",
+  textMuted: "--text-muted",
+  surface: "--bg-surface",
+  surface2: "--bg-surface-2",
+} as const;
+
+type ColorName = keyof typeof COLOR_VARIABLES;
+
+function readColor(name: ColorName): string {
+  if (typeof window === "undefined" || typeof getComputedStyle === "undefined") return "";
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(COLOR_VARIABLES[name])
+    .trim();
+}
+
+const LEGACY_ALIASES: Record<string, ColorName> = {
+  idleDark: "idle",
+  idleLight: "idle",
+  surfaceDark: "surface",
+  surfaceLight: "surface",
+  borderStrongDark: "borderStrong",
+  borderStrongLight: "borderStrong",
+  textDark: "text",
+  textLight: "text",
+  textMutedDark: "textMuted",
+  textMutedLight: "textMuted",
 };
 
-/** Exact Plan §1 series order: blue, sky, green, amber, teal, pink, purple, orange */
-export const LINEAR_SERIES_ORDER = [
-  LINEAR_COLORS.blue,
-  LINEAR_COLORS.sky,
-  LINEAR_COLORS.green,
-  LINEAR_COLORS.amber,
-  LINEAR_COLORS.teal,
-  LINEAR_COLORS.pink,
-  LINEAR_COLORS.purple,
-  LINEAR_COLORS.orange,
-] as const;
+/** Live CSS-variable-backed palette. Values update with the active `data-theme`. */
+export const LINEAR_COLORS = new Proxy({} as Record<string, string>, {
+  get: (_target, name: string) =>
+    readColor(LEGACY_ALIASES[name] ?? (name as ColorName)),
+});
+
+/** Exact Plan §1 series order: blue, sky, green, amber, teal, pink, purple, orange. */
+const SERIES_NAMES: ColorName[] = [
+  "blue",
+  "sky",
+  "green",
+  "amber",
+  "teal",
+  "pink",
+  "purple",
+  "orange",
+];
+
+export function getLinearSeriesOrder(): string[] {
+  return SERIES_NAMES.map(readColor);
+}
 
 export function createLinearAreaGradient(hexColor: string, topOpacity = 0.2) {
   const clean = hexColor.startsWith("#") ? hexColor.slice(0, 7) : `#${hexColor}`;
@@ -47,12 +80,12 @@ export function createLinearAreaGradient(hexColor: string, topOpacity = 0.2) {
   ]);
 }
 
-export const getLinearEChartsOption = (isDark: boolean = true) => ({
+export const getLinearEChartsOption = (_isDark: boolean = true) => ({
   backgroundColor: "transparent",
   textStyle: {
     fontFamily: "Inter, system-ui, -apple-system, sans-serif",
     fontSize: 12,
-    color: isDark ? LINEAR_COLORS.textMutedDark : LINEAR_COLORS.textMutedLight,
+    color: LINEAR_COLORS.textMuted,
   },
   grid: {
     top: 20,
@@ -62,34 +95,26 @@ export const getLinearEChartsOption = (isDark: boolean = true) => ({
     containLabel: false,
   },
   tooltip: {
-    backgroundColor: isDark
-      ? LINEAR_COLORS.surfaceDark
-      : LINEAR_COLORS.surfaceLight,
-    borderColor: isDark
-      ? LINEAR_COLORS.borderStrongDark
-      : LINEAR_COLORS.borderLight,
+    backgroundColor: LINEAR_COLORS.surface,
+    borderColor: LINEAR_COLORS.borderStrong,
     borderWidth: 1,
     padding: [8, 12],
     textStyle: {
-      color: isDark ? LINEAR_COLORS.textDark : LINEAR_COLORS.textLight,
+      color: LINEAR_COLORS.text,
       fontSize: 12,
       fontFamily: "Inter, system-ui, -apple-system, sans-serif",
     },
-    extraCssText: isDark
-      ? "border-radius: 4px; box-shadow: none;"
-      : "border-radius: 4px; box-shadow: 0 1px 2px rgb(16 24 40 / 5%);",
+    extraCssText: "border-radius: 4px; box-shadow: var(--shadow-card);",
   },
   xAxis: {
     axisLine: {
       lineStyle: {
-        color: isDark ? LINEAR_COLORS.borderDark : LINEAR_COLORS.borderLight,
+        color: LINEAR_COLORS.grid,
       },
     },
     axisLabel: {
       fontSize: 12,
-      color: isDark
-        ? LINEAR_COLORS.textMutedDark
-        : LINEAR_COLORS.textMutedLight,
+      color: LINEAR_COLORS.textMuted,
     },
     splitLine: { show: false },
     axisTick: { show: false },
@@ -98,16 +123,14 @@ export const getLinearEChartsOption = (isDark: boolean = true) => ({
     axisLine: { show: false },
     axisLabel: {
       fontSize: 12,
-      color: isDark
-        ? LINEAR_COLORS.textMutedDark
-        : LINEAR_COLORS.textMutedLight,
+      color: LINEAR_COLORS.textMuted,
     },
     splitLine: {
       lineStyle: {
         type: "dotted" as const,
-        color: isDark ? LINEAR_COLORS.borderDark : LINEAR_COLORS.borderLight,
+        color: LINEAR_COLORS.grid,
       },
     },
   },
-  color: [...LINEAR_SERIES_ORDER],
+  color: getLinearSeriesOrder(),
 });
