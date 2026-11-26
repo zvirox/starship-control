@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-beta.5] - 2026-11-26
+
+### Changed
+
+- **Colorful dashboard and charts**: Each chart series and component role now uses a distinct hue instead of collapsing to violet/sky. Throughput = blue + amber, latency bars = blue + pink, model-states donut = sky/amber/purple/red, and the global chart palette is `primary, blue, amber, pink, purple, orange, sky, red`.
+- **Distinct component accents**: `--accent-blue` → blue, `--accent-teal` → purple, positive/healthy → sky, with amber/pink/purple/orange/red kept separate. Chips and badges gained per-hue solid tints (blue, amber, pink, purple, orange, sky, red) in `app-accent.css`.
+- Primary buttons, links and focus rings remain **Violet**; no green is used anywhere (the `check:linear` gate still passes).
+
 ## [0.1.0-beta.4] - 2026-11-26
 
 ### Changed

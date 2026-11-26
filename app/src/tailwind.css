@@ -80,8 +80,8 @@
   --color-text-primary: var(--text);
   --color-text-secondary: var(--text-secondary);
   --color-text-disabled: var(--text-faint);
-  --color-accent: var(--primary-text);
-  --color-accent-hover: var(--primary-text);
+  --color-accent: var(--blue);
+  --color-accent-hover: var(--blue);
   --color-accent-active: var(--primary);
   --color-accent-muted: var(--primary-tint);
   --color-accent-text: var(--text);
@@ -92,36 +92,27 @@
   --color-signal-gate: var(--red);
   --color-signal-gate-bg: var(--chip-red);
   --color-signal-local-model: var(--purple);
-  --color-brand: var(--primary-text);
+  --color-brand: var(--blue);
 
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-/* Legacy CSS variable names mapped to the new roles, with colors only from linear-theme.css */
+/* Legacy CSS variable names mapped to the new roles, with colors only from the token files */
 :root {
-  --accent-blue: var(--primary-text);
-  --accent-hover: var(--primary-text);
+  --accent-blue: var(--blue);
+  --accent-hover: var(--blue);
   --accent-active: var(--primary);
   --accent-sky: var(--sky);
   --accent-green: var(--sky);
   --accent-red: var(--red);
   --accent-amber: var(--amber);
-  --accent-teal: var(--sky);
+  --accent-teal: var(--purple);
   --accent-pink: var(--pink);
   --accent-purple: var(--purple);
   --accent-orange: var(--orange);
   --accent-text: var(--text);
-
-  --tint-blue: var(--primary-tint);
-  --tint-green: var(--chip-sky);
-  --tint-red: var(--chip-red);
-  --tint-sky: var(--bg-surface-2);
-  --tint-amber: var(--bg-surface-2);
-  --tint-teal: var(--bg-surface-2);
-  --tint-pink: var(--bg-surface-2);
-  --tint-purple: var(--bg-surface-2);
-  --tint-orange: var(--bg-surface-2);
+  /* --tint-* chip backgrounds live in app-accent.css (per-hue, no green) */
 }
 
 /* Linear flat solid surfaces (zero blur, zero translucency, one allowed card shadow) */

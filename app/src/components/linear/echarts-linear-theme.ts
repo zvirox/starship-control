@@ -55,14 +55,17 @@ export const LINEAR_COLORS = new Proxy({} as Record<string, string>, {
     readColor(LEGACY_ALIASES[name] ?? (name as ColorName)),
 });
 
-/** Starship Control series order (Plan §5): primary, sky, amber, pink, blue.
- *  Purple is skipped as a near-duplicate of the Violet primary. */
+/** Starship Control series order: distinct hues so every series reads differently.
+ *  primary (Violet), blue, amber, pink, purple, orange, sky, red. No green. */
 const SERIES_NAMES: ColorName[] = [
   "primary",
-  "sky",
+  "blue",
   "amber",
   "pink",
-  "blue",
+  "purple",
+  "orange",
+  "sky",
+  "red",
 ];
 
 export function getLinearSeriesOrder(): string[] {

@@ -5,6 +5,16 @@
   --primary-fg: #FFFFFF;
   --primary-text: #6D28D9;
   --primary-tint: #F5F0FC;
+  /* Per-hue chip tints (solid, no green) so components stay colorful */
+  --tint-blue: #E0E7FF;
+  --tint-green: #E0F2FE;
+  --tint-red: #FEE2E2;
+  --tint-sky: #E0F2FE;
+  --tint-amber: #FEF3C7;
+  --tint-teal: #EDE9FE;
+  --tint-pink: #FCE7F3;
+  --tint-purple: #EDE9FE;
+  --tint-orange: #FFEDD5;
 }
 [data-theme="dark"] {
   --primary: #8B3DFF;
@@ -12,4 +22,13 @@
   --primary-fg: #FFFFFF;
   --primary-text: #B28CFF;
   --primary-tint: #2C213C;
+  --tint-blue: #1E2A4A;
+  --tint-green: #1F303C;
+  --tint-red: #2D1F1F;
+  --tint-sky: #1F303C;
+  --tint-amber: #3A2E12;
+  --tint-teal: #2A2340;
+  --tint-pink: #3A1F2E;
+  --tint-purple: #2A2340;
+  --tint-orange: #3A2410;
 }

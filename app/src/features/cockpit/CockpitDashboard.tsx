@@ -195,10 +195,10 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
           smooth: true,
           showSymbol: false,
           data: rangeSeries.secondary,
-          lineStyle: { width: 2, color: LINEAR_COLORS.sky },
-          itemStyle: { color: LINEAR_COLORS.sky },
+          lineStyle: { width: 2, color: LINEAR_COLORS.amber },
+          itemStyle: { color: LINEAR_COLORS.amber },
           areaStyle: {
-            color: createLinearAreaGradient(LINEAR_COLORS.sky, 0.14),
+            color: createLinearAreaGradient(LINEAR_COLORS.amber, 0.14),
           },
         },
       ],
@@ -274,7 +274,7 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
           data: queueOverhead.map((v, i) => ({
             value: v,
             itemStyle: {
-              color: i === activeBarIdx ? LINEAR_COLORS.sky : idleFill,
+              color: i === activeBarIdx ? LINEAR_COLORS.pink : idleFill,
               borderRadius: [4, 4, 0, 0],
             },
           })),
@@ -312,7 +312,7 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
       {
         label: "Idle",
         value: idleModelsCount,
-        color: LINEAR_COLORS.sky,
+        color: LINEAR_COLORS.purple,
       },
       {
         label: "Error",
