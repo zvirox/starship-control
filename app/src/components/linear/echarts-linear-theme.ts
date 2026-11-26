@@ -1,13 +1,15 @@
 import * as echarts from "echarts";
 
 const COLOR_VARIABLES = {
+  primary: "--primary",
   blue: "--blue",
-  blueText: "--blue-text",
+  blueText: "--sky-text",
   sky: "--sky",
-  green: "--green",
-  greenText: "--green-text",
+  skyText: "--sky-text",
+  green: "--sky",
+  greenText: "--sky-text",
   amber: "--amber",
-  teal: "--teal",
+  teal: "--sky",
   pink: "--pink",
   purple: "--purple",
   orange: "--orange",
@@ -53,16 +55,14 @@ export const LINEAR_COLORS = new Proxy({} as Record<string, string>, {
     readColor(LEGACY_ALIASES[name] ?? (name as ColorName)),
 });
 
-/** Exact Plan §1 series order: blue, sky, green, amber, teal, pink, purple, orange. */
+/** Starship Control series order (Plan §5): primary, sky, amber, pink, blue.
+ *  Purple is skipped as a near-duplicate of the Violet primary. */
 const SERIES_NAMES: ColorName[] = [
-  "blue",
+  "primary",
   "sky",
-  "green",
   "amber",
-  "teal",
   "pink",
-  "purple",
-  "orange",
+  "blue",
 ];
 
 export function getLinearSeriesOrder(): string[] {

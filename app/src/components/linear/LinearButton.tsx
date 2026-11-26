@@ -22,7 +22,7 @@ export const LinearButton: React.FC<LinearButtonProps> = ({
 
   const variantStyles = {
     primary:
-      "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] font-medium border border-[var(--btn-primary-bg)] hover:opacity-90 active:opacity-80",
+      "bg-[var(--primary)] text-[var(--primary-fg)] font-medium border border-[var(--primary)] hover:opacity-90 active:opacity-80",
     secondary:
       "bg-[var(--bg-surface-2)] hover:bg-[var(--bg-bar-idle)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--border-strong)] font-medium",
     ghost:

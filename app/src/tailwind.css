@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./styles/linear-theme.css";
+@import "./styles/app-accent.css";
 
 @custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
 
@@ -39,50 +40,59 @@
   --color-faint: var(--text-faint);
   --color-muted: var(--text-muted);
   --color-blue: var(--blue);
-  --color-blue-text: var(--blue-text);
+  --color-blue-text: var(--sky-text);
   --color-sky: var(--sky);
-  --color-green: var(--green);
-  --color-green-text: var(--green-text);
+  --color-sky-text: var(--sky-text);
+  --color-green: var(--sky);
+  --color-green-text: var(--sky-text);
   --color-amber: var(--amber);
-  --color-teal: var(--teal);
+  --color-teal: var(--sky);
   --color-pink: var(--pink);
   --color-purple: var(--purple);
   --color-orange: var(--orange);
   --color-red: var(--red);
   --color-red-text: var(--red-text);
   --color-gray: var(--gray);
-  --color-chip-green: var(--chip-green);
+  --color-chip-green: var(--chip-sky);
   --color-chip-red: var(--chip-red);
-  --color-chip-blue: var(--chip-blue);
-  --color-btn: var(--btn-primary-bg);
-  --color-btn-fg: var(--btn-primary-text);
+  --color-chip-sky: var(--chip-sky);
+  --color-chip-blue: var(--chip-sky);
+  --color-btn: var(--primary);
+  --color-btn-fg: var(--primary-fg);
   --color-close-hover: var(--close-hover);
   --color-scrim: var(--scrim);
   --color-chart-fade-up: var(--chart-fade-up);
   --color-chart-fade-down: var(--chart-fade-down);
+
+  /* Per-app primary accent (Violet for Starship Control) from app-accent.css */
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-text: var(--primary-text);
+  --color-primary-tint: var(--primary-tint);
 
   /* Compatibility names so existing role-based classes keep working */
   --color-canvas: var(--bg-app);
   --color-raised: var(--bg-surface);
   --color-surface-solid: var(--bg-surface-2);
   --color-border-subtle: var(--border);
-  --color-border-focus: var(--blue-text);
+  --color-border-focus: var(--primary-text);
   --color-text-primary: var(--text);
   --color-text-secondary: var(--text-secondary);
   --color-text-disabled: var(--text-faint);
-  --color-accent: var(--blue-text);
-  --color-accent-hover: var(--blue-text);
-  --color-accent-active: var(--blue);
-  --color-accent-muted: var(--chip-blue);
-  --color-accent-text: var(--btn-primary-text);
+  --color-accent: var(--primary-text);
+  --color-accent-hover: var(--primary-text);
+  --color-accent-active: var(--primary);
+  --color-accent-muted: var(--primary-tint);
+  --color-accent-text: var(--text);
   --color-signal-thinking: var(--amber);
   --color-signal-thinking-bg: var(--bg-surface-2);
-  --color-signal-success: var(--green);
-  --color-signal-success-bg: var(--chip-green);
+  --color-signal-success: var(--sky);
+  --color-signal-success-bg: var(--chip-sky);
   --color-signal-gate: var(--red);
   --color-signal-gate-bg: var(--chip-red);
   --color-signal-local-model: var(--purple);
-  --color-brand: var(--blue-text);
+  --color-brand: var(--primary-text);
 
   --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -90,21 +100,21 @@
 
 /* Legacy CSS variable names mapped to the new roles, with colors only from linear-theme.css */
 :root {
-  --accent-blue: var(--blue-text);
-  --accent-hover: var(--blue-text);
-  --accent-active: var(--blue);
+  --accent-blue: var(--primary-text);
+  --accent-hover: var(--primary-text);
+  --accent-active: var(--primary);
   --accent-sky: var(--sky);
-  --accent-green: var(--green);
+  --accent-green: var(--sky);
   --accent-red: var(--red);
   --accent-amber: var(--amber);
-  --accent-teal: var(--teal);
+  --accent-teal: var(--sky);
   --accent-pink: var(--pink);
   --accent-purple: var(--purple);
   --accent-orange: var(--orange);
-  --accent-text: var(--btn-primary-text);
+  --accent-text: var(--text);
 
-  --tint-blue: var(--chip-blue);
-  --tint-green: var(--chip-green);
+  --tint-blue: var(--primary-tint);
+  --tint-green: var(--chip-sky);
   --tint-red: var(--chip-red);
   --tint-sky: var(--bg-surface-2);
   --tint-amber: var(--bg-surface-2);
@@ -163,7 +173,7 @@
 }
 
 .focus-ring:focus-visible {
-  outline: 2px solid var(--blue-text);
+  outline: 2px solid var(--primary-text);
   outline-offset: 2px;
 }
 

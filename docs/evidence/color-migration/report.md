@@ -1,51 +1,71 @@
 # Color migration — Starship Control (SSC)
 
-Date: 2026-11-26 · Branch: `colors/linear-palette` · Plan step 5 of 6
+Date: 2026-11-26 · Branch: `colors/linear-palette-v2` · Plan step 5 of 6 (palette revision)
 
 ## Result
 
+This is a **palette revision** of the earlier migration. The shared ATP token file was
+updated (green/teal removed, positive → sky), and the app's primary accent is now
+**Violet**, isolated in its own `app-accent.css`. The app was re-pointed at the new tokens
+with no layout, spacing, radius, title-bar, window-config or behavior change — colors only.
+
 - `app/src/styles/linear-theme.css` copied byte-for-byte from the attached ATP token file.
-  `sha256 = 8f939da3eb48b2f04a80b5bc2f85c45a8ed2794cfc267744c32e8e5fae47d0f4`
-- `app/src/tailwind.css` now only maps tokens with `@theme inline`; it contains no hex, rgb or hsl.
-- Legacy CSS variable names used by components (`--accent-blue`, `--tint-red`, …) are
-  aliased in `tailwind.css` to the new role tokens. No component layout, spacing,
-  radius, window config or behavior was changed.
-- Primary buttons use `--btn-primary-bg` / `--btn-primary-text` (dark: white fill with
-  dark text; light: blue fill with white text). Other accents map to the shared series tokens.
+  `sha256 = a542c03e83fd42bff20815cac21e37182261ebb86f1ca6b04f2341b0c2b21a4e`
+- `app/src/styles/app-accent.css` holds the Starship Control Violet primary and matches
+  Plan §3 exactly. `sha256 = 13d47963c12a3233751ca0b628fa5fc50968a5254d84823f560da8b7d5ad4e8a`
+- `app/src/tailwind.css` imports both token files and maps them with `@theme inline`
+  (including `--color-primary`, `--color-primary-hover`, `--color-primary-fg`,
+  `--color-primary-text`, `--color-primary-tint`). It contains no hex, rgb or hsl. Legacy
+  CSS variable names used by components (`--accent-blue`, `--tint-green`, …) are aliased to
+  the new role tokens, so no component layout changed.
+- Primary buttons (`LinearButton`, `McpToolInspector`) use `--primary` fill with
+  `--primary-fg` label in both themes.
 - `echarts-linear-theme.ts` reads every color from CSS variables at runtime via
-  `getComputedStyle(document.documentElement)` and exposes `getLinearSeriesOrder()`.
-  The chart re-renders on the existing theme-store change, so colors follow the live toggle.
-- `check:linear` now enforces: colors only in the token file, no blur/glow/translucency,
-  only `var(--shadow-card)`, retired-value rejection, ATP sha256 sync and WCAG contrast pairs.
+  `getComputedStyle(document.documentElement)` and exposes `getLinearSeriesOrder()` with the
+  app order `--primary, --sky, --amber, --pink, --blue`. The chart re-renders on the existing
+  theme-store change, so colors follow the live toggle.
+- `check-linear.mjs` enforces: colors only in the two token files, no blur/glow/translucency,
+  only `var(--shadow-card)`, retired-value rejection, foreign-primary rejection, green-hue
+  rejection (75–170°), token + accent sha256 sync, and the Plan §8 WCAG contrast pairs.
+
+## Token delta (old → new)
+
+| Removed token | New role mapping | Where |
+|---|---|---|
+| `--blue-text` | `--primary-text` / `--sky-text` | links, focus ring, brand, active dot |
+| `--green` / `--green-text` | `--sky` / `--sky-text` | success, running, healthy, positive delta |
+| `--teal` | (removed) | read as green; dropped from series |
+| `--chip-blue` / `--chip-green` | `--chip-sky` / `--primary-tint` | info chip / success chip |
+| `--btn-primary-bg` / `--btn-primary-text` | `--primary` / `--primary-fg` | primary button |
+| **Added** `--sky-text`, `--chip-sky` | — | text-safe accent, info/success chip |
+| **Added** `--primary`, `--primary-hover`, `--primary-fg`, `--primary-text`, `--primary-tint` | — | per-app Violet accent (`app-accent.css`) |
 
 ## Audit
 
 `docs/color-audit.md` records the pre-migration source scan: one finding, a comment in
-`TitleBar.tsx` naming the close-hover color. No raw color utilities existed outside the
-two old token files. Post-migration retired-value search over `app/src` returns nothing.
+`TitleBar.tsx` naming the close-hover color. No raw color utilities exist outside the token
+files. Post-migration retired-value, foreign-primary and green-hue searches over `app/src`,
+`DESIGN.md`, `AGENTS.md` are clean.
 
 ## Screenshots
 
-Before and after captures for Cockpit and HUD, both themes, at 1280×800 and 1024×640:
-`docs/evidence/color-migration/before/` and `docs/evidence/color-migration/after/`.
+Before (previous palette) and after (new palette) captures for Cockpit and HUD, both themes,
+at 1280×800 and 1024×640: `docs/evidence/color-migration/before/` and `.../after/`.
 Live theme-toggle capture: `docs/evidence/color-migration/theme-toggle-light.png`.
-
-Toggle proof: `--blue` changed from `#346AFE` (dark) to `#2563EB` (light) on click and
-the rendered screen hash changed without a reload.
 
 ## Verification
 
-- `cargo fmt --check`, `cargo clippy --workspace --all-targets -D warnings`, 182 Rust tests
-- `npm run lint`, `npm run typecheck`, `npm run test:security` (4 pass)
-- `npm run check:linear` — PASS
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -D warnings`, 182 Rust tests — PASS
+- `npm run lint`, `npm run typecheck` — PASS
+- `npm run check:linear` — PASS (new token sha, accent sha, contrast pairs, retired/foreign/green clean)
 - `npm run build` — PASS
-- retired-value search — clean
-- token sha256 — matches ATP reference
+- retired-value, foreign-primary and green-hue searches — clean
+- token + accent sha256 — match references
 
 ## Notes / decisions
 
 - The dark card shadow is intentionally kept as the single allowed shadow token.
-- Close-button hover keeps a white icon via a CSS brightness/invert filter, avoiding a
-  literal color outside the token file.
-- `--gray` remains reserved for labelled neutral bars; blue and purple are not placed
-  adjacent in one chart, per the plan's accepted color-distance caveat.
+- Close-button hover keeps a white icon via a CSS brightness/invert filter.
+- `--gray` remains reserved for labelled neutral bars. Series order is the app order
+  (primary, sky, amber, pink, blue); purple is skipped as a near-duplicate of the Violet primary.
+- Primary button label uses `--primary-fg` (white in both themes) on `--primary`.

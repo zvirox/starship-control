@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-beta.4] - 2026-11-26
+
+### Changed
+
+- **Violet primary accent**: Starship Control's per-app accent is now **Violet**, isolated in `app/src/styles/app-accent.css` (`--primary #8B3DFF` dark / `#6D28D9` light, `--primary-text #B28CFF` / `#6D28D9`). Primary buttons, links, focus rings, active nav and selected tabs use the Violet accent; all other tokens stay identical to the shared six-app palette.
+- **Green and teal removed**: Positive, healthy, online, done and up now use `--sky` (replacing green); teal is dropped from series lists. Chart series order is `--primary, --sky, --amber, --pink, --blue` (purple skipped as a near-duplicate of the Violet primary).
+- **Design gate**: `check:linear` now also validates `app-accent.css` (sha256 sync), rejects foreign-app primary accents and any green hue (75–170°), and enforces the full Plan §8 contrast matrix alongside the retired-value list. `DESIGN.md` (v2.2) and `AGENTS.md` mirror the Violet palette.
+
 ## [0.1.0-beta.3] - 2026-11-26
 
 ### Changed

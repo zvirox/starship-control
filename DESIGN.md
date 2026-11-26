@@ -1,6 +1,6 @@
 # DESIGN.md — Starship Control Design System
 
-**Version:** 2.1 · **Date:** 2026-11-25 · **Status:** FINAL & LOCKED (No further UI style changes)
+**Version:** 2.2 · **Date:** 2026-11-26 · **Status:** FINAL & LOCKED (No further UI style changes)
 **Authority:** `PRD.md` (scope, functional requirements) → `ARCHITECTURE.md` (multi-window, crates, IPC) → **this file (UI & visual law)**  
 **Rule:** Every interface built in Starship Control must follow this document strictly. Do not invent custom tokens, raw hex in components, blur, translucency, or dark-theme shadows outside this specification.
 
@@ -18,7 +18,7 @@
 
 ## 2. Color Tokens (`app/src/styles/linear-theme.css`)
 
-The shared token file is byte-identical across the companion apps and is mapped into Tailwind by `@theme inline` in `app/src/tailwind.css`. No other source file may contain a hex, `rgb()`, `hsl()`, Tailwind palette class or arbitrary color value. Charts read the same variables at runtime through `echarts-linear-theme.ts`.
+The shared token file (`linear-theme.css`) is byte-identical across the companion apps; the per-app primary accent lives in `app-accent.css` (Starship Control = **Violet**). Both are mapped into Tailwind by `@theme inline` in `app/src/tailwind.css`. No other source file may contain a hex, `rgb()`, `hsl()`, Tailwind palette class or arbitrary color value. Charts read the same variables at runtime through `echarts-linear-theme.ts`.
 
 | Token | Dark | Light | Semantic Role |
 |---|---|---|---|
@@ -35,24 +35,32 @@ The shared token file is byte-identical across the companion apps and is mapped 
 | `--text` | `#FFFFFF` | `#111827` | Headings, numbers, active tab |
 | `--text-secondary` | `#CBCBCB` | `#111827` | Body text, labels, table rows |
 | `--text-muted` | `#B4B4B4` | `#5B6370` | Units, timestamps, table headers |
-| `--text-faint` | `#939393` | `#868E9C` | Hints, expand icons, idle dots |
+| `--text-faint` | `#939393` | `#818998` | Hints, expand icons, idle dots |
+
+### Per-App Primary Accent (`app-accent.css` — Violet for Starship Control)
+
+| Token | Dark | Light | Semantic Role |
+|---|---|---|---|
+| `--primary` | `#8B3DFF` | `#6D28D9` | Primary button fill, switch on, slider/fader, in-progress fill, selected border |
+| `--primary-hover` | `#7A36E0` | `#6023BF` | Primary button hover |
+| `--primary-fg` | `#FFFFFF` | `#FFFFFF` | Primary button text |
+| `--primary-text` | `#B28CFF` | `#6D28D9` | Links, focus ring, selected tab text/underline, active nav icon, Assigned chip text |
+| `--primary-tint` | `#2C213C` | `#F5F0FC` | Assigned / info chip fill |
 
 ### Shared Series Palette (Both Themes)
 
 | Token | Dark | Light | Semantic Role |
 |---|---|---|---|
-| `--blue` / `--blue-text` | `#346AFE` / `#3483FF` | `#2563EB` | Series 1, fills / links, focus ring, active dot |
-| `--sky` | `#2FADFF` | `#0284C7` | Series 2, waveform |
-| `--green` / `--green-text` | `#1A9942` / `#38C84F` | `#059669` / `#15803D` | Series 3, healthy / positive delta |
-| `--amber` | `#F6940F` | `#D97706` | Series 4, warning |
-| `--teal` | `#0ACC8A` | `#0D9488` | Series 5 |
-| `--pink` | `#FC669B` | `#DB2777` | Series 6 |
-| `--purple` | `#6D59F9` | `#6D28D9` | Series 7, local GGUF |
-| `--orange` | `#FB6801` | `#EA580C` | Series 8 |
+| `--blue` | `#346AFE` | `#2563EB` | Series and clip color |
+| `--sky` / `--sky-text` | `#2FADFF` / `#2FADFF` | `#0284C7` / `#0369A1` | Series 2, waveform / links, focus ring, active dot, success & positive delta (replaces green) |
+| `--amber` | `#F6940F` | `#D97706` | Series 3, warning |
+| `--pink` | `#FC669B` | `#DB2777` | Series 4 |
+| `--purple` | `#6D59F9` | `#6D28D9` | Series 5, local GGUF |
+| `--orange` | `#FB6801` | `#EA580C` | Series 6 |
 | `--red` / `--red-text` | `#FC4232` / `#FF6B5E` | `#DC2626` / `#B91C1C` | Error, critical / negative delta |
 | `--gray` | `#4F4F4F` | `#868E9C` | Neutral labelled bars only |
 
-Chip fills are solid (`--chip-green`, `--chip-red`, `--chip-blue`). Primary buttons use `--btn-primary-bg` / `--btn-primary-text` (dark: white with dark text; light: blue with white text). The only allowed shadow is `--shadow-card`; dark mode keeps it by explicit decision. Scrim and chart fades are the only translucent definitions.
+Chart series order for Starship Control is `--primary, --sky, --amber, --pink, --blue`; colors within 25 color-distance of the primary (e.g. purple) are skipped. Chip fills are solid (`--chip-sky`, `--chip-red`). Primary buttons use `--primary` fill with `--primary-fg` label in both themes. The only allowed shadow is `--shadow-card`; dark mode keeps it by explicit decision. Scrim and chart fades are the only translucent definitions. Green and teal are removed entirely — positive, healthy, online, done and up use `--sky`.
 
 ---
 
@@ -80,4 +88,4 @@ Chip fills are solid (`--chip-green`, `--chip-red`, `--chip-blue`). Primary butt
 ### 4.2 Floating HUD Window (`420×64`)
 - **Window Config:** `420×64` rectangular solid bar (`decorations: false`, `transparent: false`, `shadow: true`, `alwaysOnTop: true`), `6 px` inner surface radius on `--bg-surface` with `1 px` `--border`. Zero blur, zero dark-theme shadow.
 - **Controls:** Compact drag handle (`data-tauri-drag-region`), `20 px` logo, and close button (`#E5484D` hover) only. No theme toggle — synchronizes with Cockpit via Tauri event (`evt://theme/changed`).
-- **Content:** `StatusPill`, live tokens per second metric (`tabular-nums`), and green/red sparkline with gradient fade under line.
+- **Content:** `StatusPill`, live tokens per second metric (`tabular-nums`), and sky/red sparkline with gradient fade under line.

@@ -1,0 +1,15 @@
+/* src/styles/app-accent.css : Starship Control (Violet). The only styling file that differs between apps. */
+:root, [data-theme="light"] {
+  --primary: #6D28D9;
+  --primary-hover: #6023BF;
+  --primary-fg: #FFFFFF;
+  --primary-text: #6D28D9;
+  --primary-tint: #F5F0FC;
+}
+[data-theme="dark"] {
+  --primary: #8B3DFF;
+  --primary-hover: #7A36E0;
+  --primary-fg: #FFFFFF;
+  --primary-text: #B28CFF;
+  --primary-tint: #2C213C;
+}
