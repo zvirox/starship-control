@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-beta.3] - 2026-11-26
+
+### Changed
+
+- **Shared Linear color palette migration**: Replaced the SSC palette with the byte-identical six-app `linear-theme.css` (dark `#1C1C1C`/`#292929` surfaces, `#346AFE` blue, `#1A9942` green, `#FC4232` red). Dark primary buttons now use white fill with dark text; light stays blue.
+- **Runtime chart colors**: `echarts-linear-theme.ts` reads CSS variables via `getComputedStyle` and re-colors on live theme toggle; no hex literals remain in chart code.
+- **Design gate**: `check:linear` now enforces token-only colors, retired-value rejection, ATP token sha256 sync, the single allowed `--shadow-card`, and WCAG contrast pairs; `DESIGN.md` and `AGENTS.md` mirror the new palette.
+
 ## [0.1.0-beta.2] - 2026-11-25
 
 ### Changed
