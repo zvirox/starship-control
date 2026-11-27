@@ -1,0 +1,26 @@
+=== TASK 17.0 — CONFIRM ROOT CAUSES ===
+Date: 2026-11-27 · Audited commit: 8be383e (no code changes since)
+Method: direct source inspection with `grep -n` / `read`; nothing built or run.
+Plan: PHASE-17-FIX-PLAN.md §1 (R1–R16). All findings below are CONFIRMED;
+no amendment to the plan is required.
+
+| ID | File : line | Finding | Status |
+|----|-------------|---------|--------|
+| R1 | crates/starship-mcp/src/router.rs:57-61, 106+ | `route_and_call` step 3 falls back to `simulate_tool_call`; it returns `status:"success"` with hard-coded results (14 segments / 84.5 s at :123-125). | CONFIRMED |
+| R2 | app/src-tauri/src/ipc/commands.rs:979-999 | Missing binary branch emits `live_gui`, sets GUI status true and returns `spawned: true, pid: Some(12345)` (fixed PID at :998). | CONFIRMED |
+| R3 | crates/starship-core/src/pipeline/media.rs:36-47 | With no telemetry, `cuts` is populated with default `CutInterval` values instead of an error. | CONFIRMED |
+| R4 | app/src/features/hud/HudView.tsx:93-98; app/src/components/cockpit/ModelControlView.tsx:48,54; AppTopologyView.tsx:32; MissionTimelineView.tsx:156,228 | `Math.random` series, "ecosystem mock for web preview" fallback and `mockSteps` are present in production components. | CONFIRMED |
+| R5 | crates/starship-infer/src/local/runner.rs:81,222,241 | `synthesize_tasksheet_json` and canned keyword-matched `stream_chat` output; no `llama-cpp` dependency in any `Cargo.toml` (grep found none). | CONFIRMED |
+| R6 | app/src-tauri/src/ipc/commands.rs:717-721,752 | Cloud path takes `c.api_key_encrypted` straight from DB and passes it as `api_key` to `InferDispatcher::dispatch_stream`; `decrypt_api_key` (starship-db/src/models.rs:424) is only called in tests. | CONFIRMED |
+| R7 | crates/starship-infer/src/cloud/*, app/src-tauri/src/ipc/commands.rs:159,256 | No provider `/models` discovery call exists (`gemini.rs:88` is a per-model generate path); UI lists `ipc_hello.available_models` = DB rows. | CONFIRMED |
+| R8 | app/src/features/cockpit/CockpitView.tsx:219,264; crates/starship-db/src/migrations/0001_initial.sql:151 | Hard-coded `"qwen2.5-coder-7b-q4"` fallback when no model is selected; the same id is seeded as `ready` in migration 0001. | CONFIRMED |
+| R9 | app/src-tauri/src/ipc/commands.rs:739 | Chat request sends only `vec![Message::user(prompt_text)]`; stored `list_messages` history is never loaded. | CONFIRMED |
+| R10 | app/src-tauri/src/ipc/commands.rs:762-... | Stream loop accumulates text/thought only; no `tool_calls` parsing into plan steps (the `tool_call` hits at :1581/:1601 are audit action labels). | CONFIRMED |
+| R11 | crates/starship-mcp/src/registry.rs:17-81,96,120,123 | `seed_default_manifests_if_needed` writes five fake manifests with placeholder `/usr/bin/<app>` paths; `scan_and_sync_manifests` calls it before scanning. | CONFIRMED |
+| R12 | crates/starship-mcp/src/registry.rs:179-193 | `chrono_like_now` hard-codes month/day `-11-22` at :193 and approximates the year. | CONFIRMED |
+| R13 | (no crates/starship-core/src/executor/runner.rs; no `cmd_mission_run` in app/src-tauri/src) | Scheduler/Fallback/Lease/Admission/Progress exist only inside `executor/` and tests; no mission runner command is wired. | CONFIRMED |
+| R14 | crates/starship-core/src/pipeline/diagnostics.rs:49,64; crates/starship-core/src/planner/mod.rs:97; app/src-tauri/src/ipc/commands.rs:1261,1270 | Templates emit `disk.scan` / `cache.purge_all`; ATP's real catalog (docs/evidence/e2e/report.json hello response) exposes `tuneup.scan_junk` and `atp.system.clean_package_cache`. | CONFIRMED |
+| R15 | app/src-tauri/src/ipc/commands.rs:1273 | Hard-coded diff summary: "Purges 4.2 GB of obsolete package and build caches". | CONFIRMED |
+| R16 | (no app/src/components/settings/DiagnosticsView.tsx; no console/EngineConsole.tsx) | Only a Diagnostics *pipeline form* exists in PipelineWorkflowView.tsx; no engine diagnostics view or `--self-test --json`. | CONFIRMED |
+
+RESULT: 16/16 root causes confirmed. No DIFFERENT entries; PHASE-17-FIX-PLAN.md stands as written.
