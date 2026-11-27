@@ -84,7 +84,7 @@
   * *Verify:* mock provider requests `atp: tuneup.get_health`; a real ATP call result appears in the next model turn.
 - [ ] **17.14 Downloaded-model hygiene.** After HF download: verify GGUF magic bytes and size, set `file_path`, `download_status='ready'`, and show it in the picker. Add `cmd_model_delete` (removes file and row) and resume of partial downloads. A model row whose file is missing shows **Not downloaded** and cannot be selected.
   * *Verify:* download test against a local HTTP fixture; corrupt file is rejected.
-- [ ] **17.15 No silent default model (R8).** Remove the `"qwen2.5-coder-7b-q4"` fallback in `CockpitView.tsx`. With no usable model, the composer is disabled with a "Choose a model" call to action. Remove the seeded qwen row, or seed it as `remote_only` (not installed).
+- [x] **17.15 No silent default model (R8).** Remove the `"qwen2.5-coder-7b-q4"` fallback in `CockpitView.tsx`. With no usable model, the composer is disabled with a "Choose a model" call to action. Remove the seeded qwen row, or seed it as `remote_only` (not installed).
   * *Verify:* fresh profile → composer disabled; after selecting a model → enabled.
 - [ ] **17.16 Streaming robustness.** Surface HTTP/stream errors in the chat as readable messages (401 → "API key rejected by <provider>", 404 → "model not found", 429 → "rate limited, retry in Ns"), with retry. Remove the artificial 15 ms sleep per chunk.
 

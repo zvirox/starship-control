@@ -209,6 +209,7 @@ export const CockpitView: React.FC = () => {
   };
 
   const handleCreateMission = async () => {
+    if (!activeModel) return;
     try {
       const createRes = await invoke<CreateMissionResponse>(
         "cmd_mission_create",
@@ -216,7 +217,7 @@ export const CockpitView: React.FC = () => {
           payload: {
             title: "New Conversation",
             userGoal: "General assistance",
-            modelId: activeModel?.id ?? "qwen2.5-coder-7b-q4",
+            modelId: activeModel.id,
           },
         }
       );
@@ -244,7 +245,7 @@ export const CockpitView: React.FC = () => {
 
   const handleSendPrompt = async (textToSend?: string) => {
     const rawPrompt = (textToSend ?? prompt).trim();
-    if (!rawPrompt || isStreaming) return;
+    if (!rawPrompt || isStreaming || !activeModel) return;
 
     setPrompt("");
     setIsStreaming(true);
@@ -261,7 +262,7 @@ export const CockpitView: React.FC = () => {
                   ? `${rawPrompt.slice(0, 30)}...`
                   : rawPrompt,
               userGoal: rawPrompt,
-              modelId: activeModel?.id ?? "qwen2.5-coder-7b-q4",
+              modelId: activeModel.id,
             },
           }
         );
@@ -638,7 +639,7 @@ export const CockpitView: React.FC = () => {
                       ref={inputRef}
                       type="text"
                       value={prompt}
-                      disabled={isStreaming}
+                      disabled={isStreaming || !activeModel}
                       onChange={(e) => setPrompt(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey) {
@@ -656,12 +657,22 @@ export const CockpitView: React.FC = () => {
 
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="quiet-chip tabular font-medium hidden sm:inline-flex">
-                        {activeModel?.name || "Local model"}
+                        {activeModel ? (
+                          activeModel.name
+                        ) : (
+                          <button
+                            type="button"
+                            className="text-[var(--accent-blue)] cursor-pointer"
+                            onClick={() => setNavTab("models")}
+                          >
+                            Choose a model
+                          </button>
+                        )}
                       </span>
                       <LinearButton
                         variant="primary"
                         size="md"
-                        disabled={isStreaming || !prompt.trim()}
+                        disabled={isStreaming || !activeModel || !prompt.trim()}
                         onClick={() => handleSendPrompt()}
                       >
                         <Send className="size-3.5" strokeWidth={2} />

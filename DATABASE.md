@@ -328,6 +328,7 @@ Tracks empirical per-tool duration distributions for progress/ETA estimation.
 ---
 
 ### 3.17 `infer_metrics` — Measured Inference Requests (Migration `0007`)
+Migration `0008` also marks the seeded qwen row `remote_only` (no GGUF file), so a fresh profile has no installed model until one is downloaded.
 One row per completed chat stream. All numbers are measured in the stream loop;
 `tokens_out` counts non-empty streamed chunks (providers here expose no token
 count), and `ts_ms` is assigned by the database at insert time.

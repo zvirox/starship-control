@@ -1,0 +1,28 @@
+=== TASK 17.15 — NO SILENT DEFAULT MODEL ===
+Date: 2026-11-27
+
+ROOT CAUSE (R8, confirmed in 17.0)
+`CockpitView` used `"qwen2.5-coder-7b-q4"` whenever no model was selected, and
+migration 0001 seeded that row with `download_status='ready'` despite no GGUF
+file. A fresh profile silently claimed to have a usable local model.
+
+CHANGES
+- app/src/features/cockpit/CockpitView.tsx: both mission-creation paths require
+  `activeModel` (no fallback id); the chat input and Send button are disabled
+  without a selected model, and the model chip becomes a "Choose a model"
+  action that opens the Models tab.
+- Migration `0008_remote_only_seed.sql`: marks the seeded qwen row
+  `remote_only` with `file_path = NULL`; DB schema version is now 8.
+- DATABASE.md notes the migration. No API/database contract change beyond the
+  documented migration.
+
+VERIFICATION
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace
+  suites=25 passed=191 failed=0
+  (infer_metrics_test asserts schema version 8 is applied)
+  $ npx tsc --noEmit (app)                                        PASS
+  $ grep -rn 'qwen2.5-coder-7b-q4' app/src                        no matches
+  (remaining occurrences are migration seed SQL and test fixtures only)
+
+RESULT: PASS

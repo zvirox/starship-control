@@ -32,7 +32,8 @@ const MIGRATION_0004: &str = include_str!("migrations/0004_tool_stats.sql");
 const MIGRATION_0005: &str = include_str!("migrations/0005_health_rollups.sql");
 const MIGRATION_0006: &str = include_str!("migrations/0006_mission_health_summary.sql");
 const MIGRATION_0007: &str = include_str!("migrations/0007_infer_metrics.sql");
-const CURRENT_SCHEMA_VERSION: u32 = 7;
+const MIGRATION_0008: &str = include_str!("migrations/0008_remote_only_seed.sql");
+const CURRENT_SCHEMA_VERSION: u32 = 8;
 
 #[derive(Debug, Clone)]
 pub struct Database {
@@ -328,6 +329,28 @@ impl Database {
                         "db.migration_failed",
                         false,
                         format!("Failed to set user_version to 7: {e}"),
+                        None,
+                    )
+                })?;
+        }
+
+        if current_version < 8 {
+            info!(target: "starship_db", "Applying migration 0008_remote_only_seed.sql");
+            conn.execute_batch(MIGRATION_0008).map_err(|e| {
+                CoreError::db(
+                    "db.migration_failed",
+                    false,
+                    format!("Failed to execute migration 0008: {e}"),
+                    None,
+                )
+            })?;
+
+            conn.execute_batch("PRAGMA user_version = 8;")
+                .map_err(|e| {
+                    CoreError::db(
+                        "db.migration_failed",
+                        false,
+                        format!("Failed to set user_version to 8: {e}"),
                         None,
                     )
                 })?;
