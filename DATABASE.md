@@ -205,6 +205,13 @@ Tracks both local weights downloaded from Hugging Face and cloud provider endpoi
 | `created_at` | `TEXT` | `NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))` | ISO-8601 UTC timestamp. |
 | `updated_at` | `TEXT` | `NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ','now'))` | Last modified timestamp. |
 
+Migration `0009_model_discovery.sql` adds `provider_id` (`TEXT`, owning provider),
+`supports_tools` / `supports_streaming` (`INTEGER` flags), `input_price` /
+`output_price` (`REAL`, OpenRouter prices per token), `is_favorite` (`INTEGER`)
+and `discovered_at` (`TEXT`) for models returned by provider `/models` discovery.
+Rows that disappear from a catalog are marked `remote_only`, never deleted if
+favorited or referenced by a mission.
+
 ---
 
 ### 3.7 `provider_configs` — Cloud Endpoint Configurations

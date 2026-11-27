@@ -6,7 +6,7 @@ fn test_infer_metrics_record_and_history_are_real_and_empty_first() {
     let version: u32 = db
         .with_conn(|conn| conn.query_row("PRAGMA user_version", [], |row| row.get(0)))
         .expect("read schema version");
-    assert_eq!(version, 8, "migration 0007 must be applied");
+    assert_eq!(version, 9, "migration 0007 must be applied");
     assert!(
         db.list_infer_metrics("15m")
             .expect("empty history")

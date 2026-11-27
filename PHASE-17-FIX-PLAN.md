@@ -100,7 +100,7 @@
   * **Gemini:** `GET {base_url}/models` with the key; paginate with `pageToken`; keep models whose `supportedGenerationMethods` includes `generateContent`.
   * Timeouts 15 s, one retry on 5xx/429, never log the key.
   * *Verify:* wiremock fixtures for all four, including pagination and an empty list.
-- [ ] **17.21 Persist discovered models.** Migration `0003_model_discovery.sql`: add to `models` the columns `provider_id`, `context_window`, `supports_tools`, `input_price`, `output_price`, `is_favorite`, `discovered_at`. Upsert on refresh. Remove discovered rows no longer returned, **except** favorites and models used by existing missions (mark them `unavailable`). Fix any CHECK constraints that block new values.
+- [x] **17.21 Persist discovered models.** Migration `0003_model_discovery.sql`: add to `models` the columns `provider_id`, `context_window`, `supports_tools`, `input_price`, `output_price`, `is_favorite`, `discovered_at`. Upsert on refresh. Remove discovered rows no longer returned, **except** favorites and models used by existing missions (mark them `unavailable`). Fix any CHECK constraints that block new values.
   * *Verify:* refresh twice → no duplicates; a disappearing model is flagged, not deleted, if used.
 - [ ] **17.22 IPC.** `cmd_provider_list`, `cmd_provider_test_connection{providerId}` (returns `{ok, latencyMs, modelCount?, errorCode, message}`), `cmd_provider_refresh_models{providerId}`, `cmd_model_set_favorite`, `cmd_mission_set_model{missionId, modelId}`. Auto-run test + refresh right after a key is saved. Error mapping: 401/403 → `infer.auth_failed`, 404 → wrong base URL, network → `infer.network_unreachable`.
   * *Verify:* IPC tests per error mapping; saving a key triggers discovery.

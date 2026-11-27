@@ -1,0 +1,26 @@
+=== TASK 17.21 — PERSIST DISCOVERED MODELS ===
+Date: 2026-11-27
+
+ROOT CAUSE (R7/R8)
+`models` rows came only from the migration seed and HF downloads; no provider
+catalog was ever stored, and the seeded qwen row claimed to be `ready`.
+
+CHANGES
+- Migration `0009_model_discovery.sql` adds `provider_id`, `supports_tools`,
+  `supports_streaming`, `input_price`, `output_price`, `is_favorite`,
+  `discovered_at` and an index on `provider_id`; schema version is 9.
+- `crates/starship-db/src/discovery.rs` (new): `DiscoveredModelRecord` plus
+  `upsert_discovered_model`, `mark_missing_discovered_models`,
+  `set_model_favorite` and `set_mission_model`. Missing provider models become
+  `remote_only`; favorites and models referenced by missions are never deleted.
+- DATABASE.md §3.6 documents the new columns.
+
+VERIFICATION
+  $ cargo test -p starship-db --test discovery_test
+  test_discovered_models_upsert_and_missing_marking ... ok
+    (upsert stores real context/tools/price; a missing model is marked only
+     after its favorite flag is cleared)
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       200 passed / 0 failed (26 suites)
+
+RESULT: PASS
