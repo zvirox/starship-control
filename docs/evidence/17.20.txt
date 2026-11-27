@@ -1,0 +1,33 @@
+=== TASK 17.20 — MODEL DISCOVERY CLIENT ===
+Date: 2026-11-27
+
+ROOT CAUSE (R7, confirmed in 17.0)
+No code called any provider's `/models` endpoint; the Models tab only listed
+DB rows seeded by migration 0001 or downloaded from Hugging Face.
+
+CHANGES
+- crates/starship-infer/src/discovery.rs (new): `DiscoveredModel`,
+  `ModelDiscovery` trait and `ProviderDiscovery` implementation for
+  OpenAI-compatible (OpenAI / OpenRouter / llama-server), Anthropic and Gemini.
+  Uses a 15 s client timeout, one retry on network errors / 5xx / 429, maps
+  401/403 to `infer.cloud_auth_failed`, and places the key only in headers
+  (`Authorization`, `x-api-key`, `x-goog-api-key`) — never in a URL or log.
+  Parsers normalize id, display name, context window, tools support, streaming
+  support and OpenRouter prompt/completion prices. Gemini filters to
+  `generateContent` models.
+
+VERIFICATION
+  $ cargo test -p starship-infer discovery -- --nocapture
+  test_parsers_normalize_all_three_providers ... ok
+  test_discovery_sends_key_only_in_authorization_header ... ok
+    (a local HTTP stub asserts the Bearer header contains the canary key)
+
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       199 passed / 0 failed (25 suites)
+
+LIMITATION
+Anthropic (`limit`/`after_id`) and Gemini (`pageToken`) multi-page fetching is
+not implemented yet; the first page is parsed. Pagination is pending alongside
+the UI picker work in 17.23–17.24. No API key is logged or persisted here.
+
+RESULT: PASS (single-page discovery verified; pagination deferred)

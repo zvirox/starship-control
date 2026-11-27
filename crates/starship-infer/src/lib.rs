@@ -1,10 +1,12 @@
 pub mod cloud;
+pub mod discovery;
 pub mod dispatcher;
 pub mod engine;
 pub mod hf;
 pub mod local;
 pub mod types;
 
+pub use discovery::{DiscoveredModel, ModelDiscovery, ProviderDiscovery};
 pub use dispatcher::InferDispatcher;
 pub use engine::{InferenceEngine, MockInferenceEngine};
 pub use types::{ChatChunk, ChatRequest, Message, Role, TokenStream, ToolCall, ToolDefinition};

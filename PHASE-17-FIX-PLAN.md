@@ -94,7 +94,7 @@
 
 > Endpoint details below are from the providers' public APIs; the agent must confirm each against current docs when implementing (17.26).
 
-- [ ] **17.20 `ModelDiscovery` trait** in `starship-infer` (`async fn list_models(&self) -> Result<Vec<DiscoveredModel>>`), with `DiscoveredModel { id, display_name, context_window, supports_tools, supports_streaming, input_price, output_price, raw }`:
+- [x] **17.20 `ModelDiscovery` trait** in `starship-infer` (`async fn list_models(&self) -> Result<Vec<DiscoveredModel>>`), with `DiscoveredModel { id, display_name, context_window, supports_tools, supports_streaming, input_price, output_price, raw }`:
   * **OpenAI-compatible (OpenAI, OpenRouter, custom):** `GET {base_url}/models`, `Authorization: Bearer`. OpenRouter returns richer fields (`name`, `context_length`, `pricing`, `supported_parameters`) → use them to set tools support and prices.
   * **Anthropic:** `GET {base_url}/models` with `x-api-key` and `anthropic-version`; paginate with `limit` and `after_id`.
   * **Gemini:** `GET {base_url}/models` with the key; paginate with `pageToken`; keep models whose `supportedGenerationMethods` includes `generateContent`.
