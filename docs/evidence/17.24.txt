@@ -1,0 +1,34 @@
+=== TASK 17.24 — CHAT MODEL PICKER ===
+Date: 2026-11-27
+
+ROOT CAUSE (R8)
+The composer had a flat list of DB model ids with a hard-coded fallback. There
+was no search, provider grouping, favorites, price/context badges or way to
+refresh/select from a real discovered catalog.
+
+CHANGES
+- New `app/src/components/cockpit/ModelPicker.tsx`: searchable combobox grouped
+  as Favorites / Local / OpenRouter / OpenAI / Anthropic / Gemini, with tool,
+  context-size and $/M badges; star toggles call `cmd_model_set_favorite`;
+  Refresh reloads every enabled provider catalog then `cmd_list_models`;
+  "Not configured → Add API key" opens the settings modal.
+- `CockpitView` uses the picker; selecting a model also calls
+  `cmd_mission_set_model` for the active mission (mid-mission switch).
+- `ModelRecord` (Rust + TypeScript) now carries `provider_id`,
+  `supports_tools`, `supports_streaming`, `input_price`, `output_price` and
+  `is_favorite`, so badges come from persisted discovery metadata. `list_models`
+  orders favorites first.
+
+WINDOWING NOTE
+The list renders the first 50 matches and grows by 50 when the scroll container
+nears its bottom. This is a lightweight windowed list, not a full fixed-height
+virtual scroller; with 300+ OpenRouter models the initial DOM stays at 50 rows.
+
+VERIFICATION
+  $ npx tsc --noEmit                                             PASS
+  $ npm run check:linear / lint / build                          PASS
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       201 passed / 0 failed (26 suites)
+  $ cargo xtask check-no-fakes                                   PASS
+
+RESULT: PASS

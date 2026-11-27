@@ -11,7 +11,6 @@ import {
   ExternalLink,
   Search,
   Settings,
-  ChevronDown,
   Wrench,
   Workflow,
   AppWindow,
@@ -31,6 +30,7 @@ import {
 import { CockpitDashboard } from "./CockpitDashboard";
 import { ChatCanvas } from "../../components/cockpit/ChatCanvas";
 import { ModelSettingsModal } from "../../components/cockpit/ModelSettingsModal";
+import { ModelPicker } from "../../components/cockpit/ModelPicker";
 import { ModelControlView } from "../../components/cockpit/ModelControlView";
 import { AppTopologyView } from "../../components/cockpit/AppTopologyView";
 import { AppTopologyDrawer } from "../../components/cockpit/AppTopologyDrawer";
@@ -93,11 +93,61 @@ export const CockpitView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [modelDropdownOpen, setModelDropdownOpen] = useState<boolean>(false);
   const [activePlan, setActivePlan] = useState<PlanActiveResponse | null>(null);
   const [approvalGate, setApprovalGate] = useState<ApprovalNeededEvent | null>(
     null
   );
+
+  const handleSelectModel = useCallback(
+    async (model: ModelRecord) => {
+      setActiveModel(model);
+      if (activeMissionId) {
+        try {
+          await invoke("cmd_mission_set_model", {
+            payload: { missionId: activeMissionId, modelId: model.id },
+          });
+        } catch (e) {
+          console.warn("Failed to switch mission model:", e);
+        }
+      }
+    },
+    [activeMissionId],
+  );
+
+  const handleRefreshModels = useCallback(async () => {
+    try {
+      const providers = await invoke<
+        { providerId: string; isEnabled: boolean; hasKey: boolean }[]
+      >("cmd_provider_list");
+      for (const provider of providers) {
+        if (!provider.isEnabled || !provider.hasKey) continue;
+        await invoke("cmd_provider_refresh_models", {
+          payload: { providerId: provider.providerId },
+        }).catch((e: unknown) => console.warn("Catalog refresh failed:", e));
+      }
+      setModels(await invoke<ModelRecord[]>("cmd_list_models"));
+    } catch (e) {
+      console.warn("Model refresh failed:", e);
+    }
+  }, []);
+
+  const handleToggleFavorite = useCallback(async (model: ModelRecord) => {
+    const favorite = !model.is_favorite;
+    setModels((prev) =>
+      prev.map((candidate) =>
+        candidate.id === model.id
+          ? { ...candidate, is_favorite: favorite }
+          : candidate,
+      ),
+    );
+    try {
+      await invoke("cmd_model_set_favorite", {
+        payload: { modelId: model.id, favorite },
+      });
+    } catch (e) {
+      console.warn("Failed to pin model:", e);
+    }
+  }, []);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -369,51 +419,14 @@ export const CockpitView: React.FC = () => {
               <div className="flex items-center gap-2">
                 {/* Active Model Picker */}
                 <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setModelDropdownOpen((o) => !o)}
-                    className="h-7 flex items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-2.5 text-[12px] text-[var(--text)] hover:border-[var(--border-strong)] transition-colors duration-150 focus-ring cursor-pointer"
-                  >
-                    <Cpu
-                      className="size-3.5 text-[var(--accent-blue)]"
-                      strokeWidth={1.75}
-                    />
-                    <span className="font-medium truncate max-w-44">
-                      {activeModel?.name || "Select model"}
-                    </span>
-                    <ChevronDown
-                      className="size-3.5 text-[var(--text-muted)]"
-                      strokeWidth={1.75}
-                    />
-                  </button>
-
-                  {modelDropdownOpen && (
-                    <div className="surface-panel absolute right-0 z-50 mt-1 w-64 rounded-[8px] border-[var(--border-strong)] p-1.5">
-                      <div className="px-2 py-1 text-[12px] font-medium text-[var(--text-muted)]">
-                        Select engine
-                      </div>
-                      {models.map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => {
-                            setActiveModel(m);
-                            setModelDropdownOpen(false);
-                          }}
-                          className={`flex w-full items-center justify-between rounded-[6px] px-2 py-1.5 text-left text-[12px] transition-colors duration-150 focus-ring cursor-pointer ${
-                            activeModel?.id === m.id
-                              ? "bg-[var(--tint-blue)] text-[var(--accent-blue)] font-semibold"
-                              : "text-[var(--text-muted)] hover:bg-[var(--bg-surface-2)] hover:text-[var(--text)]"
-                          }`}
-                        >
-                          <span className="font-medium truncate">{m.name}</span>
-                          <span className="text-[11px] font-mono text-[var(--text-faint)] capitalize shrink-0 ml-2">
-                            {m.provider_type.replace("cloud_", "")}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <ModelPicker
+                    models={models}
+                    activeModel={activeModel}
+                    onSelect={handleSelectModel}
+                    onRefresh={handleRefreshModels}
+                    onOpenSettings={() => setIsSettingsOpen(true)}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
                 </div>
 
                 <LinearButton

@@ -82,6 +82,7 @@ pub struct AppRegistryRecord {
     pub created_at: String,
 }
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ModelRecord {
     pub id: String,
@@ -96,6 +97,12 @@ pub struct ModelRecord {
     pub context_window: i64,
     pub gpu_layers: i64,
     pub is_default: bool,
+    pub provider_id: Option<String>,
+    pub supports_tools: bool,
+    pub supports_streaming: bool,
+    pub input_price: f64,
+    pub output_price: f64,
+    pub is_favorite: bool,
     pub created_at: String,
     pub updated_at: String,
 }

@@ -43,6 +43,12 @@ export interface ModelRecord {
   context_window: number;
   gpu_layers: number;
   is_default: boolean;
+  provider_id: string | null;
+  supports_tools: boolean;
+  supports_streaming: boolean;
+  input_price: number;
+  output_price: number;
+  is_favorite: boolean;
   created_at: string;
   updated_at: string;
 }

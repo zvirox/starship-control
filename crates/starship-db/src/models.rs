@@ -33,8 +33,9 @@ impl Database {
             let mut stmt = conn.prepare(
                 "SELECT id, name, provider_type, hf_repo_id, file_path, file_size_bytes, 
                         quantization, sha256_hash, download_status, context_window, gpu_layers, 
-                        is_default, created_at, updated_at 
-                 FROM models ORDER BY is_default DESC, name ASC",
+                        is_default, provider_id, supports_tools, supports_streaming,
+                        input_price, output_price, is_favorite, created_at, updated_at
+                 FROM models ORDER BY is_default DESC, name ASC, is_favorite DESC",
             )?;
 
             let rows = stmt.query_map([], |row| {
@@ -51,8 +52,14 @@ impl Database {
                     context_window: row.get(9)?,
                     gpu_layers: row.get(10)?,
                     is_default: row.get::<_, i64>(11)? == 1,
-                    created_at: row.get(12)?,
-                    updated_at: row.get(13)?,
+                    provider_id: row.get(12)?,
+                    supports_tools: row.get::<_, i64>(13)? == 1,
+                    supports_streaming: row.get::<_, i64>(14)? == 1,
+                    input_price: row.get(15)?,
+                    output_price: row.get(16)?,
+                    is_favorite: row.get::<_, i64>(17)? == 1,
+                    created_at: row.get(18)?,
+                    updated_at: row.get(19)?,
                 })
             })?;
 
@@ -116,7 +123,8 @@ impl Database {
             let mut stmt = conn.prepare(
                 "SELECT id, name, provider_type, hf_repo_id, file_path, file_size_bytes, 
                         quantization, sha256_hash, download_status, context_window, gpu_layers, 
-                        is_default, created_at, updated_at 
+                        is_default, provider_id, supports_tools, supports_streaming,
+                        input_price, output_price, is_favorite, created_at, updated_at
                  FROM models WHERE id = ?1",
             )?;
 
@@ -134,8 +142,14 @@ impl Database {
                     context_window: row.get(9)?,
                     gpu_layers: row.get(10)?,
                     is_default: row.get::<_, i64>(11)? == 1,
-                    created_at: row.get(12)?,
-                    updated_at: row.get(13)?,
+                    provider_id: row.get(12)?,
+                    supports_tools: row.get::<_, i64>(13)? == 1,
+                    supports_streaming: row.get::<_, i64>(14)? == 1,
+                    input_price: row.get(15)?,
+                    output_price: row.get(16)?,
+                    is_favorite: row.get::<_, i64>(17)? == 1,
+                    created_at: row.get(18)?,
+                    updated_at: row.get(19)?,
                 })
             })?;
 
