@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Check, Key, Shield, Cloud, AlertCircle } from "lucide-react";
 import { LinearButton, LinearDialog } from "../linear";
-import type { ProviderConfigPayload } from "../../types/ipc";
+import type {
+  ProviderConfigPayload,
+  ProviderInfo,
+  ProviderTestResponse,
+} from "../../types/ipc";
 
 export interface ModelSettingsModalProps {
   isOpen: boolean;
@@ -15,12 +19,25 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
   const [baseUrl, setBaseUrl] = useState("https://api.anthropic.com/v1");
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [providers, setProviders] = useState<ProviderInfo[]>([]);
+  const [testResult, setTestResult] = useState<ProviderTestResponse | null>(null);
+  const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    invoke<ProviderInfo[]>("cmd_provider_list")
+      .then(setProviders)
+      .catch((e: unknown) => console.warn("Provider list failed:", e));
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const handleProviderChange = (p: typeof provider) => {
     setProvider(p);
     setStatusMsg(null);
+    setTestResult(null);
+    setVerifiedAt(null);
     if (p === "anthropic") setBaseUrl("https://api.anthropic.com/v1");
     if (p === "openai") setBaseUrl("https://api.openai.com/v1");
     if (p === "gemini") setBaseUrl("https://generativelanguage.googleapis.com/v1beta");
@@ -47,17 +64,67 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
       };
 
       await invoke("cmd_provider_config_set", { payload });
-      setStatusMsg("Configuration saved to encrypted SQLite database.");
       setApiKey("");
-      setTimeout(() => {
-        setStatusMsg(null);
-      }, 3000);
+      setProviders(await invoke<ProviderInfo[]>("cmd_provider_list"));
+      setStatusMsg("Key saved ✓ — checking connection…");
+      const result = await invoke<ProviderTestResponse>(
+        "cmd_provider_test_connection",
+        { payload: { providerId: provider } },
+      );
+      setTestResult(result);
+      setVerifiedAt(new Date().toLocaleTimeString());
+      setStatusMsg(
+        result.ok
+          ? `Key saved ✓ — ${result.modelCount} models loaded`
+          : `Key saved ✓ — test failed: ${result.message}`,
+      );
     } catch (e) {
       setStatusMsg(`Failed to save configuration: ${String(e)}`);
     } finally {
       setSaving(false);
     }
   };
+
+  const runTest = async () => {
+    setTesting(true);
+    try {
+      const result = await invoke<ProviderTestResponse>(
+        "cmd_provider_test_connection",
+        { payload: { providerId: provider } },
+      );
+      setTestResult(result);
+      setVerifiedAt(new Date().toLocaleTimeString());
+      setStatusMsg(
+        result.ok
+          ? `${provider}: ${result.modelCount} models loaded (${result.latencyMs} ms)`
+          : `${provider}: ${result.message}`,
+      );
+    } catch (e) {
+      setStatusMsg(`Failed to test connection: ${String(e)}`);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const fetchModels = async () => {
+    setTesting(true);
+    try {
+      const response = await invoke<{ modelCount?: number; models?: unknown[] }>(
+        "cmd_provider_refresh_models",
+        { payload: { providerId: provider } },
+      );
+      const count = response.models?.length ?? 0;
+      setStatusMsg(`${provider}: ${count} models loaded`);
+      setVerifiedAt(new Date().toLocaleTimeString());
+    } catch (e) {
+      setStatusMsg(`Failed to fetch models: ${String(e)}`);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const hasKey =
+    providers.find((candidate) => candidate.providerId === provider)?.hasKey ?? false;
 
   const isStatusError = statusMsg?.startsWith("Failed") ?? false;
 
@@ -111,6 +178,28 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
             </button>
           ))}
         </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-3 py-2 text-[12px]">
+          <span className="text-[var(--text-muted)]">
+            {hasKey ? "Key saved ✓" : "No key stored"} · last verified{" "}
+            {verifiedAt ?? "never"}
+          </span>
+          <div className="flex items-center gap-2">
+            <LinearButton variant="secondary" size="sm" disabled={testing} onClick={runTest}>
+              Test connection
+            </LinearButton>
+            <LinearButton variant="secondary" size="sm" disabled={testing || !hasKey} onClick={fetchModels}>
+              Fetch models
+            </LinearButton>
+          </div>
+        </div>
+        {testResult && (
+          <div className="text-[12px] text-[var(--text-muted)]">
+            {testResult.ok
+              ? `${testResult.modelCount} models · ${testResult.latencyMs} ms`
+              : `Failed: ${testResult.errorCode ?? testResult.message}`}
+          </div>
+        )}
 
         <div className="space-y-3 text-[12px]">
           <div>

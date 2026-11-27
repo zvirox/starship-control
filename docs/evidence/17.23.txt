@@ -1,0 +1,23 @@
+=== TASK 17.23 — PROVIDER TEST / FETCH IN SETTINGS ===
+Date: 2026-11-27
+
+ROOT CAUSE (R7/R8)
+Saving an API key only wrote it to SQLite; the UI gave no evidence that the
+key worked, no model count, and no way to fetch the provider catalog.
+
+CHANGES (app/src/components/cockpit/ModelSettingsModal.tsx)
+- Loads provider metadata via `cmd_provider_list` when opened.
+- After saving a key, shows "Key saved ✓" and immediately runs
+  `cmd_provider_test_connection`; the result message includes the real model
+  count or the typed error code/message.
+- "Test connection" and "Fetch models" buttons call the 17.22 commands with a
+  live result and a "last verified" timestamp.
+- The key input is cleared after save and never rendered again; provider rows
+  expose only `hasKey`, never the stored value.
+
+VERIFICATION
+  $ npx tsc --noEmit                                             PASS
+  $ npm run check:linear / lint / build                          PASS
+  $ cargo test --workspace                                       201 passed / 0 failed (26 suites)
+
+RESULT: PASS
