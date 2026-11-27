@@ -65,7 +65,7 @@
   * *Verify:* grep gate (17.7) passes; with the app idle, charts are empty; after one chat message, a point appears with true numbers (compare to the log).
 - [ ] **17.6** Replace placeholder `TuneupTelemetryChart`-style initial data anywhere else the gate finds (see 17.7).
 - [ ] **17.7 No-fakes CI gate.** `cargo xtask check-no-fakes` fails if non-test code contains: `Math.random`, `simulate_tool_call`, `pid: Some(12345)`, `mockSteps`, `Default simulated`, hard-coded numeric telemetry arrays, or `"qwen2.5-coder-7b-q4"` outside the migration. Wire into CI and release workflows.
-- [ ] **17.8 Truthful diff summaries (R15).** Remove "Purges 4.2 GB…" strings. Summaries are produced by the app's `describeChange` or by host code from real arguments or a real Tier-1 scan result (e.g. scan first, then show actual bytes). If unknown, show raw arguments, never an invented number.
+- [x] **17.8 Truthful diff summaries (R15).** Remove "Purges 4.2 GB…" strings. Summaries are produced by the app's `describeChange` or by host code from real arguments or a real Tier-1 scan result (e.g. scan first, then show actual bytes). If unknown, show raw arguments, never an invented number.
 
 ---
 

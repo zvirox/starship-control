@@ -1,0 +1,38 @@
+=== TASK 17.8 — TRUTHFUL DIFF SUMMARIES ===
+Date: 2026-11-27
+
+ROOT CAUSE (R15, confirmed in 17.0)
+`cmd_plan_generate` hard-coded "Purges 4.2 GB of obsolete package and build
+caches" and "Applies 18 ripple cuts and removes 01:24 dead time via CET" in
+Tier 3 approval cards. The user was asked to sign off on impact numbers that no
+scan or telemetry had produced.
+
+CHANGES
+- app/src-tauri/src/ipc/commands.rs: extracted `build_plan_sheet(payload)` as
+  the shared plan builder (also useful for 17.42) and replaced the invented
+  numbers:
+    * purge step: "Purges caches older than 7 days (impact measured by
+      disk.scan first)" — no byte count until a Tier 1 scan runs;
+    * cut step: "Applies ripple cuts derived from real CET telemetry
+      (intervals inspected at execution)" — no cut count or trimmed duration.
+  Other summaries describe real arguments (e.g. 60-second recording) and are
+  unchanged.
+- crates/starship-core/src/pipeline/mod.rs: removed the `// 4.2 GB` fixture
+  comment so no source file asserts an invented measured value.
+
+VERIFICATION
+  $ cargo test --workspace
+  suites=24 passed=190 failed=0
+
+  New test `test_plan_sheet_diff_summaries_never_invent_measurements` drives
+  the exact builder used by `cmd_plan_generate` for both system and screencast
+  goals and asserts no "4.2 GB", "18 ripple cuts", "01:24" or any " GB " value
+  appears in a step diff summary.
+
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ grep -rnE '4\.2 GB|18 ripple cuts|01:24' crates app/src-tauri/src
+    → only the negative assertions in the new test
+  $ cd app && npm run check:linear                               PASS
+  $ npx tsc --noEmit (app)                                        PASS
+
+RESULT: PASS

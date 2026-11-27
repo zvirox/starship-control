@@ -1259,18 +1259,11 @@ pub async fn cmd_plan_get_active(
     }))
 }
 
-#[tauri::command]
-pub async fn cmd_plan_generate(
-    app: AppHandle,
-    state: tauri::State<'_, Database>,
-    payload: GeneratePlanPayload,
-) -> Result<PlanActiveResponse, CoreError> {
-    let db = state.inner();
-    let arbiter = SafetyArbiter::default();
+/// Builds the fallback plan sheet. No diff summary invents a measured value:
+/// numbers are only shown when they came from a real argument or scan result.
+fn build_plan_sheet(payload: &GeneratePlanPayload) -> TaskSheet {
     let goal_lower = payload.user_goal.to_ascii_lowercase();
-
-    // Decompose user strategic goal into a tasksheet/1 plan
-    let sheet = if goal_lower.contains("system")
+    if goal_lower.contains("system")
         || goal_lower.contains("disk")
         || goal_lower.contains("cache")
         || goal_lower.contains("tune")
@@ -1304,7 +1297,9 @@ pub async fn cmd_plan_generate(
                     tool_name: "cache.purge_all".to_string(),
                     arguments: serde_json::json!({ "older_than_days": 7 }),
                     risk_tier: 3,
-                    diff_summary: "Purges 4.2 GB of obsolete package and build caches".to_string(),
+                    diff_summary:
+                        "Purges caches older than 7 days (impact measured by disk.scan first)"
+                            .to_string(),
                     depends_on: vec![0, 1],
                 },
             ],
@@ -1342,14 +1337,26 @@ pub async fn cmd_plan_generate(
                     tool_name: "timeline.cut_interval".to_string(),
                     arguments: serde_json::json!({ "trackId": 1, "rippleCut": true }),
                     risk_tier: 2,
-                    diff_summary: "Applies 18 ripple cuts and removes 01:24 dead time via CET"
+                    diff_summary: "Applies ripple cuts derived from real CET telemetry (intervals inspected at execution)"
                         .to_string(),
                     depends_on: vec![1],
                 },
             ],
         )
-    };
+    }
+}
 
+#[tauri::command]
+pub async fn cmd_plan_generate(
+    app: AppHandle,
+    state: tauri::State<'_, Database>,
+    payload: GeneratePlanPayload,
+) -> Result<PlanActiveResponse, CoreError> {
+    let db = state.inner();
+    let arbiter = SafetyArbiter::default();
+
+    // Decompose user strategic goal into a tasksheet/1 plan
+    let sheet = build_plan_sheet(&payload);
     activate_plan_internal(&app, db, &arbiter, payload.mission_id, &sheet)
 }
 
@@ -1775,6 +1782,27 @@ fn chrono_now_iso() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_plan_sheet_diff_summaries_never_invent_measurements() {
+        for goal in ["clean my system caches", "record a demo and cut silences"] {
+            let sheet = build_plan_sheet(&GeneratePlanPayload {
+                mission_id: 1,
+                user_goal: goal.to_string(),
+            });
+            let serialized = serde_json::to_string(&sheet).expect("serialize sheet");
+            assert!(!serialized.contains("4.2 GB"));
+            assert!(!serialized.contains("18 ripple cuts"));
+            assert!(!serialized.contains("01:24"));
+            for step in &sheet.steps {
+                assert!(
+                    !step.diff_summary.contains(" GB "),
+                    "invented measurement: {}",
+                    step.diff_summary
+                );
+            }
+        }
+    }
 
     #[test]
     fn test_pipeline_screencast_requires_real_telemetry() {

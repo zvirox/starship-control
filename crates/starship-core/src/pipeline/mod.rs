@@ -134,7 +134,7 @@ mod tests {
             total_bandwidth_kbps: 450.0,
             disk_used_gb: 120.5,
             disk_free_gb: 34.2,
-            cache_bloat_mb: 4300.0, // 4.2 GB
+            cache_bloat_mb: 4300.0,
             reclaimable_items: vec![
                 "~/.cache/cargo/registry".to_string(),
                 "~/.cache/npm".to_string(),
