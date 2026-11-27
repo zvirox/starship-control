@@ -275,6 +275,18 @@ export interface ProviderModelsResponse {
   models: DiscoveredModel[];
 }
 
+export interface ModelIdTestPayload {
+  providerId: string;
+  modelId: string;
+}
+
+export interface ModelIdTestResponse {
+  ok: boolean;
+  latencyMs: number;
+  errorCode: string | null;
+  message: string;
+}
+
 export interface ModelDeletePayload {
   modelId: string;
 }

@@ -6,6 +6,7 @@ import type {
   ProviderConfigPayload,
   ProviderInfo,
   ProviderTestResponse,
+  ModelIdTestResponse,
 } from "../../types/ipc";
 
 export interface ModelSettingsModalProps {
@@ -23,6 +24,8 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
   const [testResult, setTestResult] = useState<ProviderTestResponse | null>(null);
   const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
+  const [manualModelId, setManualModelId] = useState("");
+  const [manualResult, setManualResult] = useState<ModelIdTestResponse | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -101,6 +104,27 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
       );
     } catch (e) {
       setStatusMsg(`Failed to test connection: ${String(e)}`);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const validateModelId = async () => {
+    if (!manualModelId.trim()) return;
+    setTesting(true);
+    try {
+      const result = await invoke<ModelIdTestResponse>("cmd_model_test_id", {
+        payload: { providerId: provider, modelId: manualModelId.trim() },
+      });
+      setManualResult(result);
+      if (result.ok) {
+        setStatusMsg(`${manualModelId.trim()} validated and added to the picker.`);
+        setManualModelId("");
+      } else {
+        setStatusMsg(result.message);
+      }
+    } catch (e) {
+      setStatusMsg(`Failed to validate model id: ${String(e)}`);
     } finally {
       setTesting(false);
     }
@@ -200,6 +224,37 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
               : `Failed: ${testResult.errorCode ?? testResult.message}`}
           </div>
         )}
+
+        <div className="space-y-2 rounded-[6px] border border-[var(--border)] p-3 text-[12px]">
+          <div className="font-medium text-[var(--text)]">Use a model id manually</div>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={manualModelId}
+              onChange={(event) => setManualModelId(event.target.value)}
+              placeholder="provider/model-id"
+              className="min-w-0 flex-1 rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-3 py-2 font-mono text-[12px] text-[var(--text)] placeholder:text-[var(--text-faint)] focus-ring"
+            />
+            <LinearButton
+              variant="secondary"
+              size="sm"
+              disabled={testing || !hasKey || !manualModelId.trim()}
+              onClick={validateModelId}
+            >
+              Validate id
+            </LinearButton>
+          </div>
+          {manualResult && (
+            <div className={manualResult.ok ? "text-[var(--accent-green)]" : "text-[var(--accent-red)]"}>
+              {manualResult.ok
+                ? `${manualResult.message} · ${manualResult.latencyMs} ms`
+                : manualResult.message}
+            </div>
+          )}
+          <p className="text-[var(--text-muted)]">
+            Validated with a one-token call; the model is added to the picker only on success.
+          </p>
+        </div>
 
         <div className="space-y-3 text-[12px]">
           <div>

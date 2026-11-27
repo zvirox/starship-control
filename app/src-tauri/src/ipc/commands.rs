@@ -839,6 +839,138 @@ pub fn cmd_provider_list(
         .collect())
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelIdTestPayload {
+    pub provider_id: String,
+    pub model_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelIdTestResponse {
+    pub ok: bool,
+    pub latency_ms: i64,
+    pub error_code: Option<String>,
+    pub message: String,
+}
+
+/// Validates a manually entered model id with a one-token chat call and, on
+/// success, registers it so the picker can select it (Phase 17, 17.25).
+/// One-token validation shared with `cmd_model_test_id` for tests.
+async fn validate_model_id(
+    db: &Database,
+    provider_id: &str,
+    model_id: &str,
+) -> Result<ModelIdTestResponse, CoreError> {
+    let started = Instant::now();
+    let latency = || i64::try_from(started.elapsed().as_millis()).unwrap_or(i64::MAX);
+    let cfg = db.get_provider_config(provider_id)?.ok_or_else(|| {
+        CoreError::app(
+            "app.not_found",
+            false,
+            format!("Provider '{provider_id}' is not configured"),
+            None,
+        )
+    })?;
+    let key = db
+        .get_provider_credentials(provider_id)?
+        .map(|secret| secret.expose().to_owned());
+    let request = ChatRequest {
+        model: model_id.to_string(),
+        messages: vec![Message::user("Reply with OK")],
+        system_prompt: None,
+        temperature: Some(0.0),
+        max_tokens: Some(1),
+        tools: vec![],
+        grammar: None,
+        stream: true,
+    };
+    let provider_type = provider_type_for_id(provider_id);
+    match dispatch_with_retry(
+        provider_type,
+        model_id,
+        Some(&cfg.base_url),
+        key.as_deref(),
+        None,
+        request,
+    )
+    .await
+    {
+        Ok(mut stream) => {
+            let mut content = String::new();
+            while let Some(chunk) = stream.next().await {
+                match chunk {
+                    Ok(chunk) => {
+                        content.push_str(&chunk.content);
+                        if !content.is_empty() {
+                            break;
+                        }
+                    }
+                    Err(error) => {
+                        return Ok(ModelIdTestResponse {
+                            ok: false,
+                            latency_ms: latency(),
+                            error_code: Some(error.code.clone()),
+                            message: friendly_stream_error(
+                                &error.code,
+                                provider_type,
+                                &error.user_message,
+                                error.details.as_ref(),
+                            ),
+                        });
+                    }
+                }
+            }
+            if content.is_empty() {
+                return Ok(ModelIdTestResponse {
+                    ok: false,
+                    latency_ms: latency(),
+                    error_code: Some("infer.empty_response".to_string()),
+                    message: "The model returned no tokens. Check the id and provider endpoint."
+                        .to_string(),
+                });
+            }
+            let _ = db.upsert_discovered_model(&DiscoveredModelRecord {
+                id: model_id.to_string(),
+                name: model_id.to_string(),
+                provider_type: provider_type.to_string(),
+                provider_id: provider_id.to_string(),
+                context_window: 0,
+                supports_tools: false,
+                supports_streaming: true,
+                input_price: 0.0,
+                output_price: 0.0,
+            });
+            Ok(ModelIdTestResponse {
+                ok: true,
+                latency_ms: latency(),
+                error_code: None,
+                message: format!("{model_id} responded in {} ms", latency()),
+            })
+        }
+        Err(error) => Ok(ModelIdTestResponse {
+            ok: false,
+            latency_ms: latency(),
+            error_code: Some(error.code.clone()),
+            message: friendly_stream_error(
+                &error.code,
+                provider_type,
+                &error.user_message,
+                error.details.as_ref(),
+            ),
+        }),
+    }
+}
+
+#[tauri::command]
+pub async fn cmd_model_test_id(
+    state: tauri::State<'_, Database>,
+    payload: ModelIdTestPayload,
+) -> Result<ModelIdTestResponse, CoreError> {
+    validate_model_id(state.inner(), &payload.provider_id, &payload.model_id).await
+}
+
 #[tauri::command]
 pub async fn cmd_provider_test_connection(
     state: tauri::State<'_, Database>,
@@ -2724,6 +2856,48 @@ mod tests {
         assert_eq!(
             friendly_stream_error("something.unknown", "cloud_gemini", "raw detail", None),
             "raw detail"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_manual_model_id_validates_and_registers() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind stub");
+        let port = listener.local_addr().expect("port").port();
+        let body = "data: {\"choices\":[{\"delta\":{\"content\":\"OK\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n";
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.expect("accept");
+            let mut buffer = [0_u8; 4096];
+            let _ = socket.read(&mut buffer).await.expect("read");
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            socket.write_all(response.as_bytes()).await.expect("write");
+        });
+
+        let db = Database::open_in_memory().expect("in-memory db");
+        db.set_provider_config(
+            "openai",
+            "OpenAI",
+            &format!("http://127.0.0.1:{port}"),
+            Some("sk-test"),
+            true,
+        )
+        .expect("save provider");
+        let result = validate_model_id(&db, "openai", "private/model-v2")
+            .await
+            .expect("test result");
+        server.await.expect("stub task");
+        assert!(result.ok, "{}", result.message);
+        assert!(
+            db.list_models()
+                .expect("models")
+                .iter()
+                .any(|model| model.id == "private/model-v2")
         );
     }
 

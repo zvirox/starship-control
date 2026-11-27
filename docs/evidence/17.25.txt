@@ -1,0 +1,27 @@
+=== TASK 17.25 — MANUAL MODEL ID ===
+Date: 2026-11-27
+
+ROOT CAUSE
+Users could not select a model id that was not in a provider's `/models` list
+(new/private models), and the picker had no way to add one.
+
+CHANGES
+- New `cmd_model_test_id{providerId,modelId}` (registered in `main.rs`, mirrored
+  in API.md and ipc.ts) validates an entered id with a real one-token chat call
+  through `dispatch_with_retry`. On success it registers the model so the
+  picker can select it; on failure it returns the friendly stream message and a
+  typed error code.
+- `ModelSettingsModal` gained an "Use a model id manually" field with a
+  "Validate id" button, latency/result copy, and no key ever re-displayed.
+- `validate_model_id` is a testable helper shared with the command.
+
+VERIFICATION
+  $ cargo test -p starship-control test_manual_model_id -- --nocapture
+  test_manual_model_id_validates_and_registers ... ok
+    (local SSE stub returns one token; model row is persisted)
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       207 passed / 0 failed (26 suites)
+  $ npm run check:linear / typecheck                             PASS
+  $ cargo xtask check-no-fakes                                   PASS
+
+RESULT: PASS

@@ -192,6 +192,7 @@ fn main() {
             ipc::cmd_provider_config_set,
             ipc::cmd_provider_list,
             ipc::cmd_provider_test_connection,
+            ipc::cmd_model_test_id,
             ipc::cmd_provider_refresh_models,
             ipc::cmd_model_set_favorite,
             ipc::cmd_mission_set_model,
