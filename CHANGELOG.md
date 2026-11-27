@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Threat model (`docs/THREAT_MODEL.md`, Phase 16.7)**: assets A1–A7, trust boundaries B1–B5 (LLM, sub-apps, webview, same-user processes, core→OS), threat table T1–T16 mapped to implementing tasks and tests, accepted residual risks, and a High-gap coverage matrix proving every High gap in `GAP-CLOSURE-PLAN.md §1` has a mitigation + test (`docs/evidence/16.7.txt`).
+
 ## [0.1.0-beta.5] - 2026-11-26
 
 ### Changed

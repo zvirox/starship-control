@@ -1,0 +1,45 @@
+TASK 16.7 — Threat model document
+Date: 2026-11-27
+
+DELIVERABLE
+- docs/THREAT_MODEL.md (v1.0)
+
+CONTENTS
+- Assets A1–A7 (API keys, approval authority, user files, audit log, plans/events,
+  local models, host session).
+- Trust boundaries B1–B5 (LLM→core, sub-app→core, webview→core, same-user process→core,
+  core→OS) with an ASCII boundary diagram.
+- Threat table T1–T16, each mapped to an implementing task and the test that proves it.
+- Safety invariants (no unapproved Tier 2/3, fallbacks never auto-approve or lower tier,
+  LLM/tool output untrusted, audit-before-action, re-plan loses approvals).
+- Residual risks accepted and documented (same-UID ptrace, CSP unsafe-inline,
+  remote img-src, in-process GGUF, single allowed shadow).
+- High-gap coverage matrix for every High gap in GAP-CLOSURE-PLAN.md §1.
+
+HIGH-GAP COVERAGE (required by the task: "every High gap in §1 maps to a mitigation + test")
+  G1  High  9.1   docs/evidence/9.1.txt
+  G2  High  10.7  docs/evidence/10.7.txt
+  G3  High  10.1, 10.2  docs/evidence/10.1.txt, 10.2.txt
+  G4  High  10.3, 10.4  docs/evidence/10.3.txt, 10.4.txt
+  G5  High  10.5, 10.6  docs/evidence/10.5.txt, 10.6.txt
+  G7  High  11.1–11.6, 11.9, 11.10  docs/evidence/11.*.txt
+  G9  High  11.7, 11.8  docs/evidence/11.7.txt, 11.8.txt
+  G10 High  12.1–12.3  docs/evidence/12.1.txt–12.3.txt
+  G11 High  12.4  docs/evidence/12.4.txt
+All High gaps covered: PASS
+
+VERIFICATION COMMANDS
+  $ ls docs/THREAT_MODEL.md
+  docs/THREAT_MODEL.md
+  $ grep -cE '^\| G(1|2|3|4|5|7|9|10|11) ' docs/THREAT_MODEL.md
+  9
+  $ grep -E '^\| G(1|2|3|4|5|7|9|10|11) ' docs/THREAT_MODEL.md | wc -l
+  9
+
+CROSS-REFERENCES
+- GAP-CLOSURE-PLAN.md 16.7 checked with this evidence link.
+- PLAN.md Phase 16 progress updated.
+- docs/evidence/AUDIT.md Phase 16 status updated.
+- CHANGELOG.md [Unreleased] notes the threat model.
+
+RESULT: PASS

@@ -163,6 +163,8 @@ flowchart LR
 | **Tier 2: Mutating** | **No** (Requires Click) | Trim video pauses, apply audio filters, move caches to quarantine | Pauses and shows exact plan before running |
 | **Tier 3: Destructive** | **No** (Strict Gate) | Purge old quarantine sessions, modify protected packages | Demands explicit confirmation on HUD or Cockpit |
 
+Approvals are signed and bound to the exact step and arguments; API keys are encrypted at rest; the audit log is hash-chained. The full assets/trust-boundary analysis and residual risks are in [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
+
 ---
 
 ## Connected App Suite

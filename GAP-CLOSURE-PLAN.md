@@ -345,8 +345,8 @@ Step:    pending → ready → awaiting_approval → running
   * *Verify:* `COMPAT.md` filled with dated test notes and versions (`docs/evidence/16.5.txt`).
 - [ ] **16.6 Packaging verification** — CI clean-container install/uninstall verification across Ubuntu 22.04/24.04, Fedora, and Arch for the locked `.deb`, `.rpm`, and `.pkg.tar.zst` manifest (`nfpm`) + `SHA256SUMS` and GPG signature (`SHA256SUMS.sig`). *(No AUR publishing; no VM package test requirement.)*
   * *Verify:* CI container smoke logs in `release-workflows` run + GPG signature verification.
-- [ ] **16.7 Threat model doc** — `docs/THREAT_MODEL.md` (assets, trust boundaries: LLM, sub-apps, webview, same-user processes; mitigations mapped to task IDs 10.x).
-  * *Verify:* every High gap in §1 maps to a mitigation + test.
+- [x] **16.7 Threat model doc** — `docs/THREAT_MODEL.md` (assets, trust boundaries: LLM, sub-apps, webview, same-user processes; mitigations mapped to task IDs 10.x).
+  * *Verify:* every High gap in §1 maps to a mitigation + test (`docs/evidence/16.7.txt`: all 9 High gaps covered).
 - [ ] **16.8 Performance budgets** — idle core < 150 MB RSS and < 1 % CPU; HUD toggle < 150 ms; event latency core→UI < 50 ms at 1 Hz health + 4 Hz progress.
   * *Verify:* benchmark script output saved; budgets enforced as CI warnings.
 
