@@ -1,0 +1,27 @@
+=== TASK 9.4 EVIDENCE (README truth pass, 2026-11-27) ===
+
+$ grep -n 'Tested on' README.md
+40:  **Tested on:** KDE Plasma 6 (Wayland, kwin 6.8.3). Other compositors are unverified. The full matrix and evidence live in [`docs/COMPAT.md`](docs/COMPAT.md).
+  → matches docs/COMPAT.md, where only KDE Plasma 6 is measured and all other
+    compositors are marked "not supported / not tested on this host".
+
+$ grep -ci 'zero latency' README.md
+0
+
+$ grep -niE 'appimage|flatpak|\bAUR\b|tarball' README.md
+226:Official Linux releases ship exclusively as native `.deb`, `.rpm`, and `.pkg.tar.zst` packages alongside `SHA256SUMS`. Legacy AppImage, Flatpak, tarball, and AUR packages are retired and no longer updated.
+
+$ grep -c 'MOCK-ONLY' README.md
+9
+  → every sub-app without a working MCP bridge is marked MOCK-ONLY in the
+    support and ecosystem tables, matching docs/evidence/16.3.txt.
+
+$ grep -c 'docs/COMPAT.md' README.md
+1
+
+Encryption claim: README points to SecretVault/`enc_v1` and the threat model
+rather than claiming "encrypted SQLite" without evidence; verified in
+`docs/evidence/10.7.txt` and `docs/THREAT_MODEL.md`.
+
+Conclusion: README claims are linked to a doc, test or evidence file; the
+"tested on" list mirrors docs/COMPAT.md only.

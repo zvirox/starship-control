@@ -1,8 +1,8 @@
 # PLAN.md — Starship Control Implementation Roadmap
 
-**Version:** 1.2 · **Date:** 2026-11-25  
+**Version:** 1.3 · **Date:** 2026-11-27
 **Authority chain:** `PRD.md` (scope) → `ARCHITECTURE.md` (structure) → `DESIGN.md` (locked UI law) → `DATABASE.md` (schema) → `API.md` (contracts) → **this file (Phases 0–8)** → [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) (Phases 9–16)  
-**Working rule:** Every phase ends with a **runnable application** (vertical slices). **UI Visual Spec Status:** The Linear solid design system (`DESIGN.md` v2.1, implemented on `feat/linear-ui`) is **FINAL & LOCKED** — no further UI style planning or visual redesigns remain. The rulebook for executing any task is [`AGENTS.md`](AGENTS.md).
+**Working rule:** Every phase ends with a **runnable application** (vertical slices). **UI Visual Spec Status:** The Linear solid design system (`DESIGN.md` v2.1, implemented on `main`) is **FINAL & LOCKED** — no further UI style planning or visual redesigns remain. The rulebook for executing any task is [`AGENTS.md`](AGENTS.md).
 
 ---
 
@@ -20,7 +20,7 @@
   - *Verify:* Multi-window Tauri configuration compiles and both surfaces render in sync.
 - [x] **0.3 Tailwind CSS v4 `@theme` & Locked Linear Token Bridging**
   - Bundle self-hosted `InterVariable.woff2` and `JetBrainsMono-Variable.woff2` via `@font-face` (`app/public/fonts/`).
-  - Author `tailwind.css` using locked `DESIGN.md` v2.1 Linear solid surface tokens (`#050505`/`#111213`/`#1A1B1E` dark, `#F3F4F6`/`#FFFFFF`/`#F4F5F7` light, `#3355FF` primary accent, zero blur), enforced by `npm run check:linear`.
+  - Author `tailwind.css` using locked `DESIGN.md` v2.1 Linear solid surface tokens (`#050505`/`#111213`/`#1A1B1E` dark, `#F3F4F6`/`#FFFFFF`/`#F4F5F7` light, Violet per-app primary accent in `app-accent.css` plus the shared blue token (`--blue`: `#2563EB`/`#346AFE`), zero blur), enforced by `npm run check:linear`.
   - *Verify:* `npm run check:linear` and `DesignVerification.tsx` validate zero blur/translucent regressions across dark and light modes.
 - [x] **0.4 SQLite Engine & Migration Runner (`starship-db`)**
   - Setup `starship-db` with `rusqlite` bundled, enabling WAL mode, `PRAGMA foreign_keys = ON`, busy timeout 5000ms, and `0600` permissions at `$XDG_DATA_HOME/starship-control/library.db`.
@@ -31,7 +31,7 @@
   - [ ] Setup rotating structured logging on disk (`tracing-appender`) at `$XDG_STATE_HOME/starship-control/` (currently `tracing_subscriber::fmt()` logs to stdout only).
   - *Verify:* Frontend receives typed errors matching `API.md §1`; file log appender still pending.
 
-**Definition of Done (Phase 0):** ✅ Multi-window Tauri 2 shell launches, renders design tokens on Wayland/X11, passes CI gates (clippy `-D warnings`, `tsc --noEmit`), and seeds the SQLite WAL database.
+**Definition of Done (Phase 0):** ✅ Multi-window Tauri 2 shell launches, renders design tokens (measured on KDE Plasma 6 Wayland; X11 and other compositors unverified — see `docs/COMPAT.md`), passes CI gates (clippy `-D warnings`, `tsc --noEmit`), and seeds the SQLite WAL database.
 
 ---
 
@@ -56,7 +56,7 @@
   - Emit `evt://token/stream` and `evt://thought/stream` from Rust core to webview.
   - *Verify:* Visual verification of streamed responses in Cockpit with latency timer (`mono-sm`).
 
-**Definition of Done (Phase 1):** ✅ User can switch between a local GGUF model and cloud providers in Cockpit, issue a prompt, and observe streaming markdown and reasoning traces.
+**Definition of Done (Phase 1):** ✅ Cloud providers stream markdown and reasoning traces in Cockpit; local GGUF is a hardware/VRAM-guarded facade until 1.3 wires native `llama-cpp-2` weights.
 
 ---
 
@@ -80,7 +80,7 @@
   - Build Cockpit **Model Control** panel: Hugging Face search input, model cards with quant badges, download progress bars, and VRAM fit badges (`Fits in VRAM`, `Partial Offload`, `CPU Only`).
   - *Verify:* One-click download from Hugging Face registers the model and makes it immediately selectable.
 
-**Definition of Done (Phase 2):** ✅ User can search Hugging Face in Cockpit, download a GGUF model with progress indicators and SHA-256 validation, and immediately use it for offline inference.
+**Definition of Done (Phase 2):** ✅ User can search Hugging Face in Cockpit, download a GGUF model with progress indicators and SHA-256 validation, and register it for selection; real offline weight sampling depends on 1.3.
 
 ---
 
@@ -171,7 +171,7 @@
   - Implement dynamic vertical expansion (`cmd_resize_hud`) when streaming output or Tier 2/3 approval gates trigger.
   - *Verify:* User can submit prompts and approve/reject steps in place on the Floating HUD.
 
-**Definition of Done (Phase 6):** ✅ User can summon the Floating HUD over EEP or ALP via global shortcut, prompt the agent, and sign action approvals in place.
+**Definition of Done (Phase 6):** ✅ On Wayland, the user can summon the Floating HUD over EEP or ALP via the XDG global shortcut (X11 uses the in-app toggle until 6.2), prompt the agent, and sign action approvals in place.
 
 ---
 
@@ -189,7 +189,7 @@
   - Query network activity from NWP and disk storage metrics from ATP; generate cleanup task sheet upon approval.
   - *Verify:* Unused package caches cleaned upon single-click approval.
 
-**Definition of Done (Phase 7):** ✅ End-to-end multi-app workflow executes reliably with complete audit logs and verification proof.
+**Definition of Done (Phase 7):** ✅ Template/no-LLM pipelines execute end-to-end against the mock harness with complete audit logs; real-app steps are MOCK-ONLY until the companion apps expose MCP (16.3).
 
 ---
 
@@ -205,7 +205,7 @@
   - Author `.github/workflows/release.yml` calling reusable Linux `nfpm` release workflow (`zvirox/release-workflows`) on `v*` tags.
   - **Locked Packaging Policy:** `.deb`, `.rpm`, and `.pkg.tar.zst` (`nfpm`) plus `SHA256SUMS` (+ `.sig`) are the final, locked release formats; legacy AppImage, Flatpak, tarballs, AUR, and VM package test requirements are retired. Package install/uninstall is verified via CI clean containers (`GAP-CLOSURE-PLAN.md §16.6`).
 
-**Definition of Done (Phase 8):** ✅ Starship Control builds clean on CI and installs cleanly via locked `.deb`, `.rpm`, and `.pkg.tar.zst` packages verified in CI containers.
+**Definition of Done (Phase 8):** ✅ Builds clean on CI and produces the locked `.deb`, `.rpm`, `.pkg.tar.zst` packages with `SHA256SUMS`/`.sig`; clean-container install verification is 16.6 (pending).
 
 ---
 
@@ -215,7 +215,7 @@
 > Governed by `PRD.md` → `ARCHITECTURE.md` → `DESIGN.md` → `DATABASE.md` → `API.md` → `PLAN.md` → **`GAP-CLOSURE-PLAN.md`**.
 
 ### Summary of Phases 9–16:
-- [x] **Phase 9 — Truth, CI & Foundations**: Ground-truth audit (`docs/evidence/AUDIT.md`), CI matrix (`.github/workflows/ci.yml`), SQLite honesty notice, workspace warnings & `deny(unsafe_code)` audit (`docs/evidence/9.0, 9.1, 9.3.txt`).
+- [x] **Phase 9 — Truth, CI & Foundations**: Ground-truth audit (`docs/evidence/AUDIT.md`), CI matrix (`.github/workflows/ci.yml`), SQLite honesty notice, workspace warnings & `deny(unsafe_code)` audit (`docs/evidence/9.0, 9.1, 9.3.txt`). Evidence files `9.1`–`9.5` refreshed 2026-11-27; container smoke proof tracked in `16.6`.
 - [x] **Phase 10 — Hardened Control Plane**: Enforced safety arbiter (`tiers.toml`), HMAC-SHA256 argument-bound approval tokens, `SO_PEERCRED` + binary path checks, `SecretVault` encryption at rest, tamper-evident SHA-256 audit chain with `starship-control audit verify` (`docs/evidence/10.1–10.8.txt`).
 - [x] **Phase 11 — Executor Engine, Checkpoints & Fallback Plan**: Execution state machine, jittered retry, timeouts, dynamic fallback planner (`fallbacks.toml`), cross-app checkpoint primitives, lease supervisor, and event-sourced run log (`docs/evidence/11.1–11.11.txt`).
 - [x] **Phase 12 — Planner Reliability & Tool Routing**: Two-stage lexical tool router, strict `tasksheet/1` schema + GBNF validator with repair loop, prompt injection defense (`<untrusted_context>`), dry-run preview & `xtask` planner eval (`docs/evidence/12.1–12.7.txt`).

@@ -1,3 +1,5 @@
+=== TASK 9.3 EVIDENCE (historical local smoke, 2026-11-25) ===
+
 === STARSHIP CONTROL --VERSION ===
 starship-control 0.1.0
 
@@ -5,3 +7,15 @@ starship-control 0.1.0
 Running Starship Control self-test...
 [OK] Database opened & migrations verified at Some("/home/zvirox/.local/share/starship-control/library.db")
 [OK] Self-test passed cleanly.
+
+=== CURRENT STATUS (2026-11-27) ===
+The historical output above used the pre-beta version 0.1.0; the workspace is
+now 0.1.0-beta.5. `--version` and `--self-test` are still enforced in the
+`smoke-test` CI job, and the local binary now reports 0.1.0-beta.5.
+
+The clean-container matrix (ubuntu:22.04, ubuntu:24.04, fedora:latest,
+archlinux:latest) is implemented in the reusable release workflow (see
+`docs/evidence/9.2.txt`) but has not been observed from a tagged release on this
+host. Its run logs and GPG verification are tracked as task 16.6, which remains
+pending. This evidence file therefore proves the CLI smoke only, not the
+container matrix.

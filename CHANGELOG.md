@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Performance budgets (Phase 16.8)**: `cargo run -p xtask --bin perf_budget` runs the real app and enforces idle footprint (< 150 MB PSS), idle CPU (< 1 %), HUD toggle (< 150 ms), and event dispatch (< 50 ms); a warn-only `performance-budget` CI job runs under Xvfb. `cargo run -p starship-control -- --perf-probe [idle|latency]` exposes the raw measurements (`docs/evidence/16.8.txt`).
 - **Adaptive health sampling wired (Phase 14.2)**: 1 Hz while a window is visible, 0.2 Hz when minimized to the tray; `/proc/net/tcp` connection counting no longer allocates a string per line, and the sampler overhead test measures thread CPU time instead of wall time (0.49–0.54 % of one core at 1 Hz).
 
+### Fixed
+
+- **Documentation drift:** reconciled `PLAN.md` / `GAP-CLOSURE-PLAN.md` status lines, phase DoD wording and Appendix D checkboxes with the verified codebase; refreshed `9.1`/`9.3` evidence, added the missing `9.2`/`9.4`/`9.5` evidence files, and updated version/branch references in `AUDIT.md` and `docs/release-audit.md`.
+
 ## [0.1.0-beta.5] - 2026-11-26
 
 ### Changed

@@ -1,0 +1,19 @@
+=== TASK 9.5 EVIDENCE (coverage baseline, 2026-11-27) ===
+
+CI configuration (`.github/workflows/ci.yml:161-197`):
+  coverage:
+    name: Coverage Baseline (llvm-cov)
+    runs-on: ubuntu-24.04
+    steps: install cargo-llvm-cov, install Linux build deps, ensure app/dist,
+      run `cargo llvm-cov --workspace --text --output-path coverage.txt || true`,
+      upload artifact `coverage-report` (actions/upload-artifact@v4).
+
+Local tool check:
+  $ cargo llvm-cov --version
+  not installed
+  → the coverage baseline artifact is produced by CI, not on this host. The
+    `|| true` makes the report informational rather than a blocking gate.
+
+Result: the CI coverage job and artifact upload are configured. A recorded
+baseline percentage is not archived in-repo; maintainers can retrieve it from
+the Actions `coverage-report` artifact.

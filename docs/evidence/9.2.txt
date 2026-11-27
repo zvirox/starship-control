@@ -1,0 +1,42 @@
+=== TASK 9.2 EVIDENCE (current state, 2026-11-27) ===
+
+Release workflow:
+  .github/workflows/release.yml triggers on `v*` tags and calls
+  `zvirox/release-workflows/.github/workflows/linux-release.yml@v1` with:
+    app_name, frontend_dir: app,
+    build_cmd: cargo build --release --locked -p starship-control,
+    binary_path: target/release/starship-control,
+    nfpm_config: packaging/nfpm.yaml, check_version_flag: true.
+  All smoke inputs use their defaults (ubuntu22/24, fedora, arch = true).
+
+Reusable workflow (local checkout at ../release-workflows) implements:
+  - nfpm pkg --packager deb|rpm|archlinux
+  - sha256sum *.deb *.rpm *.pkg.tar.zst > SHA256SUMS
+  - gpg --detach-sign --armor --output SHA256SUMS.sig SHA256SUMS
+  - gpg --verify SHA256SUMS.sig SHA256SUMS
+  - clean containers ubuntu:22.04, ubuntu:24.04, fedora:latest,
+    archlinux:latest: install, ldd link check, --version, uninstall.
+
+Local packaging verification (nfpm, VERSION=0.1.0-beta.5):
+  $ nfpm pkg --config packaging/nfpm.yaml --packager deb \
+      --target /tmp/opencode/nfpm-check/starship-control_0.1.0-beta.5_amd64.deb
+    using deb packager... created package
+  $ nfpm pkg --config packaging/nfpm.yaml --packager rpm \
+      --target /tmp/opencode/nfpm-check/starship-control-0.1.0-beta.5-1.x86_64.rpm
+    using rpm packager... created package
+  $ nfpm pkg --config packaging/nfpm.yaml --packager archlinux \
+      --target /tmp/opencode/nfpm-check/starship-control-0.1.0-beta.5-1-x86_64.pkg.tar.zst
+    using archlinux packager... created package
+
+  starship-control-0.1.0-beta.5-1-x86_64.pkg.tar.zst  12M
+  starship-control-0.1.0-beta.5-1.x86_64.rpm          13M
+  starship-control_0.1.0-beta.5_amd64.deb             13M
+
+  $ sha256sum * > SHA256SUMS
+  8ba3de4c786391ae1844007b16839d9e08c4a6d465028c07622cab082493d8c4  starship-control-0.1.0-beta.5-1-x86_64.pkg.tar.zst
+  3d6e4bedb83c5f9e47bdcadefea61b8b3a935f86a92ed75cb05032d00c428f85  starship-control-0.1.0-beta.5-1.x86_64.rpm
+  eb353562c91995cf4cb5f416fd248a549c8474fafccbd036327fb83af8bcbc6f  starship-control_0.1.0-beta.5_amd64.deb
+
+Conclusion: the locked manifest builds exclusively .deb, .rpm and .pkg.tar.zst
+plus SHA256SUMS; no tar.gz/AppImage/Flatpak/AUR artifacts are produced. The
+tagged-release run log and GPG signature verification are task 16.6 (pending).
