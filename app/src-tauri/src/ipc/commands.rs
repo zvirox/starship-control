@@ -14,7 +14,7 @@ use starship_db::{Database, DiscoveredModelRecord, InferMetricRecord, NewAuditEn
 use starship_infer::discovery::{DiscoveredModel, ModelDiscovery, ProviderDiscovery};
 use starship_infer::dispatcher::InferDispatcher;
 use starship_infer::hf::{DownloadProgress, HfModelMetadata, download_hf_file, search_models};
-use starship_infer::types::{ChatRequest, Message, ToolCall};
+use starship_infer::types::{ChatRequest, Message, TokenStream, ToolCall};
 use starship_mcp::{
     AggregatedTool, HybridExecutionRouter, ToolAggregator, UnixTransportClient,
     scan_and_sync_manifests,
@@ -1038,6 +1038,109 @@ fn tool_calls_to_sheet(
 /// used by `cmd_mcp_call_tool`, feeds results back as `tool` messages, and
 /// repeats until the model finishes or the depth cap is reached. Tier 2/3
 /// calls create an approval gate and never execute autonomously.
+fn provider_label(provider_type: &str) -> &'static str {
+    match provider_type {
+        "cloud_openrouter" => "OpenRouter",
+        "cloud_anthropic" => "Anthropic",
+        "cloud_gemini" => "Gemini",
+        "local_gguf" => "the local GGUF runtime",
+        _ => "OpenAI",
+    }
+}
+
+/// Plain-English error copy for the chat composer. The raw error is kept in
+/// the `code` field for diagnostics; only this message is shown to the user.
+fn friendly_stream_error(
+    code: &str,
+    provider_type: &str,
+    raw: &str,
+    details: Option<&serde_json::Value>,
+) -> String {
+    let provider = provider_label(provider_type);
+    match code {
+        "infer.cloud_auth_failed" => {
+            format!("API key rejected by {provider}. Check it in Model settings.")
+        }
+        "infer.model_not_found" => {
+            "Model not found. Choose a model that is available to this provider.".to_string()
+        }
+        "infer.cloud_rate_limited" => {
+            let retry = details
+                .and_then(|d| d.get("retryAfterSeconds").or_else(|| d.get("retry_after")))
+                .and_then(serde_json::Value::as_u64);
+            match retry {
+                Some(seconds) => format!("Rate limited by {provider}. Retry in {seconds}s."),
+                None => format!("Rate limited by {provider}. Try again shortly."),
+            }
+        }
+        "infer.cloud_endpoint_unreachable" => {
+            format!("Cannot reach {provider}. Check the endpoint URL and your connection.")
+        }
+        "infer.context_length_exceeded" => {
+            "Conversation is too long for this model. Start a new mission.".to_string()
+        }
+        "infer.runtime_missing" => {
+            "llama-server was not found. Install llama.cpp or set STARSHIP_LLAMA_SERVER."
+                .to_string()
+        }
+        "infer.model_load_failed" => {
+            "Local model failed to load. Check the GGUF file and memory headroom.".to_string()
+        }
+        _ => raw.to_string(),
+    }
+}
+
+/// Retries transient stream-start failures (429 / 5xx / network) up to twice
+/// with exponential backoff before surfacing a typed error.
+async fn dispatch_with_retry(
+    provider_type: &str,
+    model_id: &str,
+    base_url: Option<&str>,
+    api_key: Option<&str>,
+    file_path: Option<&str>,
+    request: ChatRequest,
+) -> Result<TokenStream, CoreError> {
+    let mut last_error = None;
+    for attempt in 0_u32..3 {
+        match InferDispatcher::dispatch_stream(
+            provider_type,
+            model_id,
+            base_url,
+            api_key,
+            file_path,
+            request.clone(),
+        )
+        .await
+        {
+            Ok(stream) => return Ok(stream),
+            Err(error) => {
+                let transient = error.retryable
+                    && matches!(
+                        error.code.as_str(),
+                        "infer.cloud_auth_failed"
+                            | "infer.cloud_rate_limited"
+                            | "infer.cloud_endpoint_unreachable"
+                            | "infer.stream_error"
+                    );
+                if attempt < 2 && transient {
+                    last_error = Some(error);
+                    tokio::time::sleep(Duration::from_millis(500 * 2_u64.pow(attempt))).await;
+                    continue;
+                }
+                return Err(error);
+            }
+        }
+    }
+    Err(last_error.unwrap_or_else(|| {
+        CoreError::infer(
+            "infer.cloud_endpoint_unreachable",
+            true,
+            "Model endpoint did not respond after retries",
+            None,
+        )
+    }))
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn run_chat_with_tools(
     app: &AppHandle,
@@ -1079,7 +1182,7 @@ async fn run_chat_with_tools(
             stream: true,
         };
         let request_started = Instant::now();
-        let Ok(mut stream) = InferDispatcher::dispatch_stream(
+        let mut stream = match dispatch_with_retry(
             &model.provider_type,
             &model.id,
             base_url,
@@ -1088,8 +1191,26 @@ async fn run_chat_with_tools(
             chat_req,
         )
         .await
-        else {
-            return Ok(()); // dispatch_stream already emitted a typed error
+        {
+            Ok(stream) => stream,
+            Err(error) => {
+                let message = friendly_stream_error(
+                    &error.code,
+                    &model.provider_type,
+                    &error.user_message,
+                    error.details.as_ref(),
+                );
+                error!(target: "starship_ipc", mission_id, code = %error.code, "Inference dispatch failed");
+                let _ = app.emit(
+                    "evt://stream/error",
+                    StreamErrorEvent {
+                        mission_id,
+                        message,
+                        code: error.code,
+                    },
+                );
+                return Ok(());
+            }
         };
 
         let mut content = String::new();
@@ -1128,7 +1249,6 @@ async fn run_chat_with_tools(
                     if let Some(calls) = chunk.tool_calls {
                         tool_calls.extend(calls);
                     }
-                    tokio::time::sleep(Duration::from_millis(15)).await;
                 }
                 Err(e) => {
                     stream_error = Some(e.code.clone());
@@ -1137,7 +1257,12 @@ async fn run_chat_with_tools(
                         "evt://stream/error",
                         StreamErrorEvent {
                             mission_id,
-                            message: e.user_message.clone(),
+                            message: friendly_stream_error(
+                                &e.code,
+                                &model.provider_type,
+                                &e.user_message,
+                                e.details.as_ref(),
+                            ),
                             code: e.code,
                         },
                     );
@@ -2574,6 +2699,86 @@ mod tests {
                 .all(|message| !message.content.contains("turn-0-")),
             "oldest messages must be trimmed"
         );
+    }
+
+    #[test]
+    fn test_friendly_stream_error_copy() {
+        assert_eq!(
+            friendly_stream_error("infer.cloud_auth_failed", "cloud_openrouter", "raw", None),
+            "API key rejected by OpenRouter. Check it in Model settings."
+        );
+        assert_eq!(
+            friendly_stream_error("infer.model_not_found", "cloud_openai", "raw", None),
+            "Model not found. Choose a model that is available to this provider."
+        );
+        let details = serde_json::json!({ "retryAfterSeconds": 12 });
+        assert_eq!(
+            friendly_stream_error(
+                "infer.cloud_rate_limited",
+                "cloud_openai",
+                "raw",
+                Some(&details)
+            ),
+            "Rate limited by OpenAI. Retry in 12s."
+        );
+        assert_eq!(
+            friendly_stream_error("something.unknown", "cloud_gemini", "raw detail", None),
+            "raw detail"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_dispatch_retries_transient_rate_limit() {
+        use futures::StreamExt;
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind stub");
+        let port = listener.local_addr().expect("port").port();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.expect("first request");
+            let mut buffer = [0_u8; 4096];
+            let _ = socket.read(&mut buffer).await.expect("read 429");
+            socket
+                .write_all(b"HTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+                .await
+                .expect("write 429");
+
+            let (mut socket, _) = listener.accept().await.expect("second request");
+            let _ = socket.read(&mut buffer).await.expect("read retry");
+            let body = "data: {\"choices\":[{\"delta\":{\"content\":\"retried\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n";
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            socket
+                .write_all(response.as_bytes())
+                .await
+                .expect("write SSE");
+        });
+
+        let base_url = format!("http://127.0.0.1:{port}");
+        let request = ChatRequest {
+            model: "stub".to_string(),
+            messages: vec![Message::user("hello")],
+            system_prompt: None,
+            temperature: None,
+            max_tokens: None,
+            tools: vec![],
+            grammar: None,
+            stream: true,
+        };
+        let mut stream =
+            dispatch_with_retry("cloud_openai", "stub", Some(&base_url), None, None, request)
+                .await
+                .expect("retry must succeed");
+        let mut content = String::new();
+        while let Some(chunk) = stream.next().await {
+            content.push_str(&chunk.expect("chunk").content);
+        }
+        server.await.expect("stub task");
+        assert_eq!(content, "retried");
     }
 
     #[test]

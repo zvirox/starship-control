@@ -1,0 +1,32 @@
+=== TASK 17.16 — STREAMING ROBUSTNESS ===
+Date: 2026-11-27
+
+ROOT CAUSE
+Stream-start failures returned silently from the background task (no user-visible
+error), chunk errors showed raw backend text, and a 15 ms sleep was inserted
+after every token — adding artificial latency to every stream.
+
+CHANGES (app/src-tauri/src/ipc/commands.rs)
+- `friendly_stream_error` maps canonical codes to plain-English copy:
+  401/403 -> "API key rejected by <provider>", 404 -> "Model not found",
+  429 -> "Rate limited by <provider>. Retry in Ns" when the provider supplies a
+  retry hint, network -> "Cannot reach <provider>", plus local runtime/context
+  messages. Unknown codes keep the original `userMessage`.
+- `dispatch_with_retry` retries transient starts (429 / 5xx / network / stream
+  errors) up to twice with 500 ms / 1 s backoff, then emits a typed
+  `evt://stream/error` with the friendly message. Chunk errors use the same
+  copy; the canonical `code` is still carried for diagnostics.
+- Removed the artificial 15 ms sleep after every streamed chunk.
+
+VERIFICATION
+  $ cargo test -p starship-control test_dispatch_retries -- --nocapture
+  test_dispatch_retries_transient_rate_limit ... ok
+    (local stub returns 429 then SSE; the retried stream yields real content)
+  $ cargo test -p starship-control test_friendly_stream_error_copy ... ok
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       206 passed / 0 failed (26 suites)
+  $ npm run check:linear / typecheck / build                     PASS
+  $ cargo xtask check-no-fakes                                   PASS
+  $ grep from_millis(15) ipc/commands.rs                         no matches
+
+RESULT: PASS

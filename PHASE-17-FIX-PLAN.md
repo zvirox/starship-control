@@ -86,7 +86,7 @@
   * *Verify:* download test against a local HTTP fixture; corrupt file is rejected.
 - [x] **17.15 No silent default model (R8).** Remove the `"qwen2.5-coder-7b-q4"` fallback in `CockpitView.tsx`. With no usable model, the composer is disabled with a "Choose a model" call to action. Remove the seeded qwen row, or seed it as `remote_only` (not installed).
   * *Verify:* fresh profile → composer disabled; after selecting a model → enabled.
-- [ ] **17.16 Streaming robustness.** Surface HTTP/stream errors in the chat as readable messages (401 → "API key rejected by <provider>", 404 → "model not found", 429 → "rate limited, retry in Ns"), with retry. Remove the artificial 15 ms sleep per chunk.
+- [x] **17.16 Streaming robustness.** Surface HTTP/stream errors in the chat as readable messages (401 → "API key rejected by <provider>", 404 → "model not found", 429 → "rate limited, retry in Ns"), with retry. Remove the artificial 15 ms sleep per chunk.
 
 ---
 
