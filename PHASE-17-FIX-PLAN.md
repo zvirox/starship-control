@@ -53,7 +53,7 @@
   * *Verify:* IPC-level test: approve a step for an app with no binary and no socket → step ends `failed` with `mcp.app_unavailable`; no `"status":"success"` is ever produced. `cargo build --release` has no `simulate_` symbols.
 - [x] **17.2 Real launch only (R2).** `cmd_topology_launch_app` must `spawn()` a real binary and return its real PID, or return `mcp.app_spawn_failed`. Delete the "simulate GUI launch" branch and the fixed PID 12345. After spawn, wait up to 5 s for the bridge socket and report `launched`, or `launched_no_bridge` (honest).
   * *Verify:* test with a missing binary → typed error; test with a stub binary that creates the socket → `launched` with the true PID.
-- [ ] **17.3 No invented cuts (R3).** In `pipeline/media.rs`, remove the default `CutInterval`s. With no CET telemetry, return `pipeline.telemetry_required`, and the UI shows "Record or load a session first". Cuts come only from real `detect_cuts`.
+- [x] **17.3 No invented cuts (R3).** In `pipeline/media.rs`, remove the default `CutInterval`s. With no CET telemetry, return `pipeline.telemetry_required`, and the UI shows "Record or load a session first". Cuts come only from real `detect_cuts`.
   * *Verify:* unit + IPC test: no telemetry → error, never a plan with cuts.
 - [ ] **17.4 Remove canned model replies.** Delete the keyword-matched response code and `synthesize_tasksheet_json` from `local/runner.rs` (replaced by 17.10).
 - [ ] **17.5 Real data for every chart (R4).**

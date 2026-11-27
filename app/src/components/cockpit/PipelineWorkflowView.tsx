@@ -104,7 +104,14 @@ export const PipelineWorkflowView: React.FC<PipelineWorkflowViewProps> = ({
       setStatusMessage("Screencast pipeline generated and active — review DAG stages below.");
     } catch (err: unknown) {
       console.error("Failed to plan screencast pipeline:", err);
-      setStatusMessage(`Error: ${err instanceof Error ? err.message : String(err)}`);
+      const core = err as { userMessage?: unknown } | null;
+      const message =
+        core && typeof core.userMessage === "string"
+          ? core.userMessage
+          : err instanceof Error
+            ? err.message
+            : String(err);
+      setStatusMessage(message);
     } finally {
       setIsPlanning(false);
     }

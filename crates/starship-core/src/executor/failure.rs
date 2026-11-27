@@ -67,7 +67,8 @@ pub fn classify_error(code: &str) -> FailureClass {
         | "plan.invalid_risk_tier"
         | "plan.empty_plan"
         | "plan.empty_goal"
-        | "planner.unsupported_version" => FailureClass::ModelOutput,
+        | "planner.unsupported_version"
+        | "pipeline.telemetry_required" => FailureClass::ModelOutput,
 
         // Safety: approval rejections, permission violations, tamper, manifest untrusted
         "safety.approval_rejected"
@@ -153,6 +154,7 @@ mod tests {
             "plan.empty_plan",
             "plan.empty_goal",
             "planner.unsupported_version",
+            "pipeline.telemetry_required",
         ];
 
         for code in api_codes {

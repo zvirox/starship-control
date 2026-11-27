@@ -195,6 +195,11 @@ fn call_real_step(binary: &Path) -> Option<serde_json::Value> {
 }
 
 fn screencast_plan() -> serde_json::Value {
+    let telemetry = starship_core::pipeline::CetTelemetry::from_jsonl_str(
+        r#"{"type":"header","version":"cet/1.0","recording_fps":60.0,"duration_ms":90000,"audio_sample_rate":48000}
+{"type":"silence","start_ms":1000,"end_ms":4200,"duration_ms":3200}"#,
+    )
+    .expect("parse CET fixture");
     let result = ScreencastPipeline::plan_assembly(
         &ScreencastAssemblyRequest {
             recording_path: "/tmp/e2e/demo.mkv".to_owned(),
@@ -204,7 +209,7 @@ fn screencast_plan() -> serde_json::Value {
             intro_script: Some("Welcome to the demo".to_owned()),
             target_timeline_track: 1,
         },
-        None,
+        Some(&telemetry),
     )
     .expect("build screencast plan");
     serde_json::to_value(&result.task_sheet).expect("serialize plan")

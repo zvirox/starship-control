@@ -1,6 +1,6 @@
-use crate::CoreError;
 use crate::pipeline::cet::{CetTelemetry, CutInterval};
 use crate::planner::tasksheet::{TaskSheet, TaskSheetStep};
+use crate::{CoreError, ErrorKind};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
@@ -33,25 +33,19 @@ impl ScreencastPipeline {
         request: &ScreencastAssemblyRequest,
         telemetry: Option<&CetTelemetry>,
     ) -> Result<ScreencastPipelineResult, CoreError> {
-        let cuts: Vec<CutInterval> = if let Some(t) = telemetry {
-            t.detect_cuts(1200) // Cut silences longer than 1.2s
-        } else {
-            // Default simulated cut points
-            vec![
-                CutInterval {
-                    start_ms: 4500,
-                    end_ms: 7200,
-                    duration_ms: 2700,
-                    reason: "Initial pause before demo intro".to_string(),
-                },
-                CutInterval {
-                    start_ms: 22000,
-                    end_ms: 28500,
-                    duration_ms: 6500,
-                    reason: "Dead air during application loading".to_string(),
-                },
-            ]
+        // Cuts come only from real CET telemetry (Phase 17, 17.3). Inventing
+        // edit points would produce a plan that silently changes the user's
+        // timeline without ever inspecting the recording.
+        let Some(telemetry) = telemetry else {
+            return Err(CoreError::new(
+                ErrorKind::Plan,
+                "pipeline.telemetry_required",
+                false,
+                "Record or load a session first — CET telemetry is required for cuts",
+                Some(json!({"cetPath": request.cet_path})),
+            ));
         };
+        let cuts: Vec<CutInterval> = telemetry.detect_cuts(1200); // > 1.2 s silences
 
         let total_trimmed_ms: u64 = cuts.iter().map(|c| c.duration_ms).sum();
         let total_secs = if total_trimmed_ms > 0 {

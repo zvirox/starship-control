@@ -53,6 +53,22 @@ mod tests {
     }
 
     #[test]
+    fn test_screencast_plan_requires_real_telemetry_and_uses_no_default_cuts() {
+        let req = ScreencastAssemblyRequest {
+            recording_path: "/home/user/Videos/demo.mkv".to_string(),
+            cet_path: None,
+            clean_audio: false,
+            audio_preset: None,
+            intro_script: None,
+            target_timeline_track: 1,
+        };
+        let err = ScreencastPipeline::plan_assembly(&req, None)
+            .expect_err("no CET telemetry must be rejected");
+        assert_eq!(err.code, "pipeline.telemetry_required");
+        assert!(!err.retryable);
+    }
+
+    #[test]
     fn test_screencast_pipeline_dag_resolution() {
         // Verification requirement for 7.2:
         // Route extracted audio track to ALP for noise removal and voice mastering; synthesize intro narration via ALP TTS and insert into EEP timeline.
@@ -67,7 +83,14 @@ mod tests {
             target_timeline_track: 1,
         };
 
-        let result = ScreencastPipeline::plan_assembly(&req, None).expect("plan screencast");
+        let telemetry = CetTelemetry::from_jsonl_str(
+            r#"{"type":"header","version":"cet/1.0","recording_fps":60.0,"duration_ms":90000,"audio_sample_rate":48000}
+{"type":"silence","start_ms":1000,"end_ms":4200,"duration_ms":3200}
+{"type":"silence","start_ms":15000,"end_ms":22500,"duration_ms":7500}"#,
+        )
+        .expect("parse CET fixture");
+        let result =
+            ScreencastPipeline::plan_assembly(&req, Some(&telemetry)).expect("plan screencast");
         assert_eq!(result.task_sheet.steps.len(), 5);
 
         // Check step ordering & app delegation

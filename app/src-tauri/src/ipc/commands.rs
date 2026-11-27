@@ -1469,15 +1469,9 @@ pub struct PipelineScreencastPayload {
     pub target_timeline_track: u32,
 }
 
-#[tauri::command]
-pub async fn cmd_pipeline_screencast(
-    app: AppHandle,
-    state: tauri::State<'_, Database>,
-    payload: PipelineScreencastPayload,
-) -> Result<PlanActiveResponse, CoreError> {
-    let db = state.inner();
-    let arbiter = SafetyArbiter::default();
-
+/// Shared plan builder for `cmd_pipeline_screencast`, testable without a
+/// Tauri `AppHandle` or `State` instance.
+fn build_screencast_plan(payload: &PipelineScreencastPayload) -> Result<TaskSheet, CoreError> {
     let telemetry = if let Some(ref content) = payload.cet_content {
         Some(CetTelemetry::from_jsonl_str(content)?)
     } else if let Some(ref path) = payload.cet_path {
@@ -1487,18 +1481,28 @@ pub async fn cmd_pipeline_screencast(
     } else {
         None
     };
-
     let req = ScreencastAssemblyRequest {
-        recording_path: payload.recording_path,
-        cet_path: payload.cet_path,
+        recording_path: payload.recording_path.clone(),
+        cet_path: payload.cet_path.clone(),
         clean_audio: payload.clean_audio,
-        audio_preset: payload.audio_preset,
-        intro_script: payload.intro_script,
+        audio_preset: payload.audio_preset.clone(),
+        intro_script: payload.intro_script.clone(),
         target_timeline_track: payload.target_timeline_track,
     };
+    ScreencastPipeline::plan_assembly(&req, telemetry.as_ref()).map(|result| result.task_sheet)
+}
 
-    let result = ScreencastPipeline::plan_assembly(&req, telemetry.as_ref())?;
-    activate_plan_internal(&app, db, &arbiter, payload.mission_id, &result.task_sheet)
+#[tauri::command]
+pub async fn cmd_pipeline_screencast(
+    app: AppHandle,
+    state: tauri::State<'_, Database>,
+    payload: PipelineScreencastPayload,
+) -> Result<PlanActiveResponse, CoreError> {
+    let db = state.inner();
+    let arbiter = SafetyArbiter::default();
+
+    let task_sheet = build_screencast_plan(&payload)?;
+    activate_plan_internal(&app, db, &arbiter, payload.mission_id, &task_sheet)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -1771,6 +1775,24 @@ fn chrono_now_iso() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_pipeline_screencast_requires_real_telemetry() {
+        let payload = PipelineScreencastPayload {
+            mission_id: 0,
+            recording_path: "/tmp/demo.mkv".to_string(),
+            cet_path: None,
+            cet_content: None,
+            clean_audio: false,
+            audio_preset: None,
+            intro_script: None,
+            target_timeline_track: 1,
+        };
+        let err = build_screencast_plan(&payload).expect_err("no telemetry must fail");
+        assert_eq!(err.code, "pipeline.telemetry_required");
+        assert!(!err.retryable);
+        assert!(err.user_message.contains("Record or load a session first"));
+    }
 
     #[tokio::test]
     async fn test_launch_app_missing_binary_returns_typed_error() {

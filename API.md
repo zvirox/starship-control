@@ -39,6 +39,7 @@ Every error returned by a command or emitted over an error event strictly matche
 - **Safety & Permissions (`safety.*`):** `safety.approval_rejected`, `safety.permission_denied`, `safety.invalid_signature_token`, `safety.tier_violation`.
 - **Database & Storage (`db.*`):** `db.read_failed`, `db.write_failed`, `db.constraint_violation`, `db.migration_failed`, `db.audit_tampered`.
 - **IPC & Window (`ipc.*`):** `ipc.invalid_payload`, `ipc.bad_state`, `ipc.window_not_found`, `ipc.cycle_detected`.
+- **Pipeline (`pipeline.*`):** `pipeline.telemetry_required` (no real CET data — record a session or load a sidecar first).
 - **Planner & Schema (`plan.*`):** `plan.invalid_schema`, `plan.cycle_detected`, `plan.unknown_tool`, `plan.unknown_app`, `plan.args_invalid`, `plan.duplicate_step_index`, `plan.self_dependency`, `plan.missing_dependency`, `plan.max_steps_exceeded`, `plan.max_tier3_exceeded`, `plan.invalid_risk_tier`, `plan.empty_plan`, `plan.empty_goal`, `planner.unsupported_version`.
 - **Executor & Recovery (`exec.*`):** `exec.step_timeout`, `exec.stalled`, `exec.replan_exhausted`, `exec.rollback_failed`.
 

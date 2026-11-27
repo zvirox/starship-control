@@ -1,0 +1,41 @@
+=== TASK 17.3 — NO INVENTED CUTS ===
+Date: 2026-11-27
+
+ROOT CAUSE (R3, confirmed in 17.0)
+`ScreencastPipeline::plan_assembly` fabricated two `CutInterval`s (4500–7200 ms,
+22000–28500 ms) whenever CET telemetry was absent. The resulting plan applied
+real timeline cuts derived from nothing.
+
+CHANGES
+- crates/starship-core/src/pipeline/media.rs: removed the default cut points.
+  With no telemetry the function now returns
+  `CoreError::new(ErrorKind::Plan, "pipeline.telemetry_required", false,
+  "Record or load a session first — CET telemetry is required for cuts",
+  details: {cetPath})`. Cuts come only from `CetTelemetry::detect_cuts(1200)`.
+- API.md §1.2: added the `pipeline.*` canonical code (contract synced).
+- crates/starship-core/src/executor/failure.rs: `pipeline.telemetry_required`
+  maps to `FailureClass::ModelOutput` and is in the canonical-code test.
+- app/src-tauri/src/ipc/commands.rs: extracted `build_screencast_plan(payload)`,
+  used by `cmd_pipeline_screencast`, so the command path is testable; the typed
+  error propagates to the UI.
+- app/src/components/cockpit/PipelineWorkflowView.tsx: renders the core
+  `userMessage` instead of a generic string, so the user sees "Record or load a
+  session first" (no layout change).
+- Test/e2e fixtures now supply real CET JSONL telemetry instead of relying on
+  the old default cuts (`pipeline/mod.rs`, `xtask e2e_real_apps.rs`).
+
+VERIFICATION
+  $ cargo test --workspace
+  suites=24 passed=189 failed=0
+
+  New tests:
+  - pipeline::tests::test_screencast_plan_requires_real_telemetry_and_uses_no_default_cuts
+  - ipc::commands::tests::test_pipeline_screencast_requires_real_telemetry
+    (drives the exact helper used by `cmd_pipeline_screencast`)
+
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ grep -nE '4500|7200|22000|28500|Default simulated' media.rs   no matches
+  $ npx tsc --noEmit (app)                                        PASS
+  $ cd app && npm run check:linear                               PASS
+
+RESULT: PASS
