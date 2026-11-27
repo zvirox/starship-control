@@ -3,7 +3,7 @@
 **Original Baseline Audit:** 2026-11-22 (`GAP-CLOSURE-PLAN.md §9.0`)  
 **Re-Audit Date:** 2026-11-25 (`feat/linear-ui`, commit `9506d3b` + doc sync)  
 **Target:** Starship Control `0.1.0-beta.1` (historical re-audit target)
-**Current state:** 2026-11-27 · `0.1.0-beta.5` (commit `8be383e`) · see the live status lines in `PLAN.md` / `GAP-CLOSURE-PLAN.md` for the current phase state.
+**Current state:** 2026-11-27 · `0.1.0-beta.6` · see the live status lines in `PLAN.md` / `GAP-CLOSURE-PLAN.md` for the current phase state.
 
 ---
 

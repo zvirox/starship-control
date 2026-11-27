@@ -22,6 +22,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Documentation drift:** reconciled `PLAN.md` / `GAP-CLOSURE-PLAN.md` status lines, phase DoD wording and Appendix D checkboxes with the verified codebase; refreshed `9.1`/`9.3` evidence, added the missing `9.2`/`9.4`/`9.5` evidence files, and updated version/branch references in `AUDIT.md` and `docs/release-audit.md`.
 
+## [0.1.0-beta.6] - 2026-11-27
+
+### Added
+
+- **Real local inference (Phase 17.10)**: managed `llama-server` sidecar with runtime discovery, optional SHA-256 pinning, health wait, streaming through the OpenAI-compatible client and process cleanup. No canned model replies remain.
+- **Conversation memory and tool loop (17.12, 17.13)**: stored user/assistant/tool messages become model context; `tool_calls` from OpenAI/OpenRouter, Anthropic and Gemini streams are validated, Tier-1 calls execute through the MCP router and their real results are fed back, Tier 2/3 stop for signed approval.
+- **Cloud model discovery (17.20–17.25)**: real provider `/models` calls, persisted catalog, provider test/refresh commands, manual model-id validation, searchable grouped model picker with favorites and badges.
+- **OpenRouter correctness and guards (17.26, 17.27)**: SSE comment/error handling, optional `HTTP-Referer`/`X-Title`, tool capability gating, context-window estimate/trimming, `cargo xtask provider-smoke <provider>`.
+- **Threat model and performance budgets (16.7, 16.8)**: `docs/THREAT_MODEL.md`, measured idle/PSS/CPU/HUD/event budgets and a warn-only CI job.
+
+### Changed
+
+- Removed production simulation: unavailable apps/tools now return typed errors, launches report real PIDs, screencast plans require real CET telemetry and all fake chart/dashboard data is gone. A `cargo xtask check-no-fakes` gate runs in CI and as a release preflight.
+- GGUF downloads verify magic bytes and size before promotion; missing local models are marked not downloaded; `cmd_model_delete` confines file removal to the models directory.
+- Streaming errors are mapped to plain-English copy with bounded retry; the artificial per-chunk delay is gone.
+- Releases are optional and at the maintainer's discretion; no timeline or milestone is committed.
+
+### Fixed
+
+- Documentation drift across `PLAN.md`, `GAP-CLOSURE-PLAN.md`, `AUDIT.md`, `DATABASE.md`, `ARCHITECTURE.md`, `API.md` and Phase 9 evidence files.
+
 ## [0.1.0-beta.5] - 2026-11-26
 
 ### Changed
