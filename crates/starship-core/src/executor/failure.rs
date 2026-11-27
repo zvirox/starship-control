@@ -83,7 +83,8 @@ pub fn classify_error(code: &str) -> FailureClass {
         | "db.write_failed"
         | "db.constraint_violation"
         | "db.migration_failed"
-        | "ipc.window_not_found" => FailureClass::Environment,
+        | "ipc.window_not_found"
+        | "mcp.app_unavailable" => FailureClass::Environment,
 
         // User / Bad State: user abort or illegal state transition
         "ipc.bad_state" | "ipc.invalid_payload" => FailureClass::User,
@@ -120,6 +121,7 @@ mod tests {
             "mcp.tool_not_found",
             "mcp.execution_failed",
             "mcp.app_spawn_failed",
+            "mcp.app_unavailable",
             "mcp.lease_expired",
             // safety.*
             "safety.approval_rejected",

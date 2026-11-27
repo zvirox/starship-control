@@ -1070,8 +1070,16 @@ pub async fn cmd_mcp_call_tool(
     state: tauri::State<'_, Database>,
     payload: CallToolPayload,
 ) -> Result<serde_json::Value, CoreError> {
-    let db = state.inner().clone();
-    let router = HybridExecutionRouter::new(db);
+    call_tool(state.inner(), payload).await
+}
+
+/// Shared implementation of `cmd_mcp_call_tool`, testable without a Tauri
+/// `State` instance (which has no public constructor).
+async fn call_tool(
+    db: &Database,
+    payload: CallToolPayload,
+) -> Result<serde_json::Value, CoreError> {
+    let router = HybridExecutionRouter::new(db.clone());
     let timeout = payload.lease_timeout_ms.unwrap_or(10_000);
     router
         .route_and_call(
@@ -1747,6 +1755,27 @@ fn chrono_now_iso() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn test_mcp_call_tool_rejects_unavailable_app_without_simulating_success() {
+        let db = Database::open_in_memory().expect("in-memory db");
+        let payload = CallToolPayload {
+            app_id: "eep".to_string(),
+            tool_name: "timeline.auto_trim_silence".to_string(),
+            arguments: serde_json::json!({}),
+            lease_timeout_ms: Some(1_000),
+        };
+        let err = call_tool(&db, payload)
+            .await
+            .expect_err("no bridge socket or binary must fail");
+        assert_eq!(err.code, "mcp.app_unavailable");
+        assert!(!err.retryable);
+        assert!(
+            serde_json::to_string(&err)
+                .expect("serialize error")
+                .contains("mcp.app_unavailable")
+        );
+    }
 
     #[test]
     fn test_cloud_credentials_decrypted_at_point_of_use() {

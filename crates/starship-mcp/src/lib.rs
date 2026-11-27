@@ -185,8 +185,9 @@ mod tests {
         let db = Database::open_in_memory().expect("open db");
         let router = HybridExecutionRouter::new(db);
 
-        // Dispatches simulated tool call for EEP
-        let result = router
+        // No socket and no binary for EEP: must return a typed error, never
+        // simulated success (Phase 17, task 17.1).
+        let err = router
             .route_and_call(
                 "eep",
                 "timeline.auto_trim_silence",
@@ -194,10 +195,14 @@ mod tests {
                 5000,
             )
             .await
-            .expect("route and call");
-
-        assert_eq!(result.get("status").unwrap(), "success");
-        assert_eq!(result.get("segmentsTrimmed").unwrap(), 14);
+            .expect_err("no transport must fail");
+        assert_eq!(err.code, "mcp.app_unavailable");
+        assert!(!err.retryable);
+        assert!(
+            err.details
+                .as_ref()
+                .is_some_and(|details| details["appId"] == "eep")
+        );
     }
 
     #[tokio::test]

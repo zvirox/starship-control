@@ -54,11 +54,38 @@ impl HybridExecutionRouter {
             }
         }
 
-        // 3. Development / Simulation Mode Fallback
-        info!(
-            "No active socket or binary found for '{app_id}'. Executing simulated tool '{tool_name}'."
-        );
-        Ok(Self::simulate_tool_call(app_id, tool_name, &arguments))
+        // 3. No real transport available — never invent a successful result.
+        let mut checked = vec![
+            bridge_dir()
+                .join(format!("{app_id}.sock"))
+                .to_string_lossy()
+                .to_string(),
+        ];
+        if let Ok(Some(app)) = self.db.get_app(app_id) {
+            if let Some(sock) = app.socket_path {
+                let path = PathBuf::from(&sock).to_string_lossy().to_string();
+                if !checked.contains(&path) {
+                    checked.push(path);
+                }
+            }
+            let binary = PathBuf::from(&app.binary_path)
+                .to_string_lossy()
+                .to_string();
+            if !checked.contains(&binary) {
+                checked.push(binary);
+            }
+        }
+        Err(CoreError::mcp(
+            "mcp.app_unavailable",
+            false,
+            format!("Application '{app_id}' is not available (no bridge socket or usable binary)"),
+            Some(serde_json::json!({
+                "appId": app_id,
+                "tool": tool_name,
+                "checked": checked,
+                "reason": "no_active_socket_or_binary",
+            })),
+        ))
     }
 
     fn get_active_socket_path(&self, app_id: &str) -> Option<PathBuf> {
@@ -102,67 +129,29 @@ impl HybridExecutionRouter {
         let mut session = McpSession::new(Box::new(client));
         session.call_tool(tool_name, arguments, timeout_ms).await
     }
-
-    fn simulate_tool_call(
-        app_id: &str,
-        tool_name: &str,
-        arguments: &serde_json::Value,
-    ) -> serde_json::Value {
-        match (app_id, tool_name) {
-            ("eep", "timeline.cut_interval") => serde_json::json!({
-                "status": "success",
-                "action": "cut_interval",
-                "startMs": arguments.get("startMs").cloned().unwrap_or(serde_json::json!(0)),
-                "endMs": arguments.get("endMs").cloned().unwrap_or(serde_json::json!(5000)),
-                "editsApplied": 1,
-                "diffSummary": "Cut 5000ms dead air segment on timeline"
-            }),
-            ("eep", "timeline.auto_trim_silence") => serde_json::json!({
-                "status": "success",
-                "action": "auto_trim_silence",
-                "segmentsTrimmed": 14,
-                "timeSavedSeconds": 84.5,
-                "diffSummary": "Ripple cut 14 dead-time segments across timeline"
-            }),
-            ("alp", "audio.cleanup_preset") => serde_json::json!({
-                "status": "success",
-                "preset": arguments.get("preset").cloned().unwrap_or(serde_json::json!("voice_clean")),
-                "trackId": arguments.get("trackId").cloned().unwrap_or(serde_json::json!(1)),
-                "noiseReductionDb": -18.5,
-                "diffSummary": "Applied Voice Cleanup preset: removed -18.5dB background noise"
-            }),
-            ("ssp", "capture.start_recording") => serde_json::json!({
-                "status": "recording",
-                "sessionId": "rec_live_091",
-                "fps": 60,
-                "resolution": "2560x1440"
-            }),
-            ("nwp", "network.capture_packets") => serde_json::json!({
-                "status": "success",
-                "packetsCaptured": 4210,
-                "dropped": 0,
-                "anomaliesDetected": 0
-            }),
-            ("atp", "system.clean_package_cache") => serde_json::json!({
-                "status": "success",
-                "freedSpaceBytes": 1_842_000_000u64,
-                "packagesCleaned": 64
-            }),
-            _ => serde_json::json!({
-                "status": "success",
-                "appId": app_id,
-                "tool": tool_name,
-                "executedAt": chrono_like_now(),
-                "output": "Simulated tool execution succeeded"
-            }),
-        }
-    }
 }
 
-fn chrono_like_now() -> String {
-    use std::time::SystemTime;
-    let duration = SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap_or_default();
-    format!("{}", duration.as_secs())
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_no_transport_returns_typed_error_not_simulated_success() {
+        let router = HybridExecutionRouter::new(Database::open_in_memory().expect("in-memory db"));
+        let err = router
+            .route_and_call("missing-app", "anything.do", serde_json::json!({}), 1_000)
+            .await
+            .expect_err("no transport must fail");
+        assert_eq!(err.code, "mcp.app_unavailable");
+        assert!(!err.retryable);
+        let details = err.details.expect("error details");
+        assert_eq!(details["appId"], "missing-app");
+        assert_eq!(details["tool"], "anything.do");
+        assert_eq!(details["reason"], "no_active_socket_or_binary");
+        assert!(
+            details["checked"]
+                .as_array()
+                .is_some_and(|paths| !paths.is_empty())
+        );
+    }
 }

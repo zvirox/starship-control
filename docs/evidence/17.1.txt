@@ -1,0 +1,53 @@
+=== TASK 17.1 — DELETE PRODUCTION SIMULATION ===
+Date: 2026-11-27
+
+ROOT CAUSE (R1, confirmed in 17.0)
+`HybridExecutionRouter::route_and_call` had a third step that called
+`simulate_tool_call`, returning `status:"success"` with invented results
+(14 segments / 84.5 s, -18.5 dB, 4210 packets, 1.84 GB freed) whenever no
+socket or binary was available. Failed calls looked successful.
+
+CHANGES
+- crates/starship-mcp/src/router.rs: deleted the simulation fallback, the
+  `simulate_tool_call` function and its `chrono_like_now` helper. With no live
+  socket and no usable pinned binary the router now returns
+  `CoreError::mcp("mcp.app_unavailable", retryable=false, ...)` with
+  `details: {appId, tool, checked:[socket paths, binary path], reason:
+  "no_active_socket_or_binary"}`. No `status:"success"` path remains.
+- crates/starship-core/src/executor/failure.rs: `mcp.app_unavailable` maps to
+  `FailureClass::Environment` and is included in the canonical-code test.
+- API.md §1.2: added `mcp.app_unavailable` to the `mcp.*` error-code list
+  (contract synced in the same commit).
+- app/src-tauri/src/ipc/commands.rs: extracted `call_tool(db, payload)` as the
+  shared implementation of `cmd_mcp_call_tool` so the IPC command path is
+  testable without a Tauri `State` instance.
+- Updated the existing router test (which asserted simulated success) to
+  assert the typed error.
+
+VERIFICATION
+  $ cargo test --workspace
+  suites=24 passed=185 failed=0
+
+  New/changed tests:
+  - router::tests::test_no_transport_returns_typed_error_not_simulated_success
+  - tests::test_hybrid_execution_router (now expects mcp.app_unavailable)
+  - ipc::commands::tests::test_mcp_call_tool_rejects_unavailable_app_without_simulating_success
+    (drives the exact helper used by the `cmd_mcp_call_tool` Tauri command)
+
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ grep -rc 'simulate_tool_call' crates app/src-tauri/src       0 matches
+  $ cargo build --release -p starship-control &&
+    strings target/release/starship-control | grep -c simulate_tool_call   0
+  $ cd app && npm run check:linear                               PASS
+  $ cd app && npm run typecheck                                  PASS
+
+DEVIATION FROM PLAN (honest note)
+The plan suggested moving simulation behind `#[cfg(feature = "demo")]` with a
+DEMO badge. We deleted it outright instead: no production caller needs it,
+`starship-mock-app` already provides every fault scenario, and a demo feature
+would leave a release-build bypass path that 17.7's no-fakes gate must police.
+The "approve a step → failed step" variant of the verification needs the
+mission runner (17.40/17.41) and is deferred there; the command-path test above
+proves no simulated success can be returned today.
+
+RESULT: PASS

@@ -46,7 +46,7 @@
 ## 2. Phase 17A — Remove Every Fake
 
 - [ ] **17.0 Confirm root causes.** For each R1–R15, add a line to `docs/evidence/17.0.txt`: file, line, `CONFIRMED` or `DIFFERENT (explain)`. Amend this plan if any differ.
-- [ ] **17.1 Delete production simulation (R1).**
+- [x] **17.1 Delete production simulation (R1).**
   * Remove `simulate_tool_call` from `starship-mcp/src/router.rs`. When no socket or binary works, return `CoreError::mcp("mcp.app_unavailable", retryable=false, …)` with `details: {appId, checked: [socketPath, binaryPath], reason}`.
   * Move the simulation to `starship-mock-app` (already exists) and to `#[cfg(feature="demo")]` with a visible **DEMO** badge and `simulated: true` in every result.
   * Executor treats `mcp.app_unavailable` as failure class `environment`.
