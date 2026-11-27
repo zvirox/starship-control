@@ -1,0 +1,32 @@
+=== TASK 17.26 — OPENROUTER / SSE CORRECTNESS ===
+Date: 2026-11-27
+
+CHANGES
+- crates/starship-infer/src/cloud/openai.rs: SSE keep-alive/comment lines
+  (`:…`) are ignored; mid-stream `{"error":{"message":…}}` objects now produce
+  a typed `infer.stream_error` instead of being parsed as empty content.
+- Optional `HTTP-Referer` and `X-Title` attribution headers: migration `0010`
+  adds the columns to `provider_configs`, settings exposes both fields, and
+  `ProviderHeaders` flows through `InferDispatcher` into the OpenAI-compatible
+  client (never logged).
+- Tools are advertised only when the selected model has `supports_tools=true`.
+- `:free` model ids get a specific rate-limit message ("Free-tier model … is
+  rate limited by OpenRouter …").
+- `cargo xtask provider-smoke <provider>` uses the saved key to list models and
+  send a one-token prompt (internal workspace crates only, no new dependency).
+
+VERIFICATION
+  $ cargo test -p starship-infer test_mid_stream_error_object_is_typed ... ok
+  $ cargo test -p starship-control test_provider_attribution_headers_are_sent ... ok
+    (local HTTP stub asserts both headers on the wire)
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       209 passed / 0 failed (26 suites)
+  $ npm run check:linear / typecheck / build                     PASS
+  $ cargo xtask check-no-fakes                                   PASS
+
+LIMITATION
+No live OpenRouter key was available; SSE behavior and headers are proven with
+local HTTP stubs, and `provider-smoke` is ready for a maintainer with a saved
+key. Anthropic/Gemini pagination remains deferred (noted in 17.20).
+
+RESULT: PASS

@@ -399,7 +399,8 @@ impl Database {
     ) -> Result<Option<ProviderConfigRecord>, CoreError> {
         self.with_conn(|conn| {
             let mut stmt = conn.prepare(
-                "SELECT provider_id, display_name, base_url, api_key_encrypted, is_enabled, created_at, updated_at
+                "SELECT provider_id, display_name, base_url, api_key_encrypted, is_enabled,
+                        http_referer, x_title, created_at, updated_at
                  FROM provider_configs WHERE provider_id = ?1",
             )?;
 
@@ -410,8 +411,10 @@ impl Database {
                     base_url: row.get(2)?,
                     api_key_encrypted: row.get(3)?,
                     is_enabled: row.get::<_, i64>(4)? == 1,
-                    created_at: row.get(5)?,
-                    updated_at: row.get(6)?,
+                    http_referer: row.get(5)?,
+                    x_title: row.get(6)?,
+                    created_at: row.get(7)?,
+                    updated_at: row.get(8)?,
                 })
             })?;
 
@@ -427,7 +430,8 @@ impl Database {
     pub fn list_provider_configs(&self) -> Result<Vec<ProviderConfigRecord>, CoreError> {
         self.with_conn(|conn| {
             let mut stmt = conn.prepare(
-                "SELECT provider_id, display_name, base_url, api_key_encrypted, is_enabled, created_at, updated_at
+                "SELECT provider_id, display_name, base_url, api_key_encrypted, is_enabled,
+                        http_referer, x_title, created_at, updated_at
                  FROM provider_configs ORDER BY provider_id",
             )?;
             let rows = stmt.query_map([], |row| {
@@ -437,11 +441,29 @@ impl Database {
                     base_url: row.get(2)?,
                     api_key_encrypted: row.get(3)?,
                     is_enabled: row.get::<_, i64>(4)? == 1,
-                    created_at: row.get(5)?,
-                    updated_at: row.get(6)?,
+                    http_referer: row.get(5)?,
+                    x_title: row.get(6)?,
+                    created_at: row.get(7)?,
+                    updated_at: row.get(8)?,
                 })
             })?;
             rows.collect::<Result<Vec<_>, _>>()
+        })
+    }
+
+    /// Stores optional attribution headers used by `OpenRouter` requests.
+    pub fn set_provider_headers(
+        &self,
+        provider_id: &str,
+        http_referer: Option<&str>,
+        x_title: Option<&str>,
+    ) -> Result<(), CoreError> {
+        self.with_conn(|conn| {
+            conn.execute(
+                "UPDATE provider_configs SET http_referer = ?1, x_title = ?2 WHERE provider_id = ?3",
+                params![http_referer, x_title, provider_id],
+            )?;
+            Ok(())
         })
     }
 

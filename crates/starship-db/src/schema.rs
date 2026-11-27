@@ -114,6 +114,8 @@ pub struct ProviderConfigRecord {
     pub base_url: String,
     pub api_key_encrypted: Option<String>,
     pub is_enabled: bool,
+    pub http_referer: Option<String>,
+    pub x_title: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }

@@ -1,3 +1,9 @@
+#[derive(Debug, Clone, Default)]
+pub struct ProviderHeaders {
+    pub http_referer: Option<String>,
+    pub x_title: Option<String>,
+}
+
 use crate::cloud::{AnthropicClient, GeminiClient, OpenAiClient};
 use crate::engine::InferenceEngine;
 use crate::local::LocalGgufRunner;
@@ -18,6 +24,7 @@ impl InferDispatcher {
         base_url: Option<&str>,
         api_key: Option<&str>,
         file_path: Option<&str>,
+        headers: Option<&ProviderHeaders>,
     ) -> Result<Arc<dyn InferenceEngine>, CoreError> {
         let key_string = api_key.map(ToString::to_string);
         let path_buf = file_path.map(std::path::PathBuf::from);
@@ -29,12 +36,14 @@ impl InferDispatcher {
             }
             "cloud_openai" => {
                 let url = base_url.unwrap_or("https://api.openai.com/v1");
-                let client = OpenAiClient::new(url, key_string, model_id, "cloud_openai");
+                let client = OpenAiClient::new(url, key_string, model_id, "cloud_openai")
+                    .with_headers(headers);
                 Ok(Arc::new(client))
             }
             "cloud_openrouter" => {
                 let url = base_url.unwrap_or("https://openrouter.ai/api/v1");
-                let client = OpenAiClient::new(url, key_string, model_id, "cloud_openrouter");
+                let client = OpenAiClient::new(url, key_string, model_id, "cloud_openrouter")
+                    .with_headers(headers);
                 Ok(Arc::new(client))
             }
             "cloud_anthropic" => {
@@ -67,8 +76,16 @@ impl InferDispatcher {
         api_key: Option<&str>,
         file_path: Option<&str>,
         request: ChatRequest,
+        headers: Option<&ProviderHeaders>,
     ) -> Result<TokenStream, CoreError> {
-        let engine = Self::resolve_engine(provider_type, model_id, base_url, api_key, file_path)?;
+        let engine = Self::resolve_engine(
+            provider_type,
+            model_id,
+            base_url,
+            api_key,
+            file_path,
+            headers,
+        )?;
         engine.stream_chat(request).await
     }
 }

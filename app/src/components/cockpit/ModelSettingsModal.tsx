@@ -17,6 +17,8 @@ export interface ModelSettingsModalProps {
 export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, onClose }) => {
   const [provider, setProvider] = useState<"anthropic" | "openai" | "gemini" | "openrouter">("anthropic");
   const [apiKey, setApiKey] = useState("");
+  const [httpReferer, setHttpReferer] = useState("");
+  const [xTitle, setXTitle] = useState("");
   const [baseUrl, setBaseUrl] = useState("https://api.anthropic.com/v1");
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -64,6 +66,8 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
         baseUrl,
         apiKey: apiKey ? apiKey : undefined,
         isEnabled: true,
+        httpReferer: httpReferer || undefined,
+        xTitle: xTitle || undefined,
       };
 
       await invoke("cmd_provider_config_set", { payload });
@@ -267,6 +271,33 @@ export const ModelSettingsModal: React.FC<ModelSettingsModalProps> = ({ isOpen, 
               onChange={(e) => setBaseUrl(e.target.value)}
               className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-3 py-2 font-mono text-[12px] text-[var(--text)] placeholder:text-[var(--text-faint)] focus-ring focus:border-[var(--border-strong)]"
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="mb-1 block text-[var(--text-muted)] font-medium">
+                HTTP-Referer (optional)
+              </label>
+              <input
+                type="text"
+                value={httpReferer}
+                onChange={(event) => setHttpReferer(event.target.value)}
+                placeholder="https://your-app.example"
+                className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-3 py-2 font-mono text-[12px] text-[var(--text)] placeholder:text-[var(--text-faint)] focus-ring"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[var(--text-muted)] font-medium">
+                X-Title (optional)
+              </label>
+              <input
+                type="text"
+                value={xTitle}
+                onChange={(event) => setXTitle(event.target.value)}
+                placeholder="Starship Control"
+                className="w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg-surface-2)] px-3 py-2 font-mono text-[12px] text-[var(--text)] placeholder:text-[var(--text-faint)] focus-ring"
+              />
+            </div>
           </div>
 
           <div>

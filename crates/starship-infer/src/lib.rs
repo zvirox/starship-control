@@ -7,7 +7,7 @@ pub mod local;
 pub mod types;
 
 pub use discovery::{DiscoveredModel, ModelDiscovery, ProviderDiscovery};
-pub use dispatcher::InferDispatcher;
+pub use dispatcher::{InferDispatcher, ProviderHeaders};
 pub use engine::{InferenceEngine, MockInferenceEngine};
 pub use types::{ChatChunk, ChatRequest, Message, Role, TokenStream, ToolCall, ToolDefinition};
 

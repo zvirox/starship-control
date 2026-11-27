@@ -5834,6 +5834,7 @@ dependencies = [
  "serde",
  "serde_json",
  "starship-core",
+ "starship-db",
  "starship-infer",
  "tokio",
 ]

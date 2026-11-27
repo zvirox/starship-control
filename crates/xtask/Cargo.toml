@@ -13,6 +13,7 @@ workspace = true
 [dependencies]
 starship-core = { path = "../starship-core" }
 starship-infer = { path = "../starship-infer" }
+starship-db = { path = "../starship-db" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

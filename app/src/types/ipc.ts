@@ -307,6 +307,8 @@ export interface ProviderConfigPayload {
   baseUrl: string;
   apiKey?: string;
   isEnabled: boolean;
+  httpReferer?: string;
+  xTitle?: string;
 }
 
 /**

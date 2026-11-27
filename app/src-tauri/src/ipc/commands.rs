@@ -11,6 +11,7 @@ use starship_core::safety::{RiskTier, SafetyArbiter};
 use starship_core::{CoreError, ErrorKind};
 use starship_db::schema::{MissionMessageRecord, MissionRecord, ModelRecord};
 use starship_db::{Database, DiscoveredModelRecord, InferMetricRecord, NewAuditEntry};
+use starship_infer::ProviderHeaders;
 use starship_infer::discovery::{DiscoveredModel, ModelDiscovery, ProviderDiscovery};
 use starship_infer::dispatcher::InferDispatcher;
 use starship_infer::hf::{DownloadProgress, HfModelMetadata, download_hf_file, search_models};
@@ -149,6 +150,10 @@ pub struct ProviderConfigPayload {
     pub api_key: Option<String>,
     #[serde(rename = "isEnabled")]
     pub is_enabled: bool,
+    #[serde(rename = "httpReferer")]
+    pub http_referer: Option<String>,
+    #[serde(rename = "xTitle")]
+    pub x_title: Option<String>,
 }
 
 #[tauri::command]
@@ -675,6 +680,11 @@ pub async fn cmd_provider_config_set(
         payload.api_key.as_deref(),
         payload.is_enabled,
     )?;
+    state.set_provider_headers(
+        &payload.provider_id,
+        payload.http_referer.as_deref(),
+        payload.x_title.as_deref(),
+    )?;
     info!(target: "starship_ipc", provider_id = %payload.provider_id, "Provider config saved");
     if payload.api_key.is_some()
         && payload.is_enabled
@@ -887,6 +897,10 @@ async fn validate_model_id(
         stream: true,
     };
     let provider_type = provider_type_for_id(provider_id);
+    let headers = ProviderHeaders {
+        http_referer: cfg.http_referer.clone(),
+        x_title: cfg.x_title.clone(),
+    };
     match dispatch_with_retry(
         provider_type,
         model_id,
@@ -894,6 +908,7 @@ async fn validate_model_id(
         key.as_deref(),
         None,
         request,
+        Some(&headers),
     )
     .await
     {
@@ -915,6 +930,7 @@ async fn validate_model_id(
                             message: friendly_stream_error(
                                 &error.code,
                                 provider_type,
+                                Some(model_id),
                                 &error.user_message,
                                 error.details.as_ref(),
                             ),
@@ -956,6 +972,7 @@ async fn validate_model_id(
             message: friendly_stream_error(
                 &error.code,
                 provider_type,
+                Some(model_id),
                 &error.user_message,
                 error.details.as_ref(),
             ),
@@ -1185,6 +1202,7 @@ fn provider_label(provider_type: &str) -> &'static str {
 fn friendly_stream_error(
     code: &str,
     provider_type: &str,
+    model_id: Option<&str>,
     raw: &str,
     details: Option<&serde_json::Value>,
 ) -> String {
@@ -1197,6 +1215,12 @@ fn friendly_stream_error(
             "Model not found. Choose a model that is available to this provider.".to_string()
         }
         "infer.cloud_rate_limited" => {
+            if model_id.is_some_and(|id| id.contains(":free")) {
+                return format!(
+                    "Free-tier model {} is rate limited by OpenRouter. Wait for the limit to reset or choose a paid model.",
+                    model_id.unwrap_or_default()
+                );
+            }
             let retry = details
                 .and_then(|d| d.get("retryAfterSeconds").or_else(|| d.get("retry_after")))
                 .and_then(serde_json::Value::as_u64);
@@ -1231,6 +1255,7 @@ async fn dispatch_with_retry(
     api_key: Option<&str>,
     file_path: Option<&str>,
     request: ChatRequest,
+    headers: Option<&ProviderHeaders>,
 ) -> Result<TokenStream, CoreError> {
     let mut last_error = None;
     for attempt in 0_u32..3 {
@@ -1241,6 +1266,7 @@ async fn dispatch_with_retry(
             api_key,
             file_path,
             request.clone(),
+            headers,
         )
         .await
         {
@@ -1301,6 +1327,26 @@ async fn run_chat_with_tools(
         ));
     }
     let arbiter = SafetyArbiter::default();
+    let provider_id = match model.provider_type.as_str() {
+        "cloud_anthropic" => "anthropic",
+        "cloud_gemini" => "gemini",
+        "cloud_openrouter" => "openrouter",
+        _ => "openai",
+    };
+    let headers = db
+        .get_provider_config(provider_id)
+        .ok()
+        .flatten()
+        .map(|cfg| ProviderHeaders {
+            http_referer: cfg.http_referer,
+            x_title: cfg.x_title,
+        });
+    // Never advertise tools to a model that does not support them.
+    let effective_tools = if model.supports_tools {
+        tools.clone()
+    } else {
+        Vec::new()
+    };
 
     for depth in 0..=MAX_TOOL_LOOP_DEPTH {
         let chat_req = ChatRequest {
@@ -1309,7 +1355,7 @@ async fn run_chat_with_tools(
             system_prompt: Some(system_prompt.clone()),
             temperature: Some(0.2),
             max_tokens: Some(4096),
-            tools: tools.clone(),
+            tools: effective_tools.clone(),
             grammar: None,
             stream: true,
         };
@@ -1321,6 +1367,7 @@ async fn run_chat_with_tools(
             api_key,
             model.file_path.as_deref(),
             chat_req,
+            headers.as_ref(),
         )
         .await
         {
@@ -1329,6 +1376,7 @@ async fn run_chat_with_tools(
                 let message = friendly_stream_error(
                     &error.code,
                     &model.provider_type,
+                    Some(&model.id),
                     &error.user_message,
                     error.details.as_ref(),
                 );
@@ -1392,6 +1440,7 @@ async fn run_chat_with_tools(
                             message: friendly_stream_error(
                                 &e.code,
                                 &model.provider_type,
+                                Some(&model.id),
                                 &e.user_message,
                                 e.details.as_ref(),
                             ),
@@ -2836,11 +2885,17 @@ mod tests {
     #[test]
     fn test_friendly_stream_error_copy() {
         assert_eq!(
-            friendly_stream_error("infer.cloud_auth_failed", "cloud_openrouter", "raw", None),
+            friendly_stream_error(
+                "infer.cloud_auth_failed",
+                "cloud_openrouter",
+                None,
+                "raw",
+                None
+            ),
             "API key rejected by OpenRouter. Check it in Model settings."
         );
         assert_eq!(
-            friendly_stream_error("infer.model_not_found", "cloud_openai", "raw", None),
+            friendly_stream_error("infer.model_not_found", "cloud_openai", None, "raw", None),
             "Model not found. Choose a model that is available to this provider."
         );
         let details = serde_json::json!({ "retryAfterSeconds": 12 });
@@ -2848,15 +2903,68 @@ mod tests {
             friendly_stream_error(
                 "infer.cloud_rate_limited",
                 "cloud_openai",
+                None,
                 "raw",
                 Some(&details)
             ),
             "Rate limited by OpenAI. Retry in 12s."
         );
         assert_eq!(
-            friendly_stream_error("something.unknown", "cloud_gemini", "raw detail", None),
+            friendly_stream_error(
+                "something.unknown",
+                "cloud_gemini",
+                None,
+                "raw detail",
+                None
+            ),
             "raw detail"
         );
+    }
+
+    #[tokio::test]
+    async fn test_provider_attribution_headers_are_sent() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind stub");
+        let port = listener.local_addr().expect("port").port();
+        let body = "data: {\"choices\":[{\"delta\":{\"content\":\"OK\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n";
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.expect("accept");
+            let mut buffer = [0_u8; 4096];
+            let read = socket.read(&mut buffer).await.expect("read");
+            let request = String::from_utf8_lossy(&buffer[..read]).to_string();
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            socket.write_all(response.as_bytes()).await.expect("write");
+            request
+        });
+        let db = Database::open_in_memory().expect("in-memory db");
+        db.set_provider_config(
+            "openrouter",
+            "OpenRouter",
+            &format!("http://127.0.0.1:{port}"),
+            Some("sk-test"),
+            true,
+        )
+        .expect("save provider");
+        db.set_provider_headers(
+            "openrouter",
+            Some("https://example.in"),
+            Some("Starship Control"),
+        )
+        .expect("save headers");
+        let result = validate_model_id(&db, "openrouter", "test/model")
+            .await
+            .expect("validation");
+        let request = server.await.expect("stub");
+        assert!(result.ok);
+        let lowered = request.to_ascii_lowercase();
+        assert!(lowered.contains("http-referer: https://example.in"));
+        assert!(lowered.contains("x-title: starship control"));
     }
 
     #[tokio::test]
@@ -2943,10 +3051,17 @@ mod tests {
             grammar: None,
             stream: true,
         };
-        let mut stream =
-            dispatch_with_retry("cloud_openai", "stub", Some(&base_url), None, None, request)
-                .await
-                .expect("retry must succeed");
+        let mut stream = dispatch_with_retry(
+            "cloud_openai",
+            "stub",
+            Some(&base_url),
+            None,
+            None,
+            request,
+            None,
+        )
+        .await
+        .expect("retry must succeed");
         let mut content = String::new();
         while let Some(chunk) = stream.next().await {
             content.push_str(&chunk.expect("chunk").content);

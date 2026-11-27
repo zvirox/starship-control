@@ -6,8 +6,11 @@ use starship_core::{
     PlannerRepairLoop, RepairResult, RouteableTool, TASKSHEET_GBNF_GRAMMAR, TaskSheet,
     TaskSheetValidator, TokenBudget, TwoStageToolRouter,
 };
+use starship_db::Database;
+use starship_infer::discovery::{ModelDiscovery, ProviderDiscovery};
 use starship_infer::local::LocalGgufRunner;
-use starship_infer::{ChatRequest, InferenceEngine, Message};
+use starship_infer::{ChatRequest, InferDispatcher};
+use starship_infer::{InferenceEngine, Message};
 use std::env;
 use std::fs;
 use std::path::Path;
@@ -190,6 +193,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
     if args.len() >= 2 && args[1] == "check-no-fakes" {
         check_no_fakes::run();
+        return Ok(());
+    }
+    if args.len() >= 3 && args[1] == "provider-smoke" {
+        let provider_id = &args[2];
+        let db = Database::open_default()?;
+        let config = db
+            .get_provider_config(provider_id)?
+            .ok_or_else(|| format!("provider {provider_id} is not configured"))?;
+        let key = db
+            .get_provider_credentials(provider_id)?
+            .map(|secret| secret.expose().to_owned());
+        let provider_type = match provider_id.as_str() {
+            "openrouter" => "cloud_openrouter",
+            "anthropic" => "cloud_anthropic",
+            "gemini" => "cloud_gemini",
+            _ => "cloud_openai",
+        };
+        let models = ProviderDiscovery::new(provider_id, config.base_url.clone(), key.clone())
+            .list_models()
+            .await?;
+        println!("{provider_id}: {} models discovered", models.len());
+        if let Some(model) = models.first() {
+            let request = ChatRequest {
+                model: model.id.clone(),
+                messages: vec![Message::user("Reply with OK")],
+                system_prompt: None,
+                temperature: Some(0.0),
+                max_tokens: Some(1),
+                tools: vec![],
+                grammar: None,
+                stream: true,
+            };
+            let mut stream = InferDispatcher::dispatch_stream(
+                provider_type,
+                &model.id,
+                Some(&config.base_url),
+                key.as_deref(),
+                None,
+                request,
+                None,
+            )
+            .await?;
+            let mut reply = String::new();
+            while let Some(chunk) = stream.next().await {
+                reply.push_str(&chunk?.content);
+                if !reply.is_empty() {
+                    break;
+                }
+            }
+            println!("provider-smoke reply from {}: {}", model.id, reply.trim());
+        }
         return Ok(());
     }
     if args.len() < 2 || args[1] != "eval-planner" {

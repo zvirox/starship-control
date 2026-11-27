@@ -46,6 +46,7 @@ async fn assert_status_is_retryable(status_line: &'static str, code: u16) {
         Some(&base_url),
         Some("test-key"),
         None,
+        None,
     )
     .expect("resolve cloud engine");
 
