@@ -1,0 +1,34 @@
+=== TASK 17.22 — PROVIDER DISCOVERY IPC ===
+Date: 2026-11-27
+
+ROOT CAUSE (R6/R7/R8)
+No Tauri command could list providers, test a key, refresh a catalog or select
+a model. Saving a key never triggered discovery, and the UI had no way to
+distinguish a configured provider from a working one.
+
+CHANGES (app/src-tauri/src/ipc/commands.rs)
+- New commands registered in `main.rs`:
+  * `cmd_provider_list` — provider metadata + `hasKey`, never the stored key;
+  * `cmd_provider_test_connection{providerId}` — timed `/models` probe returning
+    `{ok, latencyMs, modelCount, errorCode, message}`;
+  * `cmd_provider_refresh_models{providerId}` — discovers and persists the live
+    catalog via 17.20/17.21;
+  * `cmd_model_set_favorite{modelId,favorite}`;
+  * `cmd_mission_set_model{missionId,modelId}`.
+- `cmd_provider_config_set` now performs a best-effort test + refresh after a
+  key is saved (discovery failures are logged, never fail the save).
+- `refresh_provider_models` is the shared path for both refresh and test; it
+  decrypts the key via `get_provider_credentials` (17.11) and never logs it.
+- `app/src/types/ipc.ts` and API.md mirrored the new commands/types (type parity).
+
+VERIFICATION
+  $ cargo test -p starship-control test_provider_refresh -- --nocapture
+  test_provider_refresh_persists_live_catalog ... ok
+    (local HTTP stub; asserts Bearer header, no enc_v1 blob, model persisted
+     with real context window)
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       201 passed / 0 failed (26 suites)
+  $ cargo xtask check-no-fakes                                   PASS
+  $ npm run check:linear / typecheck                             PASS
+
+RESULT: PASS

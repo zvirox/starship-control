@@ -183,6 +183,8 @@ Generates and activates a cross-app system health inspection and disk cleanup pi
 - **`cmd_model_hf_search`** — Searches Hugging Face Hub API for GGUF repos (`HfModelMetadata[]`).
 - **`cmd_model_hf_download`** — Starts chunked resumable GGUF weight downloads with streaming SHA-256 verification.
 - **`cmd_provider_config_set`** — Stores `SecretVault`-encrypted cloud provider credentials (`openai`, `anthropic`, `gemini`, `openrouter`) in `provider_configs`.
+- **`cmd_provider_list`** / **`cmd_provider_test_connection{providerId}`** / **`cmd_provider_refresh_models{providerId}`** — Lists configured providers (never the key), tests `/models`, and persists the live model catalog.
+- **`cmd_model_set_favorite{modelId,favorite}`** / **`cmd_mission_set_model{missionId,modelId}`** — Pins a model and switches a mission's active model.
 
 ---
 

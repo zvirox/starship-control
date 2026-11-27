@@ -233,6 +233,52 @@ export interface DeleteMissionPayload {
 /**
  * Provider Config Payload.
  */
+export interface ProviderInfo {
+  providerId: string;
+  displayName: string;
+  baseUrl: string;
+  isEnabled: boolean;
+  hasKey: boolean;
+}
+
+export interface ProviderIdPayload {
+  providerId: string;
+}
+
+export interface ProviderTestResponse {
+  ok: boolean;
+  latencyMs: number;
+  modelCount: number;
+  errorCode: string | null;
+  message: string;
+}
+
+export interface DiscoveredModel {
+  id: string;
+  displayName: string;
+  contextWindow: number;
+  supportsTools: boolean;
+  supportsStreaming: boolean;
+  inputPrice: number;
+  outputPrice: number;
+  raw: unknown;
+}
+
+export interface ProviderModelsResponse {
+  providerId: string;
+  models: DiscoveredModel[];
+}
+
+export interface ModelFavoritePayload {
+  modelId: string;
+  favorite: boolean;
+}
+
+export interface MissionModelPayload {
+  missionId: number;
+  modelId: string;
+}
+
 export interface ProviderConfigPayload {
   providerId: string;
   displayName: string;

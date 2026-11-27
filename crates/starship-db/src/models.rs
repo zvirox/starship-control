@@ -409,6 +409,28 @@ impl Database {
         })
     }
 
+    /// Lists all configured cloud providers (metadata only; keys stay encrypted).
+    pub fn list_provider_configs(&self) -> Result<Vec<ProviderConfigRecord>, CoreError> {
+        self.with_conn(|conn| {
+            let mut stmt = conn.prepare(
+                "SELECT provider_id, display_name, base_url, api_key_encrypted, is_enabled, created_at, updated_at
+                 FROM provider_configs ORDER BY provider_id",
+            )?;
+            let rows = stmt.query_map([], |row| {
+                Ok(ProviderConfigRecord {
+                    provider_id: row.get(0)?,
+                    display_name: row.get(1)?,
+                    base_url: row.get(2)?,
+                    api_key_encrypted: row.get(3)?,
+                    is_enabled: row.get::<_, i64>(4)? == 1,
+                    created_at: row.get(5)?,
+                    updated_at: row.get(6)?,
+                })
+            })?;
+            rows.collect::<Result<Vec<_>, _>>()
+        })
+    }
+
     /// Sets or updates a cloud provider configuration.
     /// Automatically encrypts plaintext API keys with `SecretVault` (GAP-CLOSURE-PLAN.md §10.7).
     pub fn set_provider_config(

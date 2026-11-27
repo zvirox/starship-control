@@ -10,7 +10,8 @@ use starship_core::planner::{
 use starship_core::safety::{RiskTier, SafetyArbiter};
 use starship_core::{CoreError, ErrorKind};
 use starship_db::schema::{MissionMessageRecord, MissionRecord, ModelRecord};
-use starship_db::{Database, InferMetricRecord, NewAuditEntry};
+use starship_db::{Database, DiscoveredModelRecord, InferMetricRecord, NewAuditEntry};
+use starship_infer::discovery::{DiscoveredModel, ModelDiscovery, ProviderDiscovery};
 use starship_infer::dispatcher::InferDispatcher;
 use starship_infer::hf::{DownloadProgress, HfModelMetadata, download_hf_file, search_models};
 use starship_infer::types::{ChatRequest, Message, ToolCall};
@@ -20,7 +21,7 @@ use starship_mcp::{
 };
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, Size};
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -674,6 +675,185 @@ pub async fn cmd_provider_config_set(
         payload.is_enabled,
     )?;
     info!(target: "starship_ipc", provider_id = %payload.provider_id, "Provider config saved");
+    if payload.api_key.is_some()
+        && payload.is_enabled
+        && let Err(err) = refresh_provider_models(state.inner(), &payload.provider_id).await
+    {
+        warn!(target: "starship_ipc", provider_id = %payload.provider_id, "Auto model discovery failed: {err}");
+    }
+    Ok(true)
+}
+
+/// Cloud provider metadata exposed to the settings UI (never the stored key).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderInfoResponse {
+    pub provider_id: String,
+    pub display_name: String,
+    pub base_url: String,
+    pub is_enabled: bool,
+    pub has_key: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderIdPayload {
+    pub provider_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderTestResponse {
+    pub ok: bool,
+    pub latency_ms: i64,
+    pub model_count: usize,
+    pub error_code: Option<String>,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProviderModelsResponse {
+    pub provider_id: String,
+    pub models: Vec<DiscoveredModel>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelFavoritePayload {
+    pub model_id: String,
+    pub favorite: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MissionModelPayload {
+    pub mission_id: i64,
+    pub model_id: String,
+}
+
+fn provider_type_for_id(provider_id: &str) -> &'static str {
+    match provider_id {
+        "openrouter" => "cloud_openrouter",
+        "anthropic" => "cloud_anthropic",
+        "gemini" => "cloud_gemini",
+        _ => "cloud_openai",
+    }
+}
+
+fn discovered_to_record(model: &DiscoveredModel, provider_id: &str) -> DiscoveredModelRecord {
+    DiscoveredModelRecord {
+        id: model.id.clone(),
+        name: model.display_name.clone(),
+        provider_type: provider_type_for_id(provider_id).to_string(),
+        provider_id: provider_id.to_string(),
+        context_window: model.context_window,
+        supports_tools: model.supports_tools,
+        supports_streaming: model.supports_streaming,
+        input_price: model.input_price,
+        output_price: model.output_price,
+    }
+}
+
+/// Fetches and persists a provider's live model catalog (Phase 17, 17.22).
+async fn refresh_provider_models(
+    db: &Database,
+    provider_id: &str,
+) -> Result<Vec<DiscoveredModel>, CoreError> {
+    let cfg = db.get_provider_config(provider_id)?.ok_or_else(|| {
+        CoreError::app(
+            "app.not_found",
+            false,
+            format!("Provider '{provider_id}' is not configured"),
+            None,
+        )
+    })?;
+    let key = db
+        .get_provider_credentials(provider_id)?
+        .map(|secret| secret.expose().to_owned());
+    let models = ProviderDiscovery::new(provider_id, cfg.base_url, key)
+        .list_models()
+        .await?;
+    for model in &models {
+        db.upsert_discovered_model(&discovered_to_record(model, provider_id))?;
+    }
+    let seen: Vec<String> = models.iter().map(|m| m.id.clone()).collect();
+    db.mark_missing_discovered_models(provider_id, &seen)?;
+    Ok(models)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn cmd_provider_list(
+    state: tauri::State<'_, Database>,
+) -> Result<Vec<ProviderInfoResponse>, CoreError> {
+    let cfg = state.list_provider_configs()?;
+    Ok(cfg
+        .into_iter()
+        .map(|c| ProviderInfoResponse {
+            has_key: c.api_key_encrypted.is_some(),
+            provider_id: c.provider_id,
+            display_name: c.display_name,
+            base_url: c.base_url,
+            is_enabled: c.is_enabled,
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub async fn cmd_provider_test_connection(
+    state: tauri::State<'_, Database>,
+    payload: ProviderIdPayload,
+) -> Result<ProviderTestResponse, CoreError> {
+    let started = Instant::now();
+    match refresh_provider_models(state.inner(), &payload.provider_id).await {
+        Ok(models) => Ok(ProviderTestResponse {
+            ok: true,
+            latency_ms: i64::try_from(started.elapsed().as_millis()).unwrap_or(i64::MAX),
+            model_count: models.len(),
+            error_code: None,
+            message: format!("{} models loaded", models.len()),
+        }),
+        Err(err) => Ok(ProviderTestResponse {
+            ok: false,
+            latency_ms: i64::try_from(started.elapsed().as_millis()).unwrap_or(i64::MAX),
+            model_count: 0,
+            error_code: Some(err.code),
+            message: err.user_message,
+        }),
+    }
+}
+
+#[tauri::command]
+pub async fn cmd_provider_refresh_models(
+    state: tauri::State<'_, Database>,
+    payload: ProviderIdPayload,
+) -> Result<ProviderModelsResponse, CoreError> {
+    let provider_id = payload.provider_id;
+    let models = refresh_provider_models(state.inner(), &provider_id).await?;
+    Ok(ProviderModelsResponse {
+        provider_id,
+        models,
+    })
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn cmd_model_set_favorite(
+    state: tauri::State<'_, Database>,
+    payload: ModelFavoritePayload,
+) -> Result<bool, CoreError> {
+    state.set_model_favorite(&payload.model_id, payload.favorite)?;
+    Ok(payload.favorite)
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn cmd_mission_set_model(
+    state: tauri::State<'_, Database>,
+    payload: MissionModelPayload,
+) -> Result<bool, CoreError> {
+    state.set_mission_model(payload.mission_id, &payload.model_id)?;
     Ok(true)
 }
 
@@ -2148,6 +2328,57 @@ mod tests {
                 .expect("serialize error")
                 .contains("mcp.app_unavailable")
         );
+    }
+
+    #[tokio::test]
+    async fn test_provider_refresh_persists_live_catalog() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind stub");
+        let port = listener.local_addr().expect("port").port();
+        let body = r#"{"data":[{"id":"stub-model","name":"Stub","context_length":4096,"supported_parameters":["tools"]}]}"#;
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.expect("accept");
+            let mut buffer = [0_u8; 4096];
+            let read = socket.read(&mut buffer).await.expect("read");
+            let request = String::from_utf8_lossy(&buffer[..read]).to_string();
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            socket.write_all(response.as_bytes()).await.expect("write");
+            request
+        });
+
+        let db = Database::open_in_memory().expect("in-memory db");
+        db.set_provider_config(
+            "openrouter",
+            "OpenRouter",
+            &format!("http://127.0.0.1:{port}"),
+            Some("sk-test-canary"),
+            true,
+        )
+        .expect("save provider");
+        let models = refresh_provider_models(&db, "openrouter")
+            .await
+            .expect("discover models");
+        assert_eq!(models.len(), 1);
+        let stored = db.list_models().expect("models");
+        let saved = stored
+            .iter()
+            .find(|m| m.id == "stub-model")
+            .expect("saved model");
+        assert_eq!(saved.provider_type, "cloud_openrouter");
+        assert_eq!(saved.context_window, 4096);
+        let request = server.await.expect("stub task");
+        assert!(
+            request
+                .to_ascii_lowercase()
+                .contains("authorization: bearer")
+        );
+        assert!(!request.contains("enc_v1:"));
     }
 
     #[test]
