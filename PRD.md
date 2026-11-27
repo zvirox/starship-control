@@ -1,6 +1,7 @@
 # PRD — Starship Control
 
-**Status:** Implemented v0.1.0-beta.1 (Linear UI Locked) · **Owner:** zvirox · **Date:** 2026-11-25  
+**Status:** Active development (Linear UI locked) · **Owner:** zvirox · **Date:** 2026-11-27
+**Release policy:** No release timeline. Publishing is optional and at the maintainer's discretion.
 **Project:** Mother Ship / Starship Control  
 **Authority:** Root Product Requirements Document for Starship Control  
 

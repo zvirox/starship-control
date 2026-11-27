@@ -6,6 +6,8 @@
 
 > **2026-11-27 Status Summary:** The unified `nfpm` packaging migration is implemented on `main`: `.github/workflows/ci.yml`, `.github/workflows/release.yml` (calling `zvirox/release-workflows/.github/workflows/linux-release.yml@v1`), `packaging/nfpm.yaml` (`.deb`, `.rpm`, Arch `.pkg.tar.zst`) and `packaging/scripts/{postinstall.sh,preremove.sh}` are in place; legacy `packaging/aur/`, `packaging/deb/`, `packaging/rpm/` and `packaging/workflows/` are removed. Workspace version is `0.1.0-beta.5` across `Cargo.toml`, `app/package.json` and `app/src-tauri/tauri.conf.json`. Local `nfpm` package generation and `SHA256SUMS` are verified in `docs/evidence/9.2.txt`; tagged-release clean-container install and GPG signature verification are task `16.6` (pending). The 2026-11-25 summary described the `feat/linear-ui` branch at `0.1.0-beta.1`.
 
+**Release policy:** no release timeline; the maintainer decides if and when to tag and push a release. Tag/version data below is historical audit history, not a schedule.
+
 *(Historical 2026-11-24 baseline snapshot preserved below.)*
 
 ---

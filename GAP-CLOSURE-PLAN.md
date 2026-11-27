@@ -1,9 +1,11 @@
 # GAP-CLOSURE-PLAN.md — Starship Control: Gap Filling, Missing Features & Build Plan
 
 **Version:** 1.2 · **Date:** 2026-11-27
-**Continues:** `PLAN.md` (Phases 0–8). This file defines **Phases 9–16**.
+**Continues:** `PLAN.md` (Phases 0–8). This file defines **Phases 9–16**; the next phase is [**`PHASE-17-FIX-PLAN.md`**](PHASE-17-FIX-PLAN.md) (17A–17F).
 **Authority chain:** `PRD.md` → `ARCHITECTURE.md` → `DESIGN.md` (locked Linear UI) → `DATABASE.md` → `API.md` → `PLAN.md` → **this file**.
-**Status:** Phases 9–15 verified complete; Phase 16 done except `16.6` (CI container packaging + signing evidence). UI style finalized & locked on `DESIGN.md` v2.1, merged to `main`. Evidence: `docs/evidence/9.0.txt`–`16.8.txt` (all task files present).
+**Status:** Phases 9–15 verified complete; Phase 16 done except `16.6` (CI container packaging + signing evidence). Phase 17 is tracked in `PHASE-17-FIX-PLAN.md` (not started). UI style finalized & locked on `DESIGN.md` v2.1, merged to `main`. Evidence: `docs/evidence/9.0.txt`–`16.8.txt` (all task files present).
+
+**Release policy:** No release timeline or concrete release milestone. Publishing a `v*` tag and pushing packages is optional and solely the maintainer's decision — when and which release to push. Phases and checklists describe verification, not a ship date.
 
 > **Honesty note.** This plan was written from the public docs (README, PLAN, ARCHITECTURE, API) and the repo's Actions page. The Rust/TypeScript source was **not** reviewed. Task 9.0 exists to reconcile this plan with the real code before anything else is built. Where this plan names a module or file that does not exist, create it; where it conflicts with the code, the code audit (`docs/evidence/AUDIT.md`) wins and this plan is amended in the same commit.
 
@@ -329,7 +331,7 @@ Step:    pending → ready → awaiting_approval → running
 
 ---
 
-## Phase 16 — Test Harness, Chaos & Release Readiness
+## Phase 16 — Test Harness, Chaos & Release Tooling
 
 > **Goal:** Close G15–G16. Prove the claims.
 
@@ -447,7 +449,7 @@ ALTER TABLE missions ADD COLUMN outcome TEXT;
 
 ## Appendix D — Acceptance Checklist (whole program)
 
-- [ ] CI green on GitHub Actions; `nfpm` release packages install cleanly on Ubuntu, Fedora, Arch (`16.6`, evidence attached)
+- [ ] CI green on GitHub Actions; `nfpm` packaging verified for Ubuntu, Fedora, Arch (`16.6`, evidence attached). Publishing any release is optional and at the maintainer's discretion.
 - [x] `AUDIT.md` shows no `MISSING` items still ticked in `PLAN.md`
 - [x] Tier floors, approval binding, manifest pinning, peer check, audit chain — tested in workspace suite (`docs/evidence/10.1–10.8.txt`; mutation suite verified in `16.4`)
 - [x] Kill-app / kill-core / network-loss / disk-full / overload chaos scenarios pass (`docs/evidence/16.1.txt`, `16.2.txt`)
@@ -456,3 +458,4 @@ ALTER TABLE missions ADD COLUMN outcome TEXT;
 - [x] Systems dashboard live in locked Linear UI; overload detection with hysteresis; governor pauses and resumes (`docs/evidence/14.1–14.11.txt`)
 - [x] No-LLM template mode runs screencast and diagnostics pipelines (`docs/evidence/12.7.txt`)
 - [x] Real-app E2E (`16.3`), `THREAT_MODEL.md` (`16.7`), `COMPAT.md` (`16.5`), and performance budgets (`16.8`) complete and mirrored in `README.md` (2026-11-27)
+- [ ] Phase 17 (`17.0`–`17.53`, Manual Test Checklist T1–T12) complete per [`PHASE-17-FIX-PLAN.md`](PHASE-17-FIX-PLAN.md); no simulated data in release builds. Release timing is the maintainer's call, not a milestone.

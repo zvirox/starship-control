@@ -26,6 +26,7 @@ When implementing features or fixing bugs, consult the governing specification f
 | **4** | [**`DATABASE.md`**](DATABASE.md) | SQLite schema, tables, foreign keys, migrations, retention. |
 | **5** | [**`API.md`**](API.md) | Typed Tauri commands, push events, MCP JSON-RPC 2.0 wire protocol. |
 | **6** | [**`PLAN.md`**](PLAN.md) / [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) | Order of work (Phases 0–8 / Phases 9–16), vertical slices, phase-by-phase acceptance criteria. |
+| **7** | [**`PHASE-17-FIX-PLAN.md`**](PHASE-17-FIX-PLAN.md) | Phase 17A–17F: remove simulated data, real chat engines, cloud model discovery, real app discovery, wired mission runner, diagnostics. |
 
 *Contract Amendment Law:* Any behavioral change that alters an API, database schema, or design token must amend the corresponding specification file **in the same commit**.
 
@@ -87,4 +88,6 @@ For every implementation task from `PLAN.md`:
 3. VERIFICATION   ──► Run compiler, clippy -D warnings, typecheck, and unit/integration tests.
 4. CONTRACT SYNC  ──► Update API.md, DATABASE.md, or PLAN.md if additions were made.
 5. COMMIT         ──► Create concise, conventional commit with proof of verification.
+
+**Release policy:** Releases are optional. No phase, task, or checklist item commits to a release date or version; publishing a `v*` tag and pushing packages is solely the maintainer's decision — when and which release to push. CI and packaging only keep the tooling ready.
 ```

@@ -278,7 +278,7 @@ Press `Super+Shift+Space` on Wayland (`ashpd` portal) or click the HUD toggle in
   </a>
 </p>
 
-I build local-first open-source Linux and Android tools under **Zvirox**. Writing real software helps me study system boundaries and security architecture hands-on while giving creators and Linux users fast desktop tools free from subscriptions and telemetry.
+I build local-first open-source Linux and Android tools under **Zvirox**. Writing real software helps me study system boundaries and security architecture hands-on while giving creators and Linux users fast desktop tools free from subscriptions and telemetry. Releases are optional and published at the maintainer's discretion — there is no fixed schedule.
 
 ### Connect and Support
 

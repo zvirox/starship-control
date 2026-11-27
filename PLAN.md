@@ -1,8 +1,9 @@
 # PLAN.md — Starship Control Implementation Roadmap
 
-**Version:** 1.3 · **Date:** 2026-11-27
-**Authority chain:** `PRD.md` (scope) → `ARCHITECTURE.md` (structure) → `DESIGN.md` (locked UI law) → `DATABASE.md` (schema) → `API.md` (contracts) → **this file (Phases 0–8)** → [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) (Phases 9–16)  
+**Version:** 1.4 · **Date:** 2026-11-27
+**Authority chain:** `PRD.md` (scope) → `ARCHITECTURE.md` (structure) → `DESIGN.md` (locked UI law) → `DATABASE.md` (schema) → `API.md` (contracts) → **this file (Phases 0–8)** → [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) (Phases 9–16) → [**`PHASE-17-FIX-PLAN.md`**](PHASE-17-FIX-PLAN.md) (Phases 17A–17F)
 **Working rule:** Every phase ends with a **runnable application** (vertical slices). **UI Visual Spec Status:** The Linear solid design system (`DESIGN.md` v2.1, implemented on `main`) is **FINAL & LOCKED** — no further UI style planning or visual redesigns remain. The rulebook for executing any task is [`AGENTS.md`](AGENTS.md).
+**Release policy:** No release timeline. Publishing a release (`v*` tag + packages) is optional and at the maintainer's sole discretion — no phase or checklist item sets a date or version; the maintainer decides when and which release to push.
 
 ---
 
@@ -205,7 +206,7 @@
   - Author `.github/workflows/release.yml` calling reusable Linux `nfpm` release workflow (`zvirox/release-workflows`) on `v*` tags.
   - **Locked Packaging Policy:** `.deb`, `.rpm`, and `.pkg.tar.zst` (`nfpm`) plus `SHA256SUMS` (+ `.sig`) are the final, locked release formats; legacy AppImage, Flatpak, tarballs, AUR, and VM package test requirements are retired. Package install/uninstall is verified via CI clean containers (`GAP-CLOSURE-PLAN.md §16.6`).
 
-**Definition of Done (Phase 8):** ✅ Builds clean on CI and produces the locked `.deb`, `.rpm`, `.pkg.tar.zst` packages with `SHA256SUMS`/`.sig`; clean-container install verification is 16.6 (pending).
+**Definition of Done (Phase 8):** ✅ Builds clean on CI and produces the locked `.deb`, `.rpm`, `.pkg.tar.zst` packages with `SHA256SUMS`/`.sig`; clean-container install verification is 16.6 (pending). Publishing a release is optional and at the maintainer's discretion.
 
 ---
 
@@ -222,7 +223,13 @@
 - [x] **Phase 13 — Progress Tracking**: Mission progress state, EWMA/p90 ETA learner (`tool_stats`), crash reconstruction, and Cockpit Timeline / HUD progress views (`docs/evidence/13.1–13.8.txt`).
 - [x] **Phase 14 — System Health & Overload Monitor + Dashboard**: `starship-health` samplers (CPU, RAM, swap, PSI, disk, thermal, GPU), 15m ring buffer + SQLite rollups (`0005`–`0006`), hysteresis detector, overload governor, and Cockpit Systems view finalized in locked Linear UI (`docs/evidence/14.1–14.11.txt`).
 - [x] **Phase 15 — Resource-Aware Scheduling (Admission Control)**: Tool resource profiles (`resources.toml`), admission controller, local-inference live headroom guard, optional `systemd-run` containment, and fair mission queueing (`docs/evidence/15.1–15.5.txt`).
-- [ ] **Phase 16 — Test Harness, Chaos & Release Readiness** *(Complete except `16.6` — `16.1`–`16.5`, `16.7`, `16.8` done)*: `starship-mock-app` crate (`16.1`, `docs/evidence/16.1.txt`), chaos fault-injection suite (`16.2`, `docs/evidence/16.2.txt`), real-app E2E runs (`16.3`, `docs/evidence/16.3.txt`), security mutation CI suite (`16.4`, `docs/evidence/16.4.txt`), compositor `COMPAT.md` matrix (`16.5`, `docs/evidence/16.5.txt`), locked-format CI container packaging & signing verification (`16.6`), `THREAT_MODEL.md` (`16.7`, `docs/evidence/16.7.txt`), and performance budgets (`16.8`, `docs/evidence/16.8.txt`).
+- [ ] **Phase 16 — Test Harness, Chaos & Release Tooling** *(Complete except `16.6` — `16.1`–`16.5`, `16.7`, `16.8` done)*: `starship-mock-app` crate (`16.1`, `docs/evidence/16.1.txt`), chaos fault-injection suite (`16.2`, `docs/evidence/16.2.txt`), real-app E2E runs (`16.3`, `docs/evidence/16.3.txt`), security mutation CI suite (`16.4`, `docs/evidence/16.4.txt`), compositor `COMPAT.md` matrix (`16.5`, `docs/evidence/16.5.txt`), locked-format CI container packaging & signing verification (`16.6`), `THREAT_MODEL.md` (`16.7`, `docs/evidence/16.7.txt`), and performance budgets (`16.8`, `docs/evidence/16.8.txt`).
 
-*Refer to [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) for the authoritative task breakdown, individual task criteria, and non-negotiable verification commands.*
+## Phase 17 — No Fakes, Real Engines & Diagnostics
+
+> Authoritative breakdown: [**`PHASE-17-FIX-PLAN.md`**](PHASE-17-FIX-PLAN.md) (17A–17F, audited at `8be383e`), including its Manual Test Checklist T1–T12 (§8) and DoD (§9).
+
+- [ ] **Phase 17 — Truth in every build**: remove simulated tool/app/model data (17A), real local + cloud chat (17B), cloud model discovery & picker (17C), real app discovery (17D), wired mission runner (17E), diagnostics/engine console (17F). Release timing remains the maintainer's call, not a milestone.
+
+*Refer to [**`GAP-CLOSURE-PLAN.md`**](GAP-CLOSURE-PLAN.md) for Phases 9–16 and [**`PHASE-17-FIX-PLAN.md`**](PHASE-17-FIX-PLAN.md) for Phase 17 task criteria and non-negotiable verification commands.*
 
