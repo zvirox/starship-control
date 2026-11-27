@@ -186,6 +186,28 @@ export interface TokenStreamEvent {
   chunk: string;
 }
 
+export interface InferMetricRecord {
+  id: number;
+  tsMs: number;
+  missionId: number | null;
+  provider: string;
+  modelId: string;
+  firstTokenMs: number;
+  totalLatencyMs: number;
+  tokensIn: number;
+  tokensOut: number;
+  tokensPerSec: number;
+  errorCode: string | null;
+}
+
+export interface InferMetricsEvent {
+  metric: InferMetricRecord;
+}
+
+export interface InferMetricsHistoryPayload {
+  range: string;
+}
+
 export interface ThoughtStreamEvent {
   missionId: number;
   thoughtChunk: string;

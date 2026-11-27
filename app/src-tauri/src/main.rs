@@ -183,6 +183,7 @@ fn main() {
             ipc::cmd_tray_set_state,
             ipc::cmd_dispatch_notification,
             ipc::cmd_health_get_snapshot,
+            ipc::cmd_infer_metrics_history,
             ipc::cmd_health_get_history,
             ipc::cmd_health_get_thresholds,
             ipc::cmd_health_set_thresholds,

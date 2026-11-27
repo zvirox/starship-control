@@ -14,6 +14,8 @@ import {
 import { LinearCard, LinearButton, LINEAR_COLORS } from "../linear";
 import { LinearTelemetryChart } from "../common/LinearTelemetryChart";
 import type {
+  InferMetricRecord,
+  InferMetricsEvent,
   DownloadCompleteEvent,
   DownloadProgress,
   DownloadModelResponse,
@@ -37,26 +39,38 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
   const [downloadProgresses, setDownloadProgresses] = useState<Record<string, DownloadProgress>>({});
   const [downloadingFiles, setDownloadingFiles] = useState<Record<string, string>>({}); // filename -> jobId
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const [throughputHistory, setThroughputHistory] = useState<number[]>([14.2, 18.5, 22.0, 19.8, 24.5, 28.1, 31.4]);
-  const [inferenceHistory, setInferenceHistory] = useState<number[]>([42.1, 44.0, 43.5, 48.2, 46.8, 51.2, 53.0]);
+  const [metrics, setMetrics] = useState<InferMetricRecord[]>([]);
+  const [downloadThroughput, setDownloadThroughput] = useState<number[]>([]);
 
-  // Periodic heartbeat / streaming telemetry
+  // Real inference telemetry: history on mount, then live per-request events.
   useEffect(() => {
-    const timer = setInterval(() => {
-      setThroughputHistory((prev) => {
-        const last = prev[prev.length - 1];
-        const jitter = (Math.random() - 0.48) * 3;
-        const next = Math.max(8, Number((last + jitter).toFixed(1)));
-        return [...prev.slice(1), next];
-      });
-      setInferenceHistory((prev) => {
-        const last = prev[prev.length - 1];
-        const jitter = (Math.random() - 0.48) * 4;
-        const next = Math.max(30, Number((last + jitter).toFixed(1)));
-        return [...prev.slice(1), next];
-      });
-    }, 3000);
-    return () => clearInterval(timer);
+    let unlisten: (() => void) | undefined;
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const rows = await invoke<InferMetricRecord[]>("cmd_infer_metrics_history", {
+          payload: { range: "15m" },
+        });
+        if (!cancelled) setMetrics(rows);
+      } catch (e) {
+        console.warn("Failed to load inference metrics:", e);
+      }
+    };
+    void load();
+
+    listen<InferMetricsEvent>("evt://infer/metrics", (event) => {
+      setMetrics((prev) => [event.payload.metric, ...prev].slice(0, 50));
+    })
+      .then((stop) => {
+        unlisten = stop;
+      })
+      .catch((e: unknown) => console.warn("Failed to listen to inference metrics:", e));
+
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
   }, []);
 
   // Fetch installed models
@@ -87,7 +101,7 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
         }));
         const speedMb = Number((event.payload.speedBytesPerSec / (1024 * 1024)).toFixed(1));
         if (speedMb > 0) {
-          setThroughputHistory((prev) => [...prev.slice(1), speedMb]);
+          setDownloadThroughput((prev) => [...prev.slice(-19), speedMb]);
         }
       });
 
@@ -189,23 +203,46 @@ export const ModelControlView: React.FC<ModelControlViewProps> = ({
       </div>
 
       <LinearCard level={1} className="p-5">
-        <LinearTelemetryChart
-          title="Engine telemetry & Hub throughput"
-          subtitle="Streaming bandwidth (MB/s) and local inference velocity (tokens/sec)"
-          unit="MB/s"
-          series={[
-            {
-              name: "Download Throughput (MB/s)",
-              data: throughputHistory,
-              color: LINEAR_COLORS.blue,
-            },
-            {
-              name: "Inference Velocity (tok/s)",
-              data: inferenceHistory,
-              color: LINEAR_COLORS.sky,
-            },
-          ]}
-        />
+        {metrics.length === 0 && downloadThroughput.length === 0 ? (
+          <div className="py-8 text-center text-[12px] text-[var(--text-muted)]">
+            No inference yet — send a message
+          </div>
+        ) : (
+          <>
+            <LinearTelemetryChart
+              title="Engine telemetry"
+              subtitle="Measured from completed chat streams"
+              unit=""
+              timestamps={metrics.map((m) => new Date(m.tsMs).toLocaleTimeString())}
+              series={[
+                {
+                  name: "Download (MB/s)",
+                  data: downloadThroughput,
+                  color: LINEAR_COLORS.orange,
+                },
+                {
+                  name: "Chunks/sec",
+                  data: metrics.map((m) => m.tokensPerSec),
+                  color: LINEAR_COLORS.sky,
+                },
+                {
+                  name: "Time to first chunk (s)",
+                  data: metrics.map((m) => m.firstTokenMs / 1000),
+                  color: LINEAR_COLORS.blue,
+                },
+                {
+                  name: "Total latency (s)",
+                  data: metrics.map((m) => m.totalLatencyMs / 1000),
+                  color: LINEAR_COLORS.amber,
+                },
+              ]}
+            />
+            <div className="mt-2 text-[11px] text-[var(--text-muted)]">
+              Source: measured chat streams · last request{" "}
+              {new Date(metrics[0].tsMs).toLocaleString()}
+            </div>
+          </>
+        )}
       </LinearCard>
 
       <div className="space-y-3">

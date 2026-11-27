@@ -327,6 +327,27 @@ Tracks empirical per-tool duration distributions for progress/ETA estimation.
 
 ---
 
+### 3.17 `infer_metrics` — Measured Inference Requests (Migration `0007`)
+One row per completed chat stream. All numbers are measured in the stream loop;
+`tokens_out` counts non-empty streamed chunks (providers here expose no token
+count), and `ts_ms` is assigned by the database at insert time.
+
+| Column | SQLite Type | Constraints | Description |
+|---|---|---|---|
+| `id` | `INTEGER` | `PRIMARY KEY AUTOINCREMENT` | Request identifier. |
+| `ts_ms` | `INTEGER` | `NOT NULL` | Measured epoch millisecond timestamp. |
+| `mission_id` | `INTEGER` | `NULL` | Owning mission if any. |
+| `provider` | `TEXT` | `NOT NULL` | Provider type used (`cloud_*`, `local_gguf`). |
+| `model_id` | `TEXT` | `NOT NULL` | Model identifier used for the request. |
+| `first_token_ms` | `INTEGER` | `NOT NULL DEFAULT 0` | Time to first streamed chunk. |
+| `total_latency_ms` | `INTEGER` | `NOT NULL DEFAULT 0` | Total request latency. |
+| `tokens_in` | `INTEGER` | `NOT NULL DEFAULT 0` | 0 when the provider does not report input tokens. |
+| `tokens_out` | `INTEGER` | `NOT NULL DEFAULT 0` | Count of non-empty streamed chunks. |
+| `tokens_per_sec` | `REAL` | `NOT NULL DEFAULT 0` | `tokens_out` / measured seconds. |
+| `error_code` | `TEXT` | `NULL` | Canonical error code when the stream failed. |
+
+---
+
 ## 4. Performance Indexes
 
 The following indexes guarantee sub-millisecond query response times across high-volume missions:

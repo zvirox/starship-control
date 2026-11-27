@@ -1,0 +1,55 @@
+=== TASK 17.5 — REAL DATA FOR EVERY CHART ===
+Date: 2026-11-27
+
+ROOT CAUSE (R4, confirmed in 17.0)
+`ModelControlView` seeded preset arrays and added `Math.random` jitter every
+3 s; `HudView` had a random tokens/s ticker; `AppTopologyView` fabricated five
+"live" apps when discovery failed; `MissionTimelineView` shipped `mockSteps`
+and a "Load sample DAG" toggle. None of it came from real telemetry.
+
+CHANGES
+Backend
+- Migration `0007_infer_metrics.sql` (schema version 7) adds the `infer_metrics`
+  table; `crates/starship-db/src/infer.rs` records one row per completed stream
+  and serves `list_infer_metrics(range)` for `15m`/`1h`/`24h`. Timestamps are
+  assigned by the DB at insert time.
+- `cmd_mission_send_prompt` now measures time-to-first-chunk, total latency and
+  streamed chunk count, records them with provider/model/error code, and emits
+  `evt://infer/metrics`.
+- `cmd_infer_metrics_history{range}` added and registered; API.md commands and
+  events, DATABASE.md table, and `app/src/types/ipc.ts` (InferMetricRecord,
+  InferMetricsEvent, InferMetricsHistoryPayload) kept in parity.
+
+Frontend
+- `ModelControlView`: no preset arrays and no `Math.random`; loads measured
+  history via IPC, listens for live events, and shows "No inference yet — send
+  a message" when nothing has been measured. Charts plot real chunks/sec,
+  first-chunk and total latency, plus real download speed from download events.
+- `HudView`: removed the random ticker and preset series; tokens/s display and
+  sparkline now come only from `evt://infer/metrics` (empty state shows "—").
+- `AppTopologyView`: deleted the ecosystem mock; a failed discovery shows the
+  core error message and an empty list.
+- `MissionTimelineView`: removed `mockSteps`, the sample-DAG toggle and mock
+  events; timeline steps come only from the active plan loaded over IPC.
+
+HONEST MEASUREMENT NOTE
+The providers used here do not report a token count in the stream path, so
+`tokens_out` counts non-empty streamed chunks and the UI label is "chunks/s",
+not "tok/s". `tokens_in` is 0 rather than invented. First-chunk and total
+latencies are measured with `Instant`.
+
+VERIFICATION
+  $ cargo test --workspace
+  suites=25 passed=191 failed=0
+  (new: infer_metrics_test verifies schema v7, empty-first history, real
+   timestamp and stored measured values)
+
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ grep -rnE 'Math\.random|mockSteps|ecosystem mock for web preview' app/src
+    → no matches
+  $ cd app && npm run check:linear                               PASS
+  $ npx tsc --noEmit                                             PASS
+  $ npm run lint                                                 PASS
+  $ npm run build                                                PASS
+
+RESULT: PASS

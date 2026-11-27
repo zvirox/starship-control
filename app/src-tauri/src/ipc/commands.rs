@@ -10,7 +10,7 @@ use starship_core::planner::{
 use starship_core::safety::{RiskTier, SafetyArbiter};
 use starship_core::{CoreError, ErrorKind};
 use starship_db::schema::{MissionMessageRecord, MissionRecord, ModelRecord};
-use starship_db::{Database, NewAuditEntry};
+use starship_db::{Database, InferMetricRecord, NewAuditEntry};
 use starship_infer::dispatcher::InferDispatcher;
 use starship_infer::hf::{DownloadProgress, HfModelMetadata, download_hf_file, search_models};
 use starship_infer::types::{ChatRequest, Message};
@@ -677,6 +677,29 @@ pub async fn cmd_provider_config_set(
     Ok(true)
 }
 
+/// Measured inference telemetry pushed after a request completes.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InferMetricsEvent {
+    pub metric: InferMetricRecord,
+}
+
+/// History for the Models panel: `cmd_infer_metrics_history{range}`.
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn cmd_infer_metrics_history(
+    state: tauri::State<'_, Database>,
+    payload: InferMetricsHistoryPayload,
+) -> Result<Vec<InferMetricRecord>, CoreError> {
+    state.list_infer_metrics(&payload.range)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InferMetricsHistoryPayload {
+    pub range: String,
+}
+
 /// Resolves a cloud provider's base URL and *decrypted* API key.
 /// This is the only path from the encrypted DB column to an HTTP client.
 fn resolve_cloud_credentials(
@@ -756,6 +779,7 @@ pub async fn cmd_mission_send_prompt(
             stream: true,
         };
 
+        let request_started = Instant::now();
         match InferDispatcher::dispatch_stream(
             &model.provider_type,
             &model.id,
@@ -769,6 +793,9 @@ pub async fn cmd_mission_send_prompt(
             Ok(mut stream) => {
                 let mut accumulated_content = String::new();
                 let mut accumulated_thought = String::new();
+                let mut first_token_at: Option<Instant> = None;
+                let mut streamed_chunks: i64 = 0;
+                let mut stream_error: Option<String> = None;
 
                 while let Some(chunk_res) = stream.next().await {
                     match chunk_res {
@@ -785,6 +812,10 @@ pub async fn cmd_mission_send_prompt(
                             }
 
                             if !chunk.content.is_empty() {
+                                if first_token_at.is_none() {
+                                    first_token_at = Some(Instant::now());
+                                }
+                                streamed_chunks += 1;
                                 accumulated_content.push_str(&chunk.content);
                                 let _ = app_handle.emit(
                                     "evt://token/stream",
@@ -797,6 +828,7 @@ pub async fn cmd_mission_send_prompt(
                             tokio::time::sleep(std::time::Duration::from_millis(15)).await;
                         }
                         Err(e) => {
+                            stream_error = Some(e.code.clone());
                             error!(target: "starship_ipc", "Stream chunk error: {e}");
                             let _ = app_handle.emit(
                                 "evt://stream/error",
@@ -810,6 +842,31 @@ pub async fn cmd_mission_send_prompt(
                         }
                     }
                 }
+
+                // Record and publish measured request telemetry (Phase 17, 17.5).
+                let elapsed = request_started.elapsed();
+                let total_ms = i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX);
+                let first_ms = first_token_at.map_or(0, |at| {
+                    i64::try_from(at.duration_since(request_started).as_millis())
+                        .unwrap_or(i64::MAX)
+                });
+                let secs = elapsed.as_secs_f64().max(0.001);
+                let chunks = u32::try_from(streamed_chunks).unwrap_or(u32::MAX);
+                let metric = InferMetricRecord {
+                    id: 0,
+                    ts_ms: starship_db::infer::now_ms(),
+                    mission_id: Some(mission_id),
+                    provider: model.provider_type.clone(),
+                    model_id: model.id.clone(),
+                    first_token_ms: first_ms,
+                    total_latency_ms: total_ms,
+                    tokens_in: 0,
+                    tokens_out: streamed_chunks,
+                    tokens_per_sec: f64::from(chunks) / secs,
+                    error_code: stream_error,
+                };
+                let _ = db.record_infer_metric(&metric);
+                let _ = app_handle.emit("evt://infer/metrics", InferMetricsEvent { metric });
 
                 // Save assistant message to SQLite
                 let thought_opt = if accumulated_thought.is_empty() {

@@ -29,81 +29,15 @@ export const AppTopologyView: React.FC<AppTopologyViewProps> = ({ onLaunchSucces
       setApps(res.apps);
     } catch (err: unknown) {
       console.warn("Failed to list topology apps:", err);
-      // Fallback ecosystem mock for web preview
-      setApps([
-        {
-          appId: "eep",
-          displayName: "Easy Edits Pro",
-          version: "0.1.2-alpha.7",
-          mode: "live_gui",
-          socketPath: "/run/user/1000/starship/bridges/eep.sock",
-          binaryPath: "/usr/bin/easy-edits-pro",
-          latencyMs: 0.4,
-          capabilities: {
-            videoEditing: true,
-            audioMastering: true,
-            timelineControl: true,
-            cetTelemetry: true,
-          },
-        },
-        {
-          appId: "ssp",
-          displayName: "ScreenStudio Pro",
-          version: "0.2.0-beta.1",
-          mode: "live_gui",
-          socketPath: "/run/user/1000/starship/bridges/ssp.sock",
-          binaryPath: "/usr/bin/screenstudio-pro",
-          latencyMs: 0.6,
-          capabilities: {
-            screenRecording: true,
-            displayCapture: true,
-            autoZoom: true,
-            cursorTracking: true,
-          },
-        },
-        {
-          appId: "alp",
-          displayName: "Audio Labs Pro",
-          version: "0.1.0-alpha.3",
-          mode: "offline",
-          socketPath: "/run/user/1000/starship/bridges/alp.sock",
-          binaryPath: "/usr/bin/audio-labs-pro",
-          latencyMs: null,
-          capabilities: {
-            voiceStudio: true,
-            audioMastering: true,
-            noiseRemoval: true,
-          },
-        },
-        {
-          appId: "nwp",
-          displayName: "Net Watch Pro",
-          version: "0.1.1",
-          mode: "headless_cli",
-          socketPath: "/run/user/1000/starship/bridges/nwp.sock",
-          binaryPath: "/usr/bin/net-watch-pro",
-          latencyMs: null,
-          capabilities: {
-            ebpfMonitor: true,
-            packetCapture: true,
-            latencyTracker: true,
-          },
-        },
-        {
-          appId: "atp",
-          displayName: "Agentic Tuneup Pro",
-          version: "0.1.0",
-          mode: "offline",
-          socketPath: "/run/user/1000/starship/bridges/atp.sock",
-          binaryPath: "/usr/bin/agentic-tuneup-pro",
-          latencyMs: null,
-          capabilities: {
-            packageCleaner: true,
-            memoryOptimizer: true,
-            cacheCleaner: true,
-          },
-        },
-      ]);
+      const core = err as { userMessage?: unknown } | null;
+      const message =
+        core && typeof core.userMessage === "string"
+          ? core.userMessage
+          : err instanceof Error
+            ? err.message
+            : String(err);
+      setErrorMsg(message);
+      setApps([]);
     } finally {
       setLoading(false);
       setRefreshing(false);

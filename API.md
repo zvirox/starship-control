@@ -185,6 +185,7 @@ Generates and activates a cross-app system health inspection and disk cleanup pi
 - **`cmd_topology_list_apps`** / **`cmd_topology_launch_app`** / **`cmd_topology_ping_app`** — Discovers, pings, and spawns connected desktop apps (`eep`, `ssp`, `alp`, `nwp`, `atp`).
 - **`cmd_mcp_list_tools`** / **`cmd_mcp_call_tool`** — Aggregates and invokes tools over `SO_PEERCRED`-verified Unix sockets or headless `--mcp` stdio child processes.
 - **`cmd_health_get_snapshot`** / **`cmd_health_get_history`** / **`cmd_health_get_thresholds`** / **`cmd_health_set_thresholds`** — Reads 1 Hz telemetry snapshots, historical rollups (`1m`/`1h`/`15m`), and overload thresholds.
+- **`cmd_infer_metrics_history{range}`** — Returns measured inference requests (`tokensPerSec`, first-token and total latency, provider/model, error code) for `15m` (default), `1h` or `24h`. Empty on a fresh profile.
 
 #### `cmd_topology_list_apps` (`cmd://topology_list_apps`)
 Lists all discovered applications from manifests and live sockets.
@@ -400,6 +401,7 @@ Emitted whenever an individual sensor trips an overload threshold or recovery ru
 - **`evt://mission/progress`** & **`evt://step/state`** — Live step state transitions, progress percentages, and ETA updates.
 - **`evt://download/complete`** & **`evt://download/error`** — Terminal states for Hugging Face GGUF weight transfers.
 - **`evt://tray/state_changed`** — Logical tray state transitions (`Idle`, `Running`, `Waiting`, `Overloaded`).
+- **`evt://infer/metrics`** — One measured inference request after the stream ends; carries the same record as `cmd_infer_metrics_history`.
 
 ---
 

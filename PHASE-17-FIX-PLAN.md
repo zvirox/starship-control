@@ -56,7 +56,7 @@
 - [x] **17.3 No invented cuts (R3).** In `pipeline/media.rs`, remove the default `CutInterval`s. With no CET telemetry, return `pipeline.telemetry_required`, and the UI shows "Record or load a session first". Cuts come only from real `detect_cuts`.
   * *Verify:* unit + IPC test: no telemetry → error, never a plan with cuts.
 - [ ] **17.4 Remove canned model replies.** Delete the keyword-matched response code and `synthesize_tasksheet_json` from `local/runner.rs` (replaced by 17.10).
-- [ ] **17.5 Real data for every chart (R4).**
+- [x] **17.5 Real data for every chart (R4).**
   * Backend: record per-request metrics in the stream loop (time-to-first-token, tokens/s, tokens in/out, total latency, provider/model, error) into new table `infer_metrics` and emit `evt://infer/metrics`. Add `cmd_infer_metrics_history{range}`.
   * `ModelControlView.tsx`: initial state is empty, no preset arrays, no `Math.random`. Plot `infer_metrics` (tokens/s, latency). Empty state: "No inference yet — send a message". Show source and last-updated time.
   * `HudView.tsx`: replace random series with real health samples (`evt://health/sample`: CPU/RAM) or real tokens/s while streaming; empty state otherwise.

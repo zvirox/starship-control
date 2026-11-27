@@ -9,6 +9,7 @@ import type {
   HealthStateChangedEvent,
   MissionProgressPayload,
   ApprovalNeededEvent,
+  InferMetricsEvent,
 } from "../../types/ipc";
 
 export const HudView: React.FC = () => {
@@ -16,10 +17,8 @@ export const HudView: React.FC = () => {
     "online" | "active" | "warning" | "alert" | "idle"
   >("online");
   const [statusLabel, setStatusLabel] = useState<string>("Ready");
-  const [tokensPerSec, setTokensPerSec] = useState<number>(48.4);
-  const [tpsHistory, setTpsHistory] = useState<number[]>([
-    39, 42, 41, 45, 44, 47, 48.4,
-  ]);
+  const [tokensPerSec, setTokensPerSec] = useState<number | null>(null);
+  const [tpsHistory, setTpsHistory] = useState<number[]>([]);
   const [isPositive, setIsPositive] = useState<boolean>(true);
 
   useEffect(() => {
@@ -27,6 +26,7 @@ export const HudView: React.FC = () => {
     let unlistenTray: (() => void) | undefined;
     let unlistenHealth: (() => void) | undefined;
     let unlistenApproval: (() => void) | undefined;
+    let unlistenMetrics: (() => void) | undefined;
 
     async function bindListeners() {
       unlistenApproval = await listen<ApprovalNeededEvent>(
@@ -86,24 +86,21 @@ export const HudView: React.FC = () => {
           }
         }
       );
+
+      unlistenMetrics = await listen<InferMetricsEvent>(
+        "evt://infer/metrics",
+        (event) => {
+          const value = event.payload.metric.tokensPerSec;
+          setTokensPerSec(value);
+          setTpsHistory((prev) => [...prev.slice(-19), value]);
+        }
+      );
     }
 
     bindListeners().catch(console.warn);
 
-    const ticker = setInterval(() => {
-      setTpsHistory((prev) => {
-        const last = prev[prev.length - 1] ?? 45;
-        const next = Math.max(
-          12,
-          Number((last + (Math.random() - 0.48) * 3.2).toFixed(1))
-        );
-        setTokensPerSec(next);
-        return [...prev.slice(1), next];
-      });
-    }, 2000);
-
     return () => {
-      clearInterval(ticker);
+      if (unlistenMetrics) unlistenMetrics();
       if (unlistenApproval) unlistenApproval();
       if (unlistenProgress) unlistenProgress();
       if (unlistenTray) unlistenTray();
@@ -149,17 +146,19 @@ export const HudView: React.FC = () => {
 
         <div className="flex items-baseline gap-1 shrink-0">
           <span className="text-[14px] font-semibold tabular-nums font-mono text-[var(--text)]">
-            {tokensPerSec.toFixed(1)}
+            {tokensPerSec === null ? "—" : tokensPerSec.toFixed(1)}
           </span>
-          <span className="text-[12px] text-[var(--text-muted)]">tok/s</span>
+          <span className="text-[12px] text-[var(--text-muted)]">chunks/s</span>
         </div>
 
-        <Sparkline
-          data={tpsHistory}
-          positive={isPositive}
-          width={64}
-          height={24}
-        />
+        {tpsHistory.length > 0 && (
+          <Sparkline
+            data={tpsHistory}
+            positive={isPositive}
+            width={64}
+            height={24}
+          />
+        )}
       </div>
 
       {/* Right: Close only (no theme toggle — follows Cockpit via Tauri event) */}

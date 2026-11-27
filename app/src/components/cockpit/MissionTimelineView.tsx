@@ -67,7 +67,6 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
   const [cursor, setCursor] = useState<number>(0);
   const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
   const [isLogDrawerOpen, setIsLogDrawerOpen] = useState<boolean>(false);
-  const [isMockMode, setIsMockMode] = useState<boolean>(false);
 
   // Aggregated progress telemetry
   const [missionProgress, setMissionProgress] = useState<number>(0.65);
@@ -77,7 +76,7 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
 
   // Polling / fetching timeline events from Rust backend
   const fetchTimeline = useCallback(async () => {
-    if (!missionId || isMockMode) return;
+    if (!missionId) return;
     try {
       const resp = await invoke<MissionGetTimelineResponse>(
         "cmd_mission_get_timeline",
@@ -95,7 +94,7 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
     } catch (err) {
       console.warn("Failed to fetch mission timeline:", err);
     }
-  }, [missionId, cursor, isMockMode]);
+  }, [missionId, cursor]);
 
   useEffect(() => {
     fetchTimeline();
@@ -151,81 +150,10 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Canonical mock timeline steps (satisfies Verification for 13.5:
-  // "mock mission containing a retry, a fallback and a skipped step")
-  const mockSteps: TimelineStepItem[] = useMemo(
-    () => [
-      {
-        stepIndex: 0,
-        appId: "ssp",
-        toolName: "ssp.recording.start",
-        description: "Captures 60fps high resolution screen display",
-        riskTier: 1,
-        state: "success",
-        progress: 1.0,
-      },
-      {
-        stepIndex: 1,
-        appId: "ssp",
-        toolName: "ssp.recording.stop",
-        description: "Finalizes video container and writes CET metadata sidecar",
-        riskTier: 1,
-        state: "success",
-        progress: 1.0,
-      },
-      {
-        stepIndex: 2,
-        appId: "alp",
-        toolName: "alp.denoise.spectral",
-        description: "Spectral subtraction noise reduction on vocal track",
-        riskTier: 2,
-        state: "success",
-        progress: 1.0,
-        retryCount: 1, // Step with RETRY
-        message: "Applied voice isolation preset after transient socket retry",
-      },
-      {
-        stepIndex: 3,
-        appId: "eep",
-        toolName: "eep.timeline.cut_interval",
-        description: "Precision cuts dead air interval on timeline",
-        riskTier: 2,
-        state: "success",
-        progress: 1.0,
-        fallbackRung: "F2 Alt Tool", // Step with FALLBACK
-        fallbackReason: "Primary cut lock was contested; engaged fallback tool eep.track.slice_clips",
-        fallbackEventId: 104,
-      },
-      {
-        stepIndex: 4,
-        appId: "eep",
-        toolName: "eep.filter.heavy_vfx",
-        description: "Optional cinematic color grade and motion blur",
-        riskTier: 1,
-        state: "skipped", // SKIPPED step
-        progress: 0.0,
-        fallbackRung: "F4 Degrade",
-        fallbackReason: "CPU memory pressure high; skipped non-critical visual filter",
-        fallbackEventId: 105,
-      },
-      {
-        stepIndex: 5,
-        appId: "eep",
-        toolName: "eep.timeline.export_mp4",
-        description: "Exports assembled master timeline to H.264 MP4 container",
-        riskTier: 2,
-        state: "running",
-        progress: 0.45,
-        message: "Encoding video frames: chunk 45/100 (1080p60)",
-      },
-    ],
-    []
-  );
-
-  // Compute active steps list
+  // Steps come only from the active plan loaded via IPC (no sample DAG).
   const steps: TimelineStepItem[] = useMemo(() => {
-    if (isMockMode || !activePlan || activePlan.steps.length === 0) {
-      return mockSteps;
+    if (!activePlan || activePlan.steps.length === 0) {
+      return [];
     }
 
     return activePlan.steps.map((s, idx) => ({
@@ -238,7 +166,7 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
       progress: s.executionStatus === "success" ? 1.0 : 0.0,
       message: s.executionStatus === "running" ? "Executing" : undefined,
     }));
-  }, [isMockMode, activePlan, mockSteps]);
+  }, [activePlan]);
 
   // Format mm:ss
   const formatTime = (secs: number) => {
@@ -272,18 +200,6 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setIsMockMode((prev) => !prev)}
-              className={`text-[12px] px-2.5 py-1 rounded-[6px] border transition-colors cursor-pointer ${
-                isMockMode
-                  ? "bg-[var(--tint-amber)] text-[var(--accent-amber)] border-[var(--accent-amber)]"
-                  : "bg-[var(--bg-surface-2)] text-[var(--text-muted)] border-[var(--border)] hover:text-[var(--text)]"
-              }`}
-              title="Toggle mock mission demonstrating retry, fallback, and skipped steps"
-            >
-              {isMockMode ? "Mock mode active" : "Load sample DAG"}
-            </button>
 
             {isStalled && (
               <span className="flex items-center gap-1.5 px-2 py-1 rounded-[4px] bg-[var(--tint-amber)] border border-[var(--accent-amber)] text-[var(--accent-amber)] text-[12px] font-medium">
@@ -533,41 +449,6 @@ export const MissionTimelineView: React.FC<MissionTimelineViewProps> = ({
               })
             )}
 
-            {isMockMode && events.length === 0 && (
-              <div className="space-y-2">
-                <div
-                  className={`p-2.5 rounded-[6px] border transition-colors ${
-                    selectedEventId === 104
-                      ? "border-[var(--accent-amber)] bg-[var(--tint-amber)] text-[var(--text)]"
-                      : "border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)]"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-[12px] text-[var(--text-muted)]">
-                    <span className="text-[var(--accent-amber)] font-semibold">fallback_engaged</span>
-                    <span>Event ID 104</span>
-                  </div>
-                  <div className="text-[var(--text)] mt-1">
-                    Ladder F2 engaged: Resource lock contested on EEP timeline cut interval. Switched to alternative tool eep.track.slice_clips.
-                  </div>
-                </div>
-
-                <div
-                  className={`p-2.5 rounded-[6px] border transition-colors ${
-                    selectedEventId === 105
-                      ? "border-[var(--accent-amber)] bg-[var(--tint-amber)] text-[var(--text)]"
-                      : "border-[var(--border)] bg-[var(--bg-surface)] text-[var(--text-muted)]"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-[12px] text-[var(--text-muted)]">
-                    <span className="text-[var(--accent-amber)] font-semibold">step_skipped</span>
-                    <span>Event ID 105</span>
-                  </div>
-                  <div className="text-[var(--text)] mt-1">
-                    Ladder F4 degrade applied: Non-critical visual filter skipped due to memory pressure threshold.
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
       </LinearCard>
