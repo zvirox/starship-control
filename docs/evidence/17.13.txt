@@ -1,0 +1,49 @@
+=== TASK 17.13 — TOOL-CALL LOOP ===
+Date: 2026-11-27
+
+ROOT CAUSE (R10, confirmed in 17.0)
+The chat stream loop only accumulated text and thought; `tool_calls` were never
+parsed, so a model could not ask the host to run a tool and see the result.
+
+CHANGES
+- `types.rs`: `ChatChunk` carries optional `tool_calls`.
+- `cloud/openai.rs`: accumulates `delta.tool_calls` across SSE events (id,
+  name, partial JSON arguments) and emits complete `ToolCall`s at completion.
+- `cloud/anthropic.rs`: parses `tool_use` blocks and `input_json_delta`, emitting
+  complete calls on `message_stop`.
+- `cloud/gemini.rs`: maps `functionCall` parts to `ToolCall`s.
+- `ipc/commands.rs`:
+  * `parse_tool_name` requires `app:tool` names;
+  * `tool_calls_to_sheet` builds a `tasksheet/1` from real arguments and
+    validates it against a `TaskSheetValidator` populated from the **live** tool
+    catalog (not just static defaults);
+  * `run_chat_with_tools` streams a turn, runs Tier-1 calls through the same
+    `call_tool` path as `cmd_mcp_call_tool`, stores each result as a `tool`
+    message, re-prompts with updated history, and caps the loop at 6 turns.
+    Tier 2/3 calls call `activate_plan_internal` and stop for signed approval —
+    no mutating tool executes autonomously.
+- `starship-db`: added `add_tool_message(mission_id, tool_call_id, content)`.
+- API.md documents the loop and its safety gating.
+
+VERIFICATION
+  $ cargo test --workspace
+  suites=25 passed=197 failed=0
+  New tests:
+  - openai::tests::test_tool_call_deltas_accumulate_into_a_complete_call
+  - ipc::commands::tests::test_tool_call_name_parsing_and_validated_sheet
+    (safe tool valid; mutating tool tier >= 2; unqualified name rejected)
+  - ipc::commands::tests::test_tool_result_is_fed_back_into_next_model_turn
+    (tool message with real payload appears in the next request context)
+
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo xtask check-no-fakes                                   PASS
+  $ npm run check:linear / typecheck                             PASS
+
+HONEST LIMITATION
+The plan's "mock provider requests atp: tuneup.get_health and a real ATP result
+appears in the next turn" is covered at the component level (SSE tool-call
+parsing, live-catalog validation, tool-result feedback) but not as a single
+E2E against a running ATP instance: the mission runner (17.40) and ATP template
+catalog (17.44) are still open. Those tasks will add the end-to-end assertion.
+
+RESULT: PASS (wiring + safety gate verified; full ATP E2E deferred to 17.40/17.44)

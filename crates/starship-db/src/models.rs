@@ -456,6 +456,23 @@ impl Database {
         }
     }
 
+    /// Stores a tool result as a `tool` message for the next model turn.
+    pub fn add_tool_message(
+        &self,
+        mission_id: i64,
+        tool_call_id: &str,
+        content: &str,
+    ) -> Result<i64, CoreError> {
+        self.with_conn(|conn| {
+            conn.execute(
+                "INSERT INTO mission_messages (mission_id, role, content, tool_call_id)
+                 VALUES (?1, 'tool', ?2, ?3)",
+                params![mission_id, content, tool_call_id],
+            )?;
+            Ok(conn.last_insert_rowid())
+        })
+    }
+
     /// Decrypts an armored API key from the database.
     pub fn decrypt_api_key(armored: &str) -> Result<String, CoreError> {
         starship_core::SecretVault::decrypt_secret(armored, "starship-db-provider-key-salt")

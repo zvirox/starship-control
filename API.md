@@ -83,6 +83,10 @@ Creates a new mission session.
 Dispatches a new user message or instruction to an active mission. The model
 request includes the mission's stored user/assistant/tool messages (newest kept
 first, trimmed at 40 messages / ~24k characters); no fabricated history is added.
+Model-issued `tool_calls` are parsed, converted to a validated `tasksheet/1`,
+Tier-1 calls run through the MCP router and their results are fed back as `tool`
+messages; Tier 2/3 calls create an approval gate instead. Loop depth is capped
+at 6 turns.
 * **Payload:**
   ```json
   {

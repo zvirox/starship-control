@@ -13,7 +13,7 @@ use starship_db::schema::{MissionMessageRecord, MissionRecord, ModelRecord};
 use starship_db::{Database, InferMetricRecord, NewAuditEntry};
 use starship_infer::dispatcher::InferDispatcher;
 use starship_infer::hf::{DownloadProgress, HfModelMetadata, download_hf_file, search_models};
-use starship_infer::types::{ChatRequest, Message};
+use starship_infer::types::{ChatRequest, Message, ToolCall};
 use starship_mcp::{
     AggregatedTool, HybridExecutionRouter, ToolAggregator, UnixTransportClient,
     scan_and_sync_manifests,
@@ -764,6 +764,262 @@ fn resolve_cloud_credentials(
     Ok((base_url, api_key))
 }
 
+/// Maximum model -> tool -> model turns for one user prompt (Phase 17, 17.13).
+const MAX_TOOL_LOOP_DEPTH: usize = 6;
+
+fn parse_tool_name(full_name: &str) -> Option<(String, String)> {
+    let (app, tool) = full_name.split_once(':')?;
+    let (app, tool) = (app.trim(), tool.trim());
+    if app.is_empty() || tool.is_empty() {
+        return None;
+    }
+    Some((app.to_string(), tool.to_string()))
+}
+
+/// Converts model-issued tool calls into a validated `tasksheet/1` plan. No
+/// impact numbers are invented; the diff summary describes the real call.
+fn tool_calls_to_sheet(
+    goal: &str,
+    calls: &[ToolCall],
+    validator: &TaskSheetValidator,
+) -> Result<TaskSheet, CoreError> {
+    let arbiter = SafetyArbiter::default();
+    let mut steps = Vec::new();
+    for (index, call) in calls.iter().enumerate() {
+        let Some((app_id, tool_name)) = parse_tool_name(&call.name) else {
+            return Err(CoreError::plan(
+                "plan.unknown_app",
+                false,
+                format!("Tool call needs an `app:tool` name: {}", call.name),
+                Some(serde_json::json!({ "name": call.name })),
+            ));
+        };
+        let tier = arbiter.classify_tool(&tool_name) as u8;
+        steps.push(TaskSheetStep {
+            step_index: u32::try_from(index).unwrap_or(u32::MAX),
+            app_id,
+            tool_name: tool_name.clone(),
+            arguments: call.arguments.clone(),
+            risk_tier: tier,
+            diff_summary: format!("Calls {tool_name} with the supplied arguments"),
+            depends_on: vec![],
+        });
+    }
+    let sheet = TaskSheet::new(
+        goal,
+        "Model-requested tool calls",
+        "Invokes the tools requested by the model",
+        steps,
+    );
+    validator.validate(&sheet)?;
+    Ok(sheet)
+}
+
+/// Streams a model turn, executes its Tier-1 tool calls through the same router
+/// used by `cmd_mcp_call_tool`, feeds results back as `tool` messages, and
+/// repeats until the model finishes or the depth cap is reached. Tier 2/3
+/// calls create an approval gate and never execute autonomously.
+#[allow(clippy::too_many_arguments)]
+async fn run_chat_with_tools(
+    app: &AppHandle,
+    db: &Database,
+    mission_id: i64,
+    model: &ModelRecord,
+    goal: &str,
+    base_url: Option<&str>,
+    api_key: Option<&str>,
+    mut messages: Vec<Message>,
+) -> Result<(), CoreError> {
+    let aggregator = ToolAggregator::new();
+    let system_prompt = aggregator.build_system_context();
+    let tools = aggregator.to_llm_definitions();
+    let mut validator = TaskSheetValidator::default();
+    for tool in &tools {
+        let app_id = tool
+            .name
+            .split_once('.')
+            .map_or(tool.name.as_str(), |(app, _)| app);
+        validator.register_tool(starship_core::planner::ToolSchema::new(
+            app_id,
+            tool.name.clone(),
+            1,
+            tool.parameters.clone(),
+        ));
+    }
+    let arbiter = SafetyArbiter::default();
+
+    for depth in 0..=MAX_TOOL_LOOP_DEPTH {
+        let chat_req = ChatRequest {
+            model: model.id.clone(),
+            messages: std::mem::take(&mut messages),
+            system_prompt: Some(system_prompt.clone()),
+            temperature: Some(0.2),
+            max_tokens: Some(4096),
+            tools: tools.clone(),
+            grammar: None,
+            stream: true,
+        };
+        let request_started = Instant::now();
+        let Ok(mut stream) = InferDispatcher::dispatch_stream(
+            &model.provider_type,
+            &model.id,
+            base_url,
+            api_key,
+            model.file_path.as_deref(),
+            chat_req,
+        )
+        .await
+        else {
+            return Ok(()); // dispatch_stream already emitted a typed error
+        };
+
+        let mut content = String::new();
+        let mut thought = String::new();
+        let mut tool_calls: Vec<ToolCall> = Vec::new();
+        let mut first_token_at: Option<Instant> = None;
+        let mut streamed_chunks: i64 = 0;
+        let mut stream_error: Option<String> = None;
+        while let Some(chunk_res) = stream.next().await {
+            match chunk_res {
+                Ok(chunk) => {
+                    if let Some(ref chunk_thought) = chunk.thought {
+                        thought.push_str(chunk_thought);
+                        let _ = app.emit(
+                            "evt://thought/stream",
+                            ThoughtStreamEvent {
+                                mission_id,
+                                thought_chunk: chunk_thought.clone(),
+                            },
+                        );
+                    }
+                    if !chunk.content.is_empty() {
+                        if first_token_at.is_none() {
+                            first_token_at = Some(Instant::now());
+                        }
+                        streamed_chunks += 1;
+                        content.push_str(&chunk.content);
+                        let _ = app.emit(
+                            "evt://token/stream",
+                            TokenStreamEvent {
+                                mission_id,
+                                chunk: chunk.content,
+                            },
+                        );
+                    }
+                    if let Some(calls) = chunk.tool_calls {
+                        tool_calls.extend(calls);
+                    }
+                    tokio::time::sleep(Duration::from_millis(15)).await;
+                }
+                Err(e) => {
+                    stream_error = Some(e.code.clone());
+                    error!(target: "starship_ipc", "Stream chunk error: {e}");
+                    let _ = app.emit(
+                        "evt://stream/error",
+                        StreamErrorEvent {
+                            mission_id,
+                            message: e.user_message.clone(),
+                            code: e.code,
+                        },
+                    );
+                    break;
+                }
+            }
+        }
+
+        let elapsed = request_started.elapsed();
+        let total_ms = i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX);
+        let first_ms = first_token_at.map_or(0, |at| {
+            i64::try_from(at.duration_since(request_started).as_millis()).unwrap_or(i64::MAX)
+        });
+        let chunks = u32::try_from(streamed_chunks).unwrap_or(u32::MAX);
+        let metric = InferMetricRecord {
+            id: 0,
+            ts_ms: starship_db::infer::now_ms(),
+            mission_id: Some(mission_id),
+            provider: model.provider_type.clone(),
+            model_id: model.id.clone(),
+            first_token_ms: first_ms,
+            total_latency_ms: total_ms,
+            tokens_in: 0,
+            tokens_out: streamed_chunks,
+            tokens_per_sec: f64::from(chunks) / elapsed.as_secs_f64().max(0.001),
+            error_code: stream_error,
+        };
+        let _ = db.record_infer_metric(&metric);
+        let _ = app.emit("evt://infer/metrics", InferMetricsEvent { metric });
+
+        let thought_opt = if thought.is_empty() {
+            None
+        } else {
+            Some(thought.as_str())
+        };
+        let assistant_id = db
+            .add_message(mission_id, "assistant", &content, thought_opt)
+            .unwrap_or(0);
+        let _ = app.emit(
+            "evt://stream/finished",
+            StreamFinishedEvent {
+                mission_id,
+                message_id: assistant_id,
+                content,
+                thought: thought_opt.map(ToString::to_string),
+            },
+        );
+
+        if tool_calls.is_empty() {
+            return Ok(());
+        }
+        if depth == MAX_TOOL_LOOP_DEPTH {
+            let err = CoreError::plan(
+                "plan.max_steps_exceeded",
+                false,
+                "Tool loop depth exceeded",
+                Some(serde_json::json!({ "depth": MAX_TOOL_LOOP_DEPTH })),
+            );
+            let _ = app.emit(
+                "evt://stream/error",
+                StreamErrorEvent {
+                    mission_id,
+                    message: err.user_message.clone(),
+                    code: err.code,
+                },
+            );
+            return Ok(());
+        }
+
+        let sheet = tool_calls_to_sheet(goal, &tool_calls, &validator)?;
+        if sheet.steps.iter().any(|step| step.risk_tier >= 2) {
+            // Mutating/destructive tools always pause for human approval.
+            activate_plan_internal(app, db, &arbiter, mission_id, &sheet)?;
+            return Ok(());
+        }
+        for step in &sheet.steps {
+            let result = call_tool(
+                db,
+                CallToolPayload {
+                    app_id: step.app_id.clone(),
+                    tool_name: step.tool_name.clone(),
+                    arguments: step.arguments.clone(),
+                    lease_timeout_ms: Some(15_000),
+                },
+            )
+            .await;
+            let payload = match result {
+                Ok(value) => value.to_string(),
+                Err(err) => serde_json::json!({ "error": err.code }).to_string(),
+            };
+            db.add_tool_message(mission_id, &format!("step-{}", step.step_index), &payload)?;
+        }
+        messages = conversation_messages(
+            &db.list_messages(mission_id)?,
+            CONVERSATION_MAX_MESSAGES,
+            CONVERSATION_CHAR_BUDGET,
+        );
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn cmd_mission_send_prompt(
     app: AppHandle,
@@ -809,147 +1065,31 @@ pub async fn cmd_mission_send_prompt(
     let mission_id = payload.mission_id;
     let app_handle = app.clone();
     let db = state.inner().clone();
+    let goal = mission.user_goal.clone();
 
-    // Spawn async background streaming task
+    // Run the model -> Tier-1 tool -> model loop on a background task.
     tokio::spawn(async move {
-        let aggregator = ToolAggregator::new();
-        let system_prompt = aggregator.build_system_context();
-        let tools = aggregator.to_llm_definitions();
-
-        let chat_req = ChatRequest {
-            model: model.id.clone(),
-            messages,
-            system_prompt: Some(system_prompt),
-            temperature: Some(0.2),
-            max_tokens: Some(4096),
-            tools,
-            grammar: None,
-            stream: true,
-        };
-
-        let request_started = Instant::now();
-        match InferDispatcher::dispatch_stream(
-            &model.provider_type,
-            &model.id,
+        if let Err(err) = run_chat_with_tools(
+            &app_handle,
+            &db,
+            mission_id,
+            &model,
+            &goal,
             base_url.as_deref(),
             api_key.as_deref(),
-            model.file_path.as_deref(),
-            chat_req,
+            messages,
         )
         .await
         {
-            Ok(mut stream) => {
-                let mut accumulated_content = String::new();
-                let mut accumulated_thought = String::new();
-                let mut first_token_at: Option<Instant> = None;
-                let mut streamed_chunks: i64 = 0;
-                let mut stream_error: Option<String> = None;
-
-                while let Some(chunk_res) = stream.next().await {
-                    match chunk_res {
-                        Ok(chunk) => {
-                            if let Some(ref thought) = chunk.thought {
-                                accumulated_thought.push_str(thought);
-                                let _ = app_handle.emit(
-                                    "evt://thought/stream",
-                                    ThoughtStreamEvent {
-                                        mission_id,
-                                        thought_chunk: thought.clone(),
-                                    },
-                                );
-                            }
-
-                            if !chunk.content.is_empty() {
-                                if first_token_at.is_none() {
-                                    first_token_at = Some(Instant::now());
-                                }
-                                streamed_chunks += 1;
-                                accumulated_content.push_str(&chunk.content);
-                                let _ = app_handle.emit(
-                                    "evt://token/stream",
-                                    TokenStreamEvent {
-                                        mission_id,
-                                        chunk: chunk.content,
-                                    },
-                                );
-                            }
-                            tokio::time::sleep(std::time::Duration::from_millis(15)).await;
-                        }
-                        Err(e) => {
-                            stream_error = Some(e.code.clone());
-                            error!(target: "starship_ipc", "Stream chunk error: {e}");
-                            let _ = app_handle.emit(
-                                "evt://stream/error",
-                                StreamErrorEvent {
-                                    mission_id,
-                                    message: e.user_message.clone(),
-                                    code: e.code.clone(),
-                                },
-                            );
-                            break;
-                        }
-                    }
-                }
-
-                // Record and publish measured request telemetry (Phase 17, 17.5).
-                let elapsed = request_started.elapsed();
-                let total_ms = i64::try_from(elapsed.as_millis()).unwrap_or(i64::MAX);
-                let first_ms = first_token_at.map_or(0, |at| {
-                    i64::try_from(at.duration_since(request_started).as_millis())
-                        .unwrap_or(i64::MAX)
-                });
-                let secs = elapsed.as_secs_f64().max(0.001);
-                let chunks = u32::try_from(streamed_chunks).unwrap_or(u32::MAX);
-                let metric = InferMetricRecord {
-                    id: 0,
-                    ts_ms: starship_db::infer::now_ms(),
-                    mission_id: Some(mission_id),
-                    provider: model.provider_type.clone(),
-                    model_id: model.id.clone(),
-                    first_token_ms: first_ms,
-                    total_latency_ms: total_ms,
-                    tokens_in: 0,
-                    tokens_out: streamed_chunks,
-                    tokens_per_sec: f64::from(chunks) / secs,
-                    error_code: stream_error,
-                };
-                let _ = db.record_infer_metric(&metric);
-                let _ = app_handle.emit("evt://infer/metrics", InferMetricsEvent { metric });
-
-                // Save assistant message to SQLite
-                let thought_opt = if accumulated_thought.is_empty() {
-                    None
-                } else {
-                    Some(accumulated_thought.as_str())
-                };
-
-                let assistant_msg_id = db
-                    .add_message(mission_id, "assistant", &accumulated_content, thought_opt)
-                    .unwrap_or(0);
-
-                let _ = app_handle.emit(
-                    "evt://stream/finished",
-                    StreamFinishedEvent {
-                        mission_id,
-                        message_id: assistant_msg_id,
-                        content: accumulated_content,
-                        thought: thought_opt.map(ToString::to_string),
-                    },
-                );
-
-                info!(target: "starship_ipc", mission_id, assistant_msg_id, "Inference streaming completed");
-            }
-            Err(e) => {
-                error!(target: "starship_ipc", "Inference dispatch failed: {e}");
-                let _ = app_handle.emit(
-                    "evt://stream/error",
-                    StreamErrorEvent {
-                        mission_id,
-                        message: e.user_message.clone(),
-                        code: e.code.clone(),
-                    },
-                );
-            }
+            error!(target: "starship_ipc", mission_id, "Tool loop failed: {err}");
+            let _ = app_handle.emit(
+                "evt://stream/error",
+                StreamErrorEvent {
+                    mission_id,
+                    message: err.user_message,
+                    code: err.code,
+                },
+            );
         }
     });
 
@@ -2008,6 +2148,85 @@ mod tests {
                 .expect("serialize error")
                 .contains("mcp.app_unavailable")
         );
+    }
+
+    #[test]
+    fn test_tool_call_name_parsing_and_validated_sheet() {
+        assert_eq!(
+            parse_tool_name("atp: tuneup.get_health"),
+            Some(("atp".to_string(), "tuneup.get_health".to_string()))
+        );
+        assert!(parse_tool_name("tuneup.get_health").is_none());
+
+        let calls = vec![ToolCall {
+            id: "call-1".to_string(),
+            name: "ssp: ssp.recording.start".to_string(),
+            arguments: serde_json::json!({}),
+        }];
+        let sheet = tool_calls_to_sheet(
+            "Check system health",
+            &calls,
+            &TaskSheetValidator::default(),
+        )
+        .expect("safe tool call must produce a valid plan");
+        assert_eq!(sheet.steps.len(), 1);
+        assert_eq!(sheet.steps[0].app_id, "ssp");
+        assert_eq!(sheet.steps[0].tool_name, "ssp.recording.start");
+        assert_eq!(
+            sheet.steps[0].risk_tier,
+            SafetyArbiter::default().classify_tool("ssp.recording.start") as u8
+        );
+
+        let mutating = vec![ToolCall {
+            id: "call-2".to_string(),
+            name: "eep: eep.timeline.cut_interval".to_string(),
+            arguments: serde_json::json!({ "startMs": 0, "endMs": 1000 }),
+        }];
+        let sheet = tool_calls_to_sheet("Clean caches", &mutating, &TaskSheetValidator::default())
+            .expect("valid plan");
+        assert!(
+            sheet.steps[0].risk_tier >= 2,
+            "mutating tool must be gated by approval"
+        );
+
+        let invalid = vec![ToolCall {
+            id: "call-3".to_string(),
+            name: "tuneup.get_health".to_string(),
+            arguments: serde_json::json!({}),
+        }];
+        let err = tool_calls_to_sheet("bad", &invalid, &TaskSheetValidator::default())
+            .expect_err("unqualified name");
+        assert_eq!(err.code, "plan.unknown_app");
+    }
+
+    #[test]
+    fn test_tool_result_is_fed_back_into_next_model_turn() {
+        let db = Database::open_in_memory().expect("in-memory db");
+        let model_id = db
+            .list_models()
+            .expect("models")
+            .first()
+            .expect("seeded model")
+            .id
+            .clone();
+        let mission_id = db
+            .create_mission(
+                "tool-loop-17-13",
+                "Chat",
+                "Check health",
+                &model_id,
+                "local_gguf",
+            )
+            .expect("create mission");
+        db.add_message(mission_id, "user", "check my health", None)
+            .expect("user turn");
+        db.add_tool_message(mission_id, "step-0", "{\"healthScore\":91}")
+            .expect("tool result");
+        let history = db.list_messages(mission_id).expect("history");
+        let messages = conversation_messages(&history, 40, 24_000);
+        assert_eq!(messages.len(), 2);
+        assert!(messages[1].content.contains("healthScore"));
+        assert_eq!(messages[1].tool_call_id.as_deref(), Some("step-0"));
     }
 
     #[test]

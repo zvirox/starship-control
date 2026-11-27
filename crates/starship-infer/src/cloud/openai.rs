@@ -1,11 +1,13 @@
 use crate::engine::InferenceEngine;
-use crate::types::{ChatChunk, ChatRequest, TokenStream};
+use crate::types::{ChatChunk, ChatRequest, TokenStream, ToolCall};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
 use reqwest::header::{AUTHORIZATION, CONTENT_TYPE, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use starship_core::CoreError;
+use std::collections::BTreeMap;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct OpenAiClient {
@@ -66,6 +68,63 @@ struct OpenAiChoice {
 struct OpenAiDelta {
     content: Option<String>,
     reasoning_content: Option<String>,
+    tool_calls: Option<Vec<OpenAiToolCallDelta>>,
+}
+
+#[derive(Deserialize)]
+struct OpenAiToolCallDelta {
+    index: usize,
+    id: Option<String>,
+    function: Option<OpenAiFunctionDelta>,
+}
+
+#[derive(Deserialize)]
+struct OpenAiFunctionDelta {
+    name: Option<String>,
+    arguments: Option<String>,
+}
+
+/// index -> (id, name, accumulated arguments JSON string)
+type PendingCalls = BTreeMap<usize, (String, String, String)>;
+
+fn accumulate_tool_calls(pending: &Mutex<PendingCalls>, deltas: Vec<OpenAiToolCallDelta>) {
+    let Ok(mut calls) = pending.lock() else {
+        return;
+    };
+    for delta in deltas {
+        let entry = calls
+            .entry(delta.index)
+            .or_insert_with(|| (String::new(), String::new(), String::new()));
+        if let Some(id) = delta.id {
+            entry.0 = id;
+        }
+        if let Some(function) = delta.function {
+            if let Some(name) = function.name {
+                entry.1 = name;
+            }
+            if let Some(args) = function.arguments {
+                entry.2.push_str(&args);
+            }
+        }
+    }
+}
+
+fn drain_tool_calls(pending: &Mutex<PendingCalls>) -> Option<Vec<ToolCall>> {
+    let mut calls = pending.lock().ok()?;
+    if calls.is_empty() {
+        return None;
+    }
+    Some(
+        std::mem::take(&mut *calls)
+            .into_values()
+            .map(|(id, name, arguments)| ToolCall {
+                id,
+                name,
+                arguments: serde_json::from_str(&arguments)
+                    .unwrap_or_else(|_| serde_json::json!({})),
+            })
+            .collect(),
+    )
 }
 
 #[async_trait]
@@ -135,54 +194,64 @@ impl InferenceEngine for OpenAiClient {
         }
 
         let event_stream = response.bytes_stream().eventsource();
-        let mapped_stream = event_stream.map(|event_result| match event_result {
-            Ok(event) => {
-                let data = event.data;
-                if data == "[DONE]" {
-                    return Ok(ChatChunk {
-                        content: String::new(),
-                        thought: None,
-                        is_final: true,
-                        finish_reason: Some("stop".to_string()),
-                    });
-                }
-
-                match serde_json::from_str::<OpenAiStreamResponse>(&data) {
-                    Ok(resp) => {
-                        let choice = resp.choices.into_iter().next();
-                        let (content, thought, finish_reason) =
-                            choice.map_or((String::new(), None, None), |c| {
-                                (
-                                    c.delta.content.unwrap_or_default(),
-                                    c.delta.reasoning_content,
-                                    c.finish_reason,
-                                )
-                            });
-
-                        let is_final = finish_reason.is_some();
-                        Ok(ChatChunk {
-                            content,
-                            thought,
-                            is_final,
-                            finish_reason,
-                        })
+        let pending: Arc<Mutex<PendingCalls>> = Arc::new(Mutex::new(BTreeMap::new()));
+        let mapped_stream = event_stream.map(move |event_result| {
+            let pending = Arc::clone(&pending);
+            match event_result {
+                Ok(event) => {
+                    let data = event.data;
+                    if data == "[DONE]" {
+                        return Ok(ChatChunk {
+                            content: String::new(),
+                            thought: None,
+                            is_final: true,
+                            finish_reason: Some("stop".to_string()),
+                            tool_calls: drain_tool_calls(&pending),
+                        });
                     }
-                    Err(e) => Err(CoreError::infer(
-                        "infer.stream_parse_error",
-                        false,
-                        format!("Failed to parse SSE payload: {e}"),
-                        Some(serde_json::json!({ "raw": data })),
-                    )),
-                }
-            }
-            Err(e) => Err(CoreError::infer(
-                "infer.stream_error",
-                true,
-                format!("SSE stream connection error: {e}"),
-                None,
-            )),
-        });
 
+                    match serde_json::from_str::<OpenAiStreamResponse>(&data) {
+                        Ok(resp) => {
+                            let choice = resp.choices.into_iter().next();
+                            let (content, thought, finish_reason, tool_deltas) =
+                                choice.map_or((String::new(), None, None, Vec::new()), |c| {
+                                    (
+                                        c.delta.content.unwrap_or_default(),
+                                        c.delta.reasoning_content,
+                                        c.finish_reason,
+                                        c.delta.tool_calls.unwrap_or_default(),
+                                    )
+                                });
+                            accumulate_tool_calls(&pending, tool_deltas);
+                            let is_final = finish_reason.is_some();
+                            Ok(ChatChunk {
+                                content,
+                                thought,
+                                is_final,
+                                finish_reason,
+                                tool_calls: if is_final {
+                                    drain_tool_calls(&pending)
+                                } else {
+                                    None
+                                },
+                            })
+                        }
+                        Err(e) => Err(CoreError::infer(
+                            "infer.stream_parse_error",
+                            false,
+                            format!("Failed to parse SSE payload: {e}"),
+                            Some(serde_json::json!({ "raw": data })),
+                        )),
+                    }
+                }
+                Err(e) => Err(CoreError::infer(
+                    "infer.stream_error",
+                    true,
+                    format!("SSE stream connection error: {e}"),
+                    None,
+                )),
+            }
+        });
         Ok(Box::pin(mapped_stream))
     }
 
@@ -192,5 +261,42 @@ impl InferenceEngine for OpenAiClient {
 
     fn provider_type(&self) -> &str {
         &self.provider_type
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tool_call_deltas_accumulate_into_a_complete_call() {
+        let pending = Mutex::new(BTreeMap::new());
+        accumulate_tool_calls(
+            &pending,
+            vec![
+                OpenAiToolCallDelta {
+                    index: 0,
+                    id: Some("call-1".to_string()),
+                    function: Some(OpenAiFunctionDelta {
+                        name: Some("atp:tuneup.get_health".to_string()),
+                        arguments: None,
+                    }),
+                },
+                OpenAiToolCallDelta {
+                    index: 0,
+                    id: None,
+                    function: Some(OpenAiFunctionDelta {
+                        name: None,
+                        arguments: Some("{\"categories\":[\"package\"]}".to_string()),
+                    }),
+                },
+            ],
+        );
+        let calls = drain_tool_calls(&pending).expect("one complete tool call");
+        assert_eq!(calls.len(), 1);
+        assert_eq!(calls[0].id, "call-1");
+        assert_eq!(calls[0].name, "atp:tuneup.get_health");
+        assert_eq!(calls[0].arguments["categories"][0], "package");
+        assert!(drain_tool_calls(&pending).is_none());
     }
 }

@@ -1,11 +1,13 @@
 use crate::engine::InferenceEngine;
-use crate::types::{ChatChunk, ChatRequest, TokenStream};
+use crate::types::{ChatChunk, ChatRequest, TokenStream, ToolCall};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
 use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use starship_core::CoreError;
+use std::collections::BTreeMap;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub struct AnthropicClient {
@@ -50,6 +52,10 @@ struct AnthropicMessage<'a> {
 #[derive(Deserialize)]
 #[serde(tag = "type")]
 enum AnthropicEvent {
+    #[serde(rename = "content_block_start")]
+    ContentBlockStart {
+        content_block: AnthropicContentBlock,
+    },
     #[serde(rename = "content_block_delta")]
     ContentBlockDelta { delta: AnthropicDelta },
     #[serde(rename = "message_delta")]
@@ -63,6 +69,8 @@ enum AnthropicEvent {
 #[derive(Deserialize)]
 #[serde(tag = "type")]
 enum AnthropicDelta {
+    #[serde(rename = "input_json_delta")]
+    InputJsonDelta { partial_json: String },
     #[serde(rename = "text_delta")]
     TextDelta { text: String },
     #[serde(rename = "thinking_delta")]
@@ -74,6 +82,35 @@ enum AnthropicDelta {
 #[derive(Deserialize)]
 struct AnthropicMessageDelta {
     stop_reason: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct AnthropicContentBlock {
+    #[serde(rename = "type")]
+    kind: String,
+    id: Option<String>,
+    name: Option<String>,
+}
+
+/// index -> (id, name, accumulated arguments JSON string)
+type PendingCalls = BTreeMap<usize, (String, String, String)>;
+
+fn drain_tool_calls(pending: &Mutex<PendingCalls>) -> Option<Vec<ToolCall>> {
+    let mut calls = pending.lock().ok()?;
+    if calls.is_empty() {
+        return None;
+    }
+    Some(
+        std::mem::take(&mut *calls)
+            .into_values()
+            .map(|(id, name, arguments)| ToolCall {
+                id,
+                name,
+                arguments: serde_json::from_str(&arguments)
+                    .unwrap_or_else(|_| serde_json::json!({})),
+            })
+            .collect(),
+    )
 }
 
 #[async_trait]
@@ -152,53 +189,84 @@ impl InferenceEngine for AnthropicClient {
         }
 
         let event_stream = response.bytes_stream().eventsource();
-        let mapped = event_stream.filter_map(|event_res| async move {
-            match event_res {
-                Ok(event) => match serde_json::from_str::<AnthropicEvent>(&event.data) {
-                    Ok(AnthropicEvent::ContentBlockDelta { delta }) => match delta {
-                        AnthropicDelta::TextDelta { text } => Some(Ok(ChatChunk {
-                            content: text,
-                            thought: None,
-                            is_final: false,
-                            finish_reason: None,
-                        })),
-                        AnthropicDelta::ThinkingDelta { thinking } => Some(Ok(ChatChunk {
+        let pending: Arc<Mutex<PendingCalls>> = Arc::new(Mutex::new(BTreeMap::new()));
+        let mapped = event_stream.filter_map(move |event_res| {
+            let pending = Arc::clone(&pending);
+            async move {
+                match event_res {
+                    Ok(event) => match serde_json::from_str::<AnthropicEvent>(&event.data) {
+                        Ok(AnthropicEvent::ContentBlockStart { content_block }) => {
+                            if content_block.kind == "tool_use"
+                                && let Ok(mut calls) = pending.lock()
+                            {
+                                let index = calls.len();
+                                calls.insert(
+                                    index,
+                                    (
+                                        content_block.id.unwrap_or_default(),
+                                        content_block.name.unwrap_or_default(),
+                                        String::new(),
+                                    ),
+                                );
+                            }
+                            None
+                        }
+                        Ok(AnthropicEvent::ContentBlockDelta { delta }) => match delta {
+                            AnthropicDelta::InputJsonDelta { partial_json } => {
+                                if let Ok(mut calls) = pending.lock()
+                                    && let Some((_, (_, _, arguments))) = calls.iter_mut().next()
+                                {
+                                    arguments.push_str(&partial_json);
+                                }
+                                None
+                            }
+                            AnthropicDelta::TextDelta { text } => Some(Ok(ChatChunk {
+                                content: text,
+                                thought: None,
+                                is_final: false,
+                                finish_reason: None,
+                                tool_calls: None,
+                            })),
+                            AnthropicDelta::ThinkingDelta { thinking } => Some(Ok(ChatChunk {
+                                content: String::new(),
+                                thought: Some(thinking),
+                                is_final: false,
+                                finish_reason: None,
+                                tool_calls: None,
+                            })),
+                            AnthropicDelta::Other => None,
+                        },
+                        Ok(AnthropicEvent::MessageDelta { delta }) => Some(Ok(ChatChunk {
                             content: String::new(),
-                            thought: Some(thinking),
-                            is_final: false,
-                            finish_reason: None,
+                            thought: None,
+                            is_final: delta.stop_reason.is_some(),
+                            finish_reason: delta.stop_reason,
+                            tool_calls: None,
                         })),
-                        AnthropicDelta::Other => None,
+                        Ok(AnthropicEvent::MessageStop) => Some(Ok(ChatChunk {
+                            content: String::new(),
+                            thought: None,
+                            is_final: true,
+                            finish_reason: Some("stop".to_string()),
+                            tool_calls: drain_tool_calls(&pending),
+                        })),
+                        Ok(AnthropicEvent::Unknown) => None,
+                        Err(e) => Some(Err(CoreError::infer(
+                            "infer.stream_parse_error",
+                            false,
+                            format!("Failed to parse Anthropic SSE: {e}"),
+                            Some(serde_json::json!({ "raw": event.data })),
+                        ))),
                     },
-                    Ok(AnthropicEvent::MessageDelta { delta }) => Some(Ok(ChatChunk {
-                        content: String::new(),
-                        thought: None,
-                        is_final: delta.stop_reason.is_some(),
-                        finish_reason: delta.stop_reason,
-                    })),
-                    Ok(AnthropicEvent::MessageStop) => Some(Ok(ChatChunk {
-                        content: String::new(),
-                        thought: None,
-                        is_final: true,
-                        finish_reason: Some("stop".to_string()),
-                    })),
-                    Ok(AnthropicEvent::Unknown) => None,
                     Err(e) => Some(Err(CoreError::infer(
-                        "infer.stream_parse_error",
-                        false,
-                        format!("Failed to parse Anthropic SSE: {e}"),
-                        Some(serde_json::json!({ "raw": event.data })),
+                        "infer.stream_error",
+                        true,
+                        format!("SSE stream connection error: {e}"),
+                        None,
                     ))),
-                },
-                Err(e) => Some(Err(CoreError::infer(
-                    "infer.stream_error",
-                    true,
-                    format!("SSE stream connection error: {e}"),
-                    None,
-                ))),
+                }
             }
         });
-
         Ok(Box::pin(mapped))
     }
 

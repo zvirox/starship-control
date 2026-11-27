@@ -114,6 +114,8 @@ pub struct ChatChunk {
     pub is_final: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub finish_reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tool_calls: Option<Vec<ToolCall>>,
 }
 
 pub type TokenStream = Pin<Box<dyn Stream<Item = Result<ChatChunk, CoreError>> + Send>>;

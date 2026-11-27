@@ -35,6 +35,7 @@ pub trait InferenceEngine: Send + Sync {
             },
             is_final: true,
             finish_reason,
+            tool_calls: None,
         })
     }
 
@@ -71,18 +72,21 @@ impl InferenceEngine for MockInferenceEngine {
                 ),
                 is_final: false,
                 finish_reason: None,
+                tool_calls: None,
             }),
             Ok(ChatChunk {
                 content: format!("Starship Control acknowledged: {prompt}. "),
                 thought: None,
                 is_final: false,
                 finish_reason: None,
+                tool_calls: None,
             }),
             Ok(ChatChunk {
                 content: "Executing plan step 1 autonomously.".to_string(),
                 thought: None,
                 is_final: true,
                 finish_reason: Some("stop".to_string()),
+                tool_calls: None,
             }),
         ];
 
@@ -124,6 +128,7 @@ mod tests {
                 thought: None,
                 is_final: true,
                 finish_reason: Some("stop".to_string()),
+                tool_calls: None,
             })])))
         }
 

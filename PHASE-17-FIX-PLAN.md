@@ -80,7 +80,7 @@
   * *Verify:* wiremock server asserts `Authorization: Bearer <plaintext>` (and `x-api-key` for Anthropic). Regression test fails if the `enc_v1:` blob is ever sent.
 - [x] **17.12 Conversation memory (R9).** Build `messages` from `list_messages(mission_id)` (roles user, assistant, tool) with a token budget (trim oldest, keep system prompt and the last N turns). Persist assistant text and tool messages.
   * *Verify:* two-turn test: "My name is X" then "What is my name?" returns X from a mock engine that echoes its context.
-- [ ] **17.13 Tool-call loop (R10).** Parse `tool_calls` from stream chunks (OpenAI/OpenRouter `delta.tool_calls`, Anthropic `tool_use`, Gemini `functionCall`). Convert them to a validated plan (12.1) → approval → execution (17.40) → feed results back as a `tool` message and continue until the model finishes. Cap loop depth (default 6).
+- [x] **17.13 Tool-call loop (R10).** Parse `tool_calls` from stream chunks (OpenAI/OpenRouter `delta.tool_calls`, Anthropic `tool_use`, Gemini `functionCall`). Convert them to a validated plan (12.1) → approval → execution (17.40) → feed results back as a `tool` message and continue until the model finishes. Cap loop depth (default 6).
   * *Verify:* mock provider requests `atp: tuneup.get_health`; a real ATP call result appears in the next model turn.
 - [ ] **17.14 Downloaded-model hygiene.** After HF download: verify GGUF magic bytes and size, set `file_path`, `download_status='ready'`, and show it in the picker. Add `cmd_model_delete` (removes file and row) and resume of partial downloads. A model row whose file is missing shows **Not downloaded** and cannot be selected.
   * *Verify:* download test against a local HTTP fixture; corrupt file is rejected.

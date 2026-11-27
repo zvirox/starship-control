@@ -1,5 +1,5 @@
 use crate::engine::InferenceEngine;
-use crate::types::{ChatChunk, ChatRequest, TokenStream};
+use crate::types::{ChatChunk, ChatRequest, TokenStream, ToolCall};
 use async_trait::async_trait;
 use eventsource_stream::Eventsource;
 use futures::StreamExt;
@@ -74,6 +74,14 @@ struct GeminiContentResponse {
 #[derive(Deserialize)]
 struct GeminiPartResponse {
     text: Option<String>,
+    #[serde(rename = "functionCall")]
+    function_call: Option<GeminiFunctionCall>,
+}
+
+#[derive(Deserialize)]
+struct GeminiFunctionCall {
+    name: String,
+    args: Option<serde_json::Value>,
 }
 
 #[async_trait]
@@ -154,10 +162,20 @@ impl InferenceEngine for GeminiClient {
                     Ok(resp) => {
                         if let Some(candidate) = resp.candidates.and_then(|mut c| c.pop()) {
                             let mut text_content = String::new();
+                            let mut tool_calls = Vec::new();
                             if let Some(parts) = candidate.content.and_then(|c| c.parts) {
                                 for p in parts {
                                     if let Some(t) = p.text {
                                         text_content.push_str(&t);
+                                    }
+                                    if let Some(call) = p.function_call {
+                                        tool_calls.push(ToolCall {
+                                            id: call.name.clone(),
+                                            name: call.name,
+                                            arguments: call
+                                                .args
+                                                .unwrap_or_else(|| serde_json::json!({})),
+                                        });
                                     }
                                 }
                             }
@@ -168,6 +186,11 @@ impl InferenceEngine for GeminiClient {
                                 thought: None,
                                 is_final,
                                 finish_reason: candidate.finish_reason,
+                                tool_calls: if tool_calls.is_empty() {
+                                    None
+                                } else {
+                                    Some(tool_calls)
+                                },
                             }))
                         } else {
                             None
