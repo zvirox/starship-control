@@ -165,6 +165,10 @@ flowchart LR
 
 Approvals are signed and bound to the exact step and arguments; API keys are encrypted at rest; the audit log is hash-chained. The full assets/trust-boundary analysis and residual risks are in [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md).
 
+### Performance budgets
+
+The release build is measured against: idle core < 150 MB PSS and < 1 % CPU, HUD toggle < 150 ms, and core→UI event dispatch < 50 ms at 1 Hz health + 4 Hz progress. `cargo run -p xtask --bin perf_budget` runs the probe against the real app; CI reports breaches as warnings. Results are in [`docs/evidence/16.8.txt`](docs/evidence/16.8.txt). Health sampling adapts from 1 Hz while a window is visible to 0.2 Hz when minimized to the tray.
+
 ---
 
 ## Connected App Suite

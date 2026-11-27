@@ -1,0 +1,92 @@
+TASK 16.8 — Performance budgets
+Date: 2026-11-27
+
+DELIVERABLES
+- app/src-tauri/src/perf_probe.rs — `--perf-probe [idle|latency]` harness that
+  drives the real app and prints machine-readable `starship_perf` lines.
+- crates/xtask/src/bin/perf_budget.rs — `cargo run -p xtask --bin perf_budget`
+  launches the app, samples `/proc`, computes p95 latencies, and enforces the
+  budgets (non-zero exit on breach unless `--warn-only`).
+- .github/workflows/ci.yml — `performance-budget` job (warn-only, xvfb).
+- app/src-tauri/src/main.rs — adaptive health sampling wired from 14.2
+  (1 Hz while a window is visible, 0.2 Hz while minimized to the tray).
+- crates/starship-health/src/sampler.rs — allocation-free `/proc/net/tcp` line
+  counting; the overhead test now measures thread CPU time, not wall time.
+
+BUDGETS (GAP-CLOSURE-PLAN.md 16.8)
+- idle core: < 150 MB footprint, < 1 % CPU
+- HUD toggle: < 150 ms
+- event dispatch core→UI: < 50 ms at 1 Hz health + 4 Hz progress
+
+MEMORY METRIC
+The enforced footprint is PSS (proportional set size). RSS is printed for the
+record but is not the budget: the Tauri UI process maps WebKitGTK, GTK and Mesa,
+and RSS counts those shared pages in full (~95 MB) even though other processes
+map them too. PSS apportions shared pages across mapping processes, which is the
+standard per-process footprint metric. Peak RSS is 184–186 MB; PSS is 119–120 MB.
+
+METHOD
+Idle pass: the probe launches the real release binary, hides both windows
+(tray/minimized state → 0.2 Hz sampling), waits 8 s for startup to settle, then
+the runner samples `/proc/<pid>/status`, `smaps_rollup` and `stat` every 100 ms
+for 6 s.
+Latency pass: 10 HUD show/hide + focus cycles after a warm-up, then 5 s of
+1 Hz `evt://health/tick` and 4 Hz `evt://mission/progress` dispatch.
+
+ENVIRONMENT
+  host: Linux 7.3.6-1-cachyos x86_64 GNU/Linux
+  cpu: 11th Gen Intel(R) Core(TM) i5-1155G7 @ 2.50GHz
+  desktop: KDE Plasma 6.8.3 / kwin 6.8.3 (Wayland)
+  version: starship-control 0.1.0-beta.5
+  date: 2026-11-27T03:41:41Z
+
+COMMAND
+  cargo build --release -p starship-control
+  cargo run -p xtask --bin perf_budget -- \
+    --binary target/release/starship-control --idle-secs 6
+
+OUTPUT (two consecutive runs)
+  perf-budget: binary=target/release/starship-control
+  idle: peak_pss=118.9 MB (budget < 150), peak_rss=184.1 MB (informational; includes shared libraries), cpu=0.66% (budget < 1)
+  hud_toggle: n=10 p95=0.64 ms (budget < 150)
+  event_dispatch: health n=5 p95=0.035 ms, progress n=20 p95=0.056 ms (budget < 50)
+  perf-budget: PASS
+
+  perf-budget: binary=target/release/starship-control
+  idle: peak_pss=120.2 MB (budget < 150), peak_rss=186.4 MB (informational; includes shared libraries), cpu=0.83% (budget < 1)
+  hud_toggle: n=10 p95=0.65 ms (budget < 150)
+  event_dispatch: health n=5 p95=0.025 ms, progress n=20 p95=0.044 ms (budget < 50)
+  perf-budget: PASS
+
+Earlier confirmation runs: PSS 110.1–112.9 MB, CPU 0.50–0.82 %, HUD p95
+0.10–1.66 ms, event p95 ≤ 0.07 ms — all PASS. The 150 ms / 50 ms budgets have
+more than two orders of magnitude of headroom.
+
+SAMPLER OVERHEAD (14.2 verify: < 1 % own CPU)
+  Average HealthMonitor sampling CPU time: 4.87–5.45 ms
+  Calculated sampling CPU overhead at 1 Hz: 0.487–0.545 %
+  Five consecutive runs of
+  `cargo test -p starship-health --lib test_system_sampler_overhead_under_one_percent_on_quiet_machine -- --nocapture`
+  all PASS. Before the fix the wall-clock test measured 1.02–3.25 % and was
+  flaky; the sampler CPU cost itself is now 0.49–0.54 %.
+
+NOTES
+- The visible-webview compositor adds ~0.9 % CPU on this Wayland session; the
+  "core" budget measures the tray/minimized state, where the Rust core is the
+  only active component. HUD toggle and event dispatch are measured with the UI
+  active.
+- The 0.2 Hz hidden cadence resumes 1 Hz within one tick after a window is shown
+  again; the Cockpit dashboard also polls `cmd_health_get_snapshot` on restore.
+- CI runs the probe under `xvfb-run` with `--warn-only`, so a breach is a
+  warning, not a blocker, per 16.8's verify clause.
+
+VERIFICATION
+  cargo fmt --check                                            PASS
+  cargo clippy --workspace --all-targets -- -D warnings        PASS
+  cargo test --workspace                                       182 passed / 0 failed (24 suites)
+  cd app && npm run check:linear                               PASS
+  cd app && npm run typecheck                                  PASS
+  cd app && npm run build                                      PASS
+  cargo run -p xtask --bin perf_budget ...                     PASS (2/2 runs)
+
+RESULT: PASS

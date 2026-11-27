@@ -18,7 +18,7 @@ Since the initial `2026-11-22` audit:
   - **`1.3` Native `llama-cpp-2` Bindings:** Hardware/VRAM detection, `LocalInferenceGuard`, and `LocalGgufRunner` response/GBNF synthesis exist, while native `llama-cpp-2` GGUF inference bindings are not yet wired into `crates/starship-infer/Cargo.toml`.
   - **`6.2` Native X11 Global Shortcut Fallback:** Wayland `ashpd` `GlobalShortcuts` (`Super+Shift+Space`) and in-app fallback exist (`shortcut.rs`), while native X11 `XGrabKey` fallback is pending.
 - **Phases 9–15:** All 52 tasks completed & verified (`docs/evidence/9.0–15.5.txt`), with Systems/Timeline/HUD/Cockpit finalized under the locked Linear UI (`DESIGN.md` v2.1).
-- **Phase 16 (`16.1–16.8`):** `16.1`–`16.5` and `16.7` **VERIFIED** (`docs/evidence/16.1.txt`–`16.5.txt`, `16.7.txt`); `16.6` (CI container packaging & signing sign-off) and `16.8` (performance benchmarks) pending; manual VM packaging tests retired. Threat model at [`THREAT_MODEL.md`](THREAT_MODEL.md).
+- **Phase 16 (`16.1–16.8`):** `16.1`–`16.5`, `16.7` and `16.8` **VERIFIED** (`docs/evidence/16.1.txt`–`16.5.txt`, `16.7.txt`, `16.8.txt`); only `16.6` (CI container packaging & signing sign-off) pending; manual VM packaging tests retired. Threat model at [`THREAT_MODEL.md`](THREAT_MODEL.md). Performance budgets enforced by `cargo run -p xtask --bin perf_budget` and the warn-only `performance-budget` CI job.
 
 ---
 

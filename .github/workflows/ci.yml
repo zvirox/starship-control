@@ -237,3 +237,55 @@ jobs:
           cd app
           npm ci
           npm run test:security
+
+  performance-budget:
+    name: Performance Budgets (warn-only)
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            libssl-dev \
+            libsqlite3-dev \
+            xvfb
+
+      - name: Build frontend
+        run: |
+          cd app
+          npm ci
+          npm run build
+
+      - name: Build release binary and budget runner
+        run: |
+          cargo build --release -p starship-control
+          cargo build -p xtask --bin perf_budget
+
+      - name: Run performance budget probe (warn-only)
+        env:
+          WEBKIT_DISABLE_COMPOSITING_MODE: "1"
+          WEBKIT_DISABLE_DMABUF_RENDERER: "1"
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          xvfb-run -a cargo run -q -p xtask --bin perf_budget -- \
+            --binary target/release/starship-control --idle-secs 6 --warn-only

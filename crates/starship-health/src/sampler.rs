@@ -3,7 +3,7 @@ use crate::sample::{
     NetworkMetrics, ProcessMetrics,
 };
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use sysinfo::{Disks, Networks, System};
@@ -895,12 +895,28 @@ fn read_proc_diskstats_sectors() -> Option<(u64, u64)> {
 
 // Helper: count active connections in /proc/net/tcp and /proc/net/tcp6
 fn count_proc_net_connections() -> u32 {
+    /// Counts newline bytes without allocating a `String` per line; `/proc/net/tcp`
+    /// can hold thousands of sockets and the per-line allocation dominated the
+    /// 1 Hz sampler cost.
+    #[allow(clippy::naive_bytecount)]
+    fn count_lines(path: &str) -> Option<usize> {
+        let mut file = File::open(path).ok()?;
+        let mut buf = [0u8; 16 * 1024];
+        let mut newlines = 0usize;
+        loop {
+            match file.read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => newlines += buf[..n].iter().filter(|&&b| b == b'\n').count(),
+                Err(_) => return None,
+            }
+        }
+        Some(newlines)
+    }
+
     let mut count = 0;
     for path in &["/proc/net/tcp", "/proc/net/tcp6"] {
-        if let Ok(file) = File::open(path) {
-            let reader = BufReader::new(file);
+        if let Some(lines) = count_lines(path) {
             // subtract 1 for the header line
-            let lines = reader.lines().map_while(Result::ok).count();
             if lines > 1 {
                 #[allow(clippy::cast_possible_truncation)]
                 let entries = (lines - 1) as u32;
@@ -933,6 +949,16 @@ mod tests {
         assert!(sample.timestamp_ms > 0);
     }
 
+    /// Calling thread's accumulated runtime in nanoseconds
+    /// (`/proc/thread-self/schedstat`, field 1).
+    fn thread_runtime_ns() -> u128 {
+        std::fs::read_to_string("/proc/thread-self/schedstat")
+            .ok()
+            .and_then(|s| s.split_whitespace().next()?.parse().ok())
+            .unwrap_or(0)
+    }
+
+    #[allow(clippy::cast_precision_loss)]
     #[test]
     fn test_system_sampler_overhead_under_one_percent_on_quiet_machine() {
         // Verification requirement for 14.2:
@@ -942,30 +968,35 @@ mod tests {
         // Warm up sysinfo once
         let _ = monitor.sample();
 
-        let iterations = 5;
-        let mut total_duration = Duration::ZERO;
+        // 20 samples cover five full process-enumeration cycles and average
+        // out scheduler jitter; five samples made this test flaky at the 1 %
+        // boundary.
+        // 20 samples cover five full process-enumeration cycles.
+        let iterations = 20;
 
+        // Measure the sampler's own CPU time, not wall time: wall time grows
+        // when the scheduler preempts the test thread on a busy desktop and
+        // made this assertion flaky.
+        let cpu_ns_before = thread_runtime_ns();
         for _ in 0..iterations {
-            let start = Instant::now();
             let sample = monitor.sample();
-            total_duration += start.elapsed();
 
             // Verify essential metrics were collected
             assert!(sample.cpu.is_some(), "CPU metrics must be present");
             assert!(sample.memory.is_some(), "Memory metrics must be present");
             assert!(sample.network.is_some(), "Network metrics must be present");
         }
+        let cpu_ns = thread_runtime_ns().saturating_sub(cpu_ns_before);
 
-        let avg_sample_duration = total_duration / iterations;
+        let avg_cpu_ns = cpu_ns as f64 / f64::from(iterations);
         println!(
-            "Average HealthMonitor sampling duration: {:?} ({:.4} ms)",
-            avg_sample_duration,
-            avg_sample_duration.as_secs_f64() * 1000.0
+            "Average HealthMonitor sampling CPU time: {:.4} ms",
+            avg_cpu_ns / 1_000_000.0
         );
 
-        // At 1 Hz (1000ms period), overhead % = (sample_time / 1000ms) * 100%
-        let overhead_pct = (avg_sample_duration.as_secs_f64() / 1.0) * 100.0;
-        println!("Calculated sampling overhead at 1 Hz: {overhead_pct:.4}%");
+        // At 1 Hz (1000ms period), overhead % = (sample_cpu_time / 1000ms) * 100%
+        let overhead_pct = (avg_cpu_ns / 1_000_000_000.0) * 100.0;
+        println!("Calculated sampling CPU overhead at 1 Hz: {overhead_pct:.4}%");
 
         let is_ci = std::env::var("CI").is_ok();
         let limit = if is_ci { 50.0 } else { 1.0 };

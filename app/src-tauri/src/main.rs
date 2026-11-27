@@ -3,9 +3,11 @@
 pub mod health_service;
 mod ipc;
 pub mod notification;
+mod perf_probe;
 mod shortcut;
 
 use starship_db::Database;
+use tauri::Manager;
 use tracing::info;
 
 fn handle_cli_flags() -> Option<i32> {
@@ -85,6 +87,7 @@ fn handle_cli_flags() -> Option<i32> {
                     "  --self-test     Open database, run migrations, verify health, and exit 0"
                 );
                 println!("  --verify-audit  Verify hash integrity of the tamper-evident audit log");
+                println!("  --perf-probe    Run the performance probe (idle|latency) and exit");
                 println!("  --version, -V   Print application version and exit");
                 println!("  --help, -h      Print this help message and exit");
                 return Some(0);
@@ -134,12 +137,30 @@ fn main() {
         .setup(move |app| {
             shortcut::register_wayland_global_shortcut(app.handle().clone());
 
+            if let Some(mode) = perf_probe::parse_mode() {
+                perf_probe::spawn(app.handle().clone(), mode);
+            }
+
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                let mut interval = tokio::time::interval(std::time::Duration::from_secs(1));
+                // Adaptive sampling (GAP-CLOSURE-PLAN.md 14.2): 1 Hz while a
+                // window is visible (dashboard/HUD), 0.2 Hz while minimized to
+                // the tray. Missions keep the HUD/Cockpit visible, so they
+                // stay on the 1 Hz path.
                 loop {
-                    interval.tick().await;
                     hs_bg.tick(&app_handle, &db_bg);
+                    let visible = ["main", "hud"].iter().any(|label| {
+                        app_handle
+                            .get_webview_window(label)
+                            .and_then(|w| w.is_visible().ok())
+                            .unwrap_or(false)
+                    });
+                    let delay = if visible {
+                        std::time::Duration::from_secs(1)
+                    } else {
+                        std::time::Duration::from_secs(5)
+                    };
+                    tokio::time::sleep(delay).await;
                 }
             });
 
