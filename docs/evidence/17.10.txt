@@ -1,0 +1,51 @@
+=== TASK 17.10 — REAL LOCAL INFERENCE (closes 17.4) ===
+Date: 2026-11-27
+
+ROOT CAUSE (R5, confirmed in 17.0)
+`LocalGgufRunner::stream_chat` returned keyword-matched canned text built from
+`synthesize_tasksheet_json`; no llama.cpp runtime existed anywhere in the
+workspace. Users could "chat" with a downloaded model without inference.
+
+DECISION: PATH A (managed `llama-server` sidecar), documented in ARCHITECTURE.md
+section 7 and the component table. In-process `llama-cpp-2` bindings remain an
+optional later path, not a blocker.
+
+CHANGES
+- crates/starship-infer/src/local/sidecar.rs (new): locates the runtime from an
+  explicit path, `STARSHIP_LLAMA_SERVER`, then PATH; verifies its SHA-256 when
+  `STARSHIP_LLAMA_SERVER_SHA256` is configured; binds a free loopback port,
+  spawns `llama-server -m <gguf> -c <ctx> -ngl <layers> --host 127.0.0.1
+  --port <port>`, waits up to 30 s for `/health`, and kills the child on drop.
+- crates/starship-infer/src/local/runner.rs: removed all canned replies and
+  `synthesize_tasksheet_json`. `stream_chat` now checks file existence, live
+  headroom (`infer.model_out_of_memory` via the F3 guard), starts/reuses the
+  sidecar, and delegates streaming to the existing OpenAI-compatible client on
+  `<base>/v1`. Dropping the stream cancels the request; a crashed sidecar is
+  restarted on the next call.
+- API.md: added `infer.runtime_missing` and `infer.model_load_failed`; both are
+  classified in `executor/failure.rs` and included in the canonical-code test.
+- ARCHITECTURE.md: updated the local-engine description from native bindings to
+  the managed sidecar.
+- Tests: missing-file error, missing-runtime error, and a sidecar integration
+  test whose stub emits 24 real SSE chunks through the full stream path. The
+  canned 20-prompt golden suite is replaced by an ignored test that requires
+  `STARSHIP_TEST_GGUF` and a genuine llama-server.
+
+VERIFICATION
+  $ cargo test -p starship-infer
+  test result: ok. 8 passed; 0 failed; 1 ignored
+  - test_local_runner_streams_from_sidecar ... ok (24 chunks streamed)
+  - test_local_golden_suite_with_real_model ... ignored (needs real GGUF)
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       191 passed / 0 failed (25 suites)
+  $ cargo xtask check-no-fakes                                   PASS
+
+HONEST LIMITATION
+No `llama-server` binary or GGUF model is installed on this host, so the
+"tiny GGUF streams >= 16 real tokens" verification was performed against a test
+stub that emits real SSE chunks, not model weights. The ignored test is the
+real-model path for a CI runner with a cached model. Runtime SHA-256 pinning is
+enforced only when `STARSHIP_LLAMA_SERVER_SHA256` is set; without it the digest
+is not checked (documented here rather than silently skipped).
+
+RESULT: PASS (wiring verified; real-model verification requires CI model cache)

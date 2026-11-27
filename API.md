@@ -34,7 +34,7 @@ Every error returned by a command or emitted over an error event strictly matche
 | `details` | `object \| null` | Optional structured metadata (bytes missing, PID, socket path, HTTP status). |
 
 ### 1.2 Canonical Error Codes
-- **Inference (`infer.*`):** `infer.model_not_found`, `infer.model_out_of_memory`, `infer.download_failed`, `infer.checksum_mismatch`, `infer.cloud_auth_failed`, `infer.cloud_rate_limited`, `infer.cloud_endpoint_unreachable`, `infer.context_length_exceeded`.
+- **Inference (`infer.*`):** `infer.model_not_found`, `infer.model_out_of_memory`, `infer.download_failed`, `infer.checksum_mismatch`, `infer.cloud_auth_failed`, `infer.cloud_rate_limited`, `infer.cloud_endpoint_unreachable`, `infer.context_length_exceeded`, `infer.runtime_missing`, `infer.model_load_failed`.
 - **MCP & Bridge (`mcp.*`):** `mcp.socket_unreachable`, `mcp.so_peercred_failed`, `mcp.handshake_timeout`, `mcp.tool_not_found`, `mcp.execution_failed`, `mcp.app_spawn_failed`, `mcp.app_unavailable`, `mcp.lease_expired`, `mcp.manifest_untrusted`, `mcp.peer_exe_mismatch`, `mcp.checkpoint_unsupported`.
 - **Safety & Permissions (`safety.*`):** `safety.approval_rejected`, `safety.permission_denied`, `safety.invalid_signature_token`, `safety.tier_violation`.
 - **Database & Storage (`db.*`):** `db.read_failed`, `db.write_failed`, `db.constraint_violation`, `db.migration_failed`, `db.audit_tampered`.

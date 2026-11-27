@@ -55,7 +55,7 @@
   * *Verify:* test with a missing binary → typed error; test with a stub binary that creates the socket → `launched` with the true PID.
 - [x] **17.3 No invented cuts (R3).** In `pipeline/media.rs`, remove the default `CutInterval`s. With no CET telemetry, return `pipeline.telemetry_required`, and the UI shows "Record or load a session first". Cuts come only from real `detect_cuts`.
   * *Verify:* unit + IPC test: no telemetry → error, never a plan with cuts.
-- [ ] **17.4 Remove canned model replies.** Delete the keyword-matched response code and `synthesize_tasksheet_json` from `local/runner.rs` (replaced by 17.10).
+- [x] **17.4 Remove canned model replies.** Delete the keyword-matched response code and `synthesize_tasksheet_json` from `local/runner.rs` (replaced by 17.10).
 - [x] **17.5 Real data for every chart (R4).**
   * Backend: record per-request metrics in the stream loop (time-to-first-token, tokens/s, tokens in/out, total latency, provider/model, error) into new table `infer_metrics` and emit `evt://infer/metrics`. Add `cmd_infer_metrics_history{range}`.
   * `ModelControlView.tsx`: initial state is empty, no preset arrays, no `Math.random`. Plot `infer_metrics` (tokens/s, latency). Empty state: "No inference yet — send a message". Show source and last-updated time.
@@ -71,7 +71,7 @@
 
 ## 3. Phase 17B — Real Chat Engine (local and cloud)
 
-- [ ] **17.10 Real local inference (R5).** Implement `LocalGgufRunner` for real. Pick **one** path and document the choice in `ARCHITECTURE.md`:
+- [x] **17.10 Real local inference (R5).** Implement `LocalGgufRunner` for real. Pick **one** path and document the choice in `ARCHITECTURE.md`:
   * **Path A (recommended first — fastest to a working chat):** managed **`llama-server`** sidecar. Spawn it with `-m <gguf> -c <ctx> -ngl <layers> --port <free-port> --host 127.0.0.1`, wait for `/health`, then talk to its OpenAI-compatible `/v1/chat/completions` stream using the existing `OpenAiClient`. Manage lifecycle (start on first use, idle unload, kill on exit, crash restart), use hardware-probe layer offload (`local/hardware.rs`), and refuse to load if headroom is insufficient (`local/guard.rs`). Locate or download the `llama-server` binary and verify its SHA-256; error `infer.runtime_missing` with an install hint if absent.
   * **Path B (later):** in-process `llama-cpp-2` behind feature `local-llama` (load in `spawn_blocking`, stream tokens, GBNF grammar support).
   * Both: apply the model's chat template, honor stop tokens, support cancel, and return real errors (`infer.model_load_failed`, `infer.out_of_memory`).

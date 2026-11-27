@@ -8,7 +8,7 @@
 
 ## 1. Architecture Principles
 
-1. **Local-First & Sovereign by Default:** Starship Control operates fully on-device without phoning home. Local GGUF models run directly against the hardware (Vulkan/ROCm/CPU) via native Rust bindings. Cloud APIs are strictly optional, user-configured, and directly addressed with the user's private keys.
+1. **Local-First & Sovereign by Default:** Starship Control operates fully on-device without phoning home. Local GGUF models run through a managed `llama-server` sidecar (OpenAI-compatible HTTP over loopback), with hardware/VRAM probing and a live headroom guard. Cloud APIs are strictly optional, user-configured, and directly addressed with the user's private keys.
 2. **Two Surfaces, One Core:** The system runs a single core process hosting the agent orchestration runtime, SQLite database, and MCP client manager. It drives two distinct UI surfaces via Tauri 2:
    - **The Cockpit:** Primary window (`1280×800`, min `1024×640`, solid Linear UI) for strategic mission planning, timelines, workflows, model downloading, app topology inspection, live systems health, and audit review.
    - **The Floating HUD:** Always-on-top, draggable, solid matte companion bar (`420×64`, `transparent: false`, synced dark/light theme) that sits over other applications for quick prompts, live progress, and instant approvals.
@@ -33,7 +33,7 @@
 | **UI Behaviors & Agent Bridge** | **`@ui-sdk/react` + `@ui-sdk/core` + Zustand 5** | Headless behavior primitives and synchronized cross-window theme/app state. |
 | **Animation & Motion** | **framer-motion / motion** | Snappy `150ms ease-out` UI transitions compliant with `prefers-reduced-motion` and zero blur transitions. |
 | **Async Runtime (Core)** | **Rust 2024 + Tokio** | High-throughput asynchronous runtime managing concurrent MCP transports, streaming SSE connections, system health monitoring, and child processes. |
-| **Local LLM Engine** | **`starship-infer/local/` runner facade** | Hardware capability & VRAM probe, `LocalInferenceGuard`, constrained GBNF prompt/tasksheet synthesis (native `llama-cpp-2` GGUF C++ bindings pending in roadmap). |
+| **Local LLM Engine** | **`starship-infer/local/` runner + `llama-server` sidecar** | Hardware/VRAM probe, `LocalInferenceGuard`, managed runtime lifecycle, real GGUF streaming and GBNF passthrough (in-process `llama-cpp-2` bindings remain an optional later path). |
 | **Cloud Model Client** | **`reqwest` (HTTP/2, rustls)** | Streaming Server-Sent Events (SSE) client for OpenAI, Anthropic, Gemini, and OpenRouter endpoints. |
 | **Protocol / Tooling** | **Model Context Protocol (MCP)** | Official protocol for discovering tools, schemas, resources, and executing actions across sub-apps. |
 | **IPC Transport (Sub-Apps)** | **Linux UNIX Domain Sockets (`SO_PEERCRED`)** | High-speed local IPC verified by kernel UID/binary/manifest checks, replacing TCP/CORS vulnerabilities. |
@@ -293,12 +293,12 @@ Starship Control uses `notify` to watch `$XDG_DATA_HOME/starship/plugins/`, auto
            ▼                                                 ▼
 ┌───────────────────────────────┐ ┌──────────────────────────────────────┐
 │         LOCAL ENGINE          │ │             CLOUD ENGINE             │
-│   (llama-cpp-2 Rust Wrapper)  │ │      (reqwest SSE HTTP Client)       │
+│ (llama-server sidecar / HTTP) │ │      (reqwest SSE HTTP Client)       │
 ├───────────────────────────────┤ ├──────────────────────────────────────┤
 │ • GGUF format (Q4_K_M, etc.)  │ │ • OpenAI API format                  │
 │ • Vulkan / ROCm / CPU backend │ │ • Anthropic Claude format            │
 │ • VRAM allocation detection   │ │ • Google Gemini format               │
-│ • Context caching             │ │ • OpenRouter / Local OpenAI (Ollama) │
+│ • Context caching             │ │ • OpenRouter / local llama-server      │
 └───────────────────────────────┘ └──────────────────────────────────────┘
 ```
 

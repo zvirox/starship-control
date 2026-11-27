@@ -37,7 +37,8 @@ pub fn classify_error(code: &str) -> FailureClass {
         | "mcp.handshake_timeout"
         | "infer.cloud_rate_limited"
         | "infer.cloud_endpoint_unreachable"
-        | "infer.download_failed" => FailureClass::Transient,
+        | "infer.download_failed"
+        | "infer.runtime_missing" => FailureClass::Transient,
 
         // App failure: sub-app crashes, internal execution errors, lease expirations
         "mcp.execution_failed"
@@ -47,7 +48,9 @@ pub fn classify_error(code: &str) -> FailureClass {
         | "mcp.tool_not_found" => FailureClass::AppFailure,
 
         // Resource: local VRAM/OOM, disk full, governor throttling
-        "infer.model_out_of_memory" | "disk.no_space" => FailureClass::Resource,
+        "infer.model_out_of_memory" | "infer.model_load_failed" | "disk.no_space" => {
+            FailureClass::Resource
+        }
 
         // Model output: context length exceeded, invalid plan json, checksum mismatch
         "infer.context_length_exceeded"
@@ -115,6 +118,8 @@ mod tests {
             "infer.cloud_rate_limited",
             "infer.cloud_endpoint_unreachable",
             "infer.context_length_exceeded",
+            "infer.runtime_missing",
+            "infer.model_load_failed",
             // mcp.*
             "mcp.socket_unreachable",
             "mcp.so_peercred_failed",
