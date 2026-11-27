@@ -1,0 +1,22 @@
+=== TASK 17.27 — COST / CONTEXT GUARD ===
+Date: 2026-11-27
+
+CHANGES
+- app/src-tauri/src/ipc/commands.rs: `estimate_tokens` uses the same explicit
+  4-chars-per-token approximation in back end and UI (no invented exact count).
+  `fit_messages_to_context` drops the oldest turns until the request fits the
+  selected model's context window (minus the system prompt). If one turn alone
+  exceeds it, the loop emits a typed `infer.context_length_exceeded` friendly
+  error instead of sending a doomed request.
+- Cockpit composer shows `~N/Xk tok` next to the Send button and turns amber
+  above 90% of the selected model's window.
+
+VERIFICATION
+  $ cargo test -p starship-control test_context_guard_trims_oldest_turns ... ok
+    (oldest turns trimmed, newest kept, single oversized turn flagged)
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       210 passed / 0 failed (26 suites)
+  $ npm run check:linear / typecheck / build                     PASS
+  $ cargo xtask check-no-fakes                                   PASS
+
+RESULT: PASS

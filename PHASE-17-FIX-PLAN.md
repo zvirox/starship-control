@@ -109,7 +109,7 @@
   * *Verify:* with the OpenRouter fixture (300 models) the list renders and filters under 100 ms; selecting a model and sending hits that model id.
 - [x] **17.25 Manual model id.** An "Enter model id" field for providers (e.g. a new or private model not in the list), validated by a 1-token test call.
 - [x] **17.26 OpenRouter correctness.** Ignore SSE comment lines (keep-alives start with `:`), read mid-stream `error` objects, support optional `HTTP-Referer` / `X-Title` headers (settings), handle `:free` models' rate limits with a clear message, and pass `tools` only when the model supports them. Add `cargo xtask provider_smoke <provider>` that uses the saved key to list models and send one short prompt, so you can verify with your own key in one command.
-- [ ] **17.27 Cost and context guard.** Show estimated context use per request; warn before sending if the prompt exceeds the model's context window.
+- [x] **17.27 Cost and context guard.** Show estimated context use per request; warn before sending if the prompt exceeds the model's context window.
 
 ---
 

@@ -669,6 +669,20 @@ export const CockpitView: React.FC = () => {
                     />
 
                     <div className="flex items-center gap-2 shrink-0">
+                      {activeModel && (
+                        <span
+                          className={`hidden font-mono text-[11px] tabular-nums sm:inline ${
+                            prompt.length / 4 >
+                            activeModel.context_window * 9 / 10
+                              ? "text-[var(--accent-amber)]"
+                              : "text-[var(--text-faint)]"
+                          }`}
+                          title="Estimated tokens for this prompt vs the selected model context window"
+                        >
+                          ~{Math.ceil(prompt.length / 4)}/
+                          {Math.round(activeModel.context_window / 1000)}k tok
+                        </span>
+                      )}
                       <span className="quiet-chip tabular font-medium hidden sm:inline-flex">
                         {activeModel ? (
                           activeModel.name

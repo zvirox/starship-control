@@ -1299,6 +1299,31 @@ async fn dispatch_with_retry(
     }))
 }
 
+/// Conservative token estimate for a string (4 characters ≈ 1 token). No
+/// provider token-count API is available on this path, so the UI/back end both
+/// use the same explicit approximation rather than inventing an exact number.
+fn estimate_tokens(text: &str) -> usize {
+    text.len() / 4
+}
+
+/// Drops the oldest turns until the request fits the model context window.
+/// Returns the fitted messages and whether a single turn still exceeds it.
+fn fit_messages_to_context(messages: Vec<Message>, max_tokens: usize) -> (Vec<Message>, bool) {
+    if max_tokens == 0 {
+        return (messages, false);
+    }
+    let mut messages = messages;
+    let mut used: usize = messages
+        .iter()
+        .map(|message| estimate_tokens(&message.content))
+        .sum();
+    while used > max_tokens && messages.len() > 1 {
+        let dropped = messages.remove(0);
+        used = used.saturating_sub(estimate_tokens(&dropped.content));
+    }
+    (messages, used > max_tokens)
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn run_chat_with_tools(
     app: &AppHandle,
@@ -1349,6 +1374,28 @@ async fn run_chat_with_tools(
     };
 
     for depth in 0..=MAX_TOOL_LOOP_DEPTH {
+        let context_budget = usize::try_from(model.context_window).unwrap_or(8192);
+        let available = context_budget.saturating_sub(estimate_tokens(&system_prompt));
+        let (fitted, still_over) = fit_messages_to_context(messages, available);
+        messages = fitted;
+        if still_over {
+            let error = friendly_stream_error(
+                "infer.context_length_exceeded",
+                &model.provider_type,
+                Some(&model.id),
+                "Conversation exceeds the model context window",
+                None,
+            );
+            let _ = app.emit(
+                "evt://stream/error",
+                StreamErrorEvent {
+                    mission_id,
+                    message: error,
+                    code: "infer.context_length_exceeded".to_string(),
+                },
+            );
+            return Ok(());
+        }
         let chat_req = ChatRequest {
             model: model.id.clone(),
             messages: std::mem::take(&mut messages),
@@ -2880,6 +2927,25 @@ mod tests {
                 .all(|message| !message.content.contains("turn-0-")),
             "oldest messages must be trimmed"
         );
+    }
+
+    #[test]
+    fn test_context_guard_trims_oldest_turns() {
+        let messages = vec![
+            Message::user("old ".repeat(200)),
+            Message::assistant("mid ".repeat(20)),
+            Message::user("new question"),
+        ];
+        let (fitted, still_over) = fit_messages_to_context(messages, 100);
+        assert!(!still_over);
+        assert_eq!(fitted.len(), 2);
+        assert_eq!(fitted.last().expect("newest").content, "new question");
+
+        let single = vec![Message::user("x".repeat(1000))];
+        let (fitted, still_over) = fit_messages_to_context(single, 100);
+        assert_eq!(fitted.len(), 1);
+        assert!(still_over, "a single oversized turn cannot be trimmed");
+        assert_eq!(estimate_tokens("abcd"), 1);
     }
 
     #[test]
