@@ -1,3 +1,5 @@
+mod check_no_fakes;
+
 use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use starship_core::{
@@ -186,6 +188,10 @@ pub struct PromptEvalResult {
 #[allow(clippy::cast_precision_loss)]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
+    if args.len() >= 2 && args[1] == "check-no-fakes" {
+        check_no_fakes::run();
+        return Ok(());
+    }
     if args.len() < 2 || args[1] != "eval-planner" {
         eprintln!("Usage: cargo xtask eval-planner [--engine <mock|local>] [--output <path>]");
         std::process::exit(1);
@@ -218,7 +224,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let start_time = Instant::now();
 
     // 1. Evaluate Golden Prompts Schema Validity & Replan Rate
-    let runner = LocalGgufRunner::new("qwen2.5-coder-7b-q4", None, 8192, 33);
+    let runner = LocalGgufRunner::new("qwen2.5-coder-7b-q4", None, 8192, 33); // check-no-fakes: allowed golden-prompt fixture
     let validator = TaskSheetValidator::default();
     let repair_loop = PlannerRepairLoop::new(validator.clone());
 
@@ -228,7 +234,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     for prompt in GOLDEN_PROMPTS {
         let req = ChatRequest {
-            model: "qwen2.5-coder-7b-q4".to_string(),
+            model: "qwen2.5-coder-7b-q4".to_string(), // check-no-fakes: allowed golden-prompt fixture
             messages: vec![Message::user(prompt)],
             system_prompt: None,
             temperature: Some(0.1),

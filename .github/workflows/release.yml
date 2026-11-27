@@ -9,7 +9,19 @@ permissions:
   contents: write
 
 jobs:
+  check-no-fakes:
+    name: No-Fakes Gate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Run no-fakes gate
+        run: cargo xtask check-no-fakes
+
   release:
+    needs: check-no-fakes
     uses: zvirox/release-workflows/.github/workflows/linux-release.yml@v1
     with:
       app_name: ${{ github.event.repository.name }}

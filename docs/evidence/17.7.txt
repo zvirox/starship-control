@@ -1,0 +1,49 @@
+=== TASK 17.7 — NO-FAKES CI GATE ===
+Date: 2026-11-27
+
+DELIVERABLE
+`cargo xtask check-no-fakes` (implemented in `crates/xtask/src/check_no_fakes.rs`,
+dispatched from `xtask` main, with `default-run = "xtask"` in `xtask/Cargo.toml`).
+It scans non-test source under `crates/` and `app/src/` and fails on:
+  - `Math.random`
+  - `simulate_tool_call`
+  - `Some(12345)` (invented PID)
+  - `mockSteps`
+  - `Default simulated`
+  - hard-coded model id `qwen2.5-coder-7b-q4` outside migrations/tests
+  - arrays with >= 4 numeric literals (style tuples such as `borderRadius`
+    are excluded)
+Test modules (`#[cfg(test)]`, `/tests/`, `*.test.ts(x)`) and migration files are
+skipped. The eval harness's golden-prompt fixtures use an explicit inline
+exemption: `// check-no-fakes: allowed golden-prompt fixture`.
+
+WIRING
+- `.github/workflows/ci.yml`: "No-fakes gate (Phase 17)" step in
+  `format-and-lint`, after clippy.
+- `.github/workflows/release.yml`: `check-no-fakes` preflight job; the reusable
+  release job now `needs: check-no-fakes`, so no tag can be published from a
+  build containing simulated data.
+
+VERIFICATION
+  $ cargo xtask check-no-fakes
+  check-no-fakes: PASS — no simulation or invented telemetry in release source
+  exit code 0
+
+  Mutation test (temporary `app/src/__fake_probe.ts` containing
+  `const probe = Math.random();`):
+  check-no-fakes: app/src/__fake_probe.ts:1: Math.random
+  check-no-fakes: FAIL (1 violation(s))
+  exit code 1
+  The file was removed immediately afterwards; a second clean run returned 0.
+
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       191 passed / 0 failed (25 suites)
+  $ cd app && npm run check:linear / typecheck / lint / build    PASS
+  $ git diff --check                                              PASS
+
+NOTE
+An early version scanned `crates/crates` because the workspace root was
+computed one directory too high, producing a vacuous PASS. The mutation test
+above exposed it; the root is now `<workspace>/crates/xtask/../..`.
+
+RESULT: PASS

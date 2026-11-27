@@ -52,6 +52,9 @@ jobs:
       - name: Rust clippy verification (-D warnings)
         run: cargo clippy --workspace --all-targets -- -D warnings
 
+      - name: No-fakes gate (Phase 17)
+        run: cargo xtask check-no-fakes
+
       - name: Install frontend dependencies
         run: |
           cd app
