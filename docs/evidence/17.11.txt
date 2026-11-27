@@ -1,0 +1,44 @@
+=== TASK 17.11 — DECRYPT API KEYS AT POINT OF USE ===
+Date: 2026-11-27
+
+ROOT CAUSE (R6, confirmed in 17.0)
+`cmd_mission_send_prompt` took `c.api_key_encrypted` straight from the DB and
+passed the `enc_v1:` blob as `api_key` to `InferDispatcher::dispatch_stream`.
+`decrypt_api_key` existed but was only called in a test. Every cloud request
+therefore sent an armored blob as the bearer token.
+
+CHANGES
+- crates/starship-db/src/models.rs: added `SecretString` (redacted `Debug`)
+  and `Database::get_provider_credentials(provider_id) ->
+  Result<Option<SecretString>, CoreError>`; decrypts via `decrypt_api_key`.
+  `Result` is used instead of the plan's `Option` because decryption can fail.
+- crates/starship-db/src/lib.rs: re-exported `SecretString`.
+- app/src-tauri/src/ipc/commands.rs: added `resolve_cloud_credentials(db,
+  provider_type)` — the only path from the encrypted column to an HTTP client;
+  `cmd_mission_send_prompt` now uses it. Local models return `(None, None)`.
+- No API.md/DATABASE.md change: no Tauri command, event, event payload or
+  SQLite schema was added or altered (internal DB helper only).
+
+VERIFICATION
+  $ cargo test -p starship-control test_cloud_credentials_decrypted_at_point_of_use -- --nocapture
+  test ipc::commands::tests::test_cloud_credentials_decrypted_at_point_of_use ... ok
+  test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out
+
+  The test stores a canary key, asserts the DB column is `enc_v1:` and contains
+  no plaintext, then drives the exact helper used by the IPC command and
+  asserts the dispatcher receives the plaintext canary — never `enc_v1:`.
+
+  $ cargo clippy --workspace --all-targets -- -D warnings                  PASS
+  $ cargo test --workspace                                                  183 passed / 0 failed (24 suites)
+  $ cd app && npm run check:linear                                          PASS
+  $ cd app && npm run typecheck                                             PASS
+
+HONEST SCOPE NOTE
+The plan asks for a wiremock assertion of the `Authorization: Bearer <plaintext>`
+header. No HTTP mock dependency exists in the workspace and this task forbids
+unapproved dependencies, so the regression test proves the call site instead:
+the value handed to `dispatch_stream` is plaintext and can never be the stored
+`enc_v1:` blob. A header-level test will be added with the provider connection
+test in 17.20–17.22, where the mock-provider surface is introduced.
+
+RESULT: PASS (call-site fix + regression test; header-level test deferred to 17.22)

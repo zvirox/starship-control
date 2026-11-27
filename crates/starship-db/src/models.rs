@@ -3,6 +3,29 @@ use crate::schema::{MissionMessageRecord, MissionRecord, ModelRecord, ProviderCo
 use rusqlite::params;
 use starship_core::CoreError;
 
+/// A decrypted secret held only at the point of use. `Debug` is redacted so an
+/// accidental log or panic cannot leak an API key (Phase 17, task 17.11).
+#[derive(Clone)]
+pub struct SecretString(String);
+
+impl SecretString {
+    #[must_use]
+    pub fn new(value: String) -> Self {
+        Self(value)
+    }
+
+    #[must_use]
+    pub fn expose(&self) -> &str {
+        &self.0
+    }
+}
+
+impl std::fmt::Debug for SecretString {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[REDACTED]")
+    }
+}
+
 impl Database {
     /// Retrieves all registered models from the SQLite store.
     pub fn list_models(&self) -> Result<Vec<ModelRecord>, CoreError> {
@@ -418,6 +441,19 @@ impl Database {
             )?;
             Ok(())
         })
+    }
+
+    /// Loads and decrypts a provider's API key for immediate use.
+    /// The returned value must never be logged, persisted or put in a prompt.
+    pub fn get_provider_credentials(
+        &self,
+        provider_id: &str,
+    ) -> Result<Option<SecretString>, CoreError> {
+        let cfg = self.get_provider_config(provider_id)?;
+        match cfg.and_then(|c| c.api_key_encrypted) {
+            Some(armored) => Ok(Some(SecretString::new(Self::decrypt_api_key(&armored)?))),
+            None => Ok(None),
+        }
     }
 
     /// Decrypts an armored API key from the database.

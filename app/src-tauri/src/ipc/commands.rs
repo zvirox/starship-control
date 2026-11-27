@@ -676,6 +676,29 @@ pub async fn cmd_provider_config_set(
     Ok(true)
 }
 
+/// Resolves a cloud provider's base URL and *decrypted* API key.
+/// This is the only path from the encrypted DB column to an HTTP client.
+fn resolve_cloud_credentials(
+    db: &Database,
+    provider_type: &str,
+) -> Result<(Option<String>, Option<String>), CoreError> {
+    if !provider_type.starts_with("cloud_") {
+        return Ok((None, None));
+    }
+    let provider_id = match provider_type {
+        "cloud_anthropic" => "anthropic",
+        "cloud_gemini" => "gemini",
+        "cloud_openrouter" => "openrouter",
+        _ => "openai",
+    };
+    let cfg = db.get_provider_config(provider_id)?;
+    let base_url = cfg.map(|c| c.base_url);
+    let api_key = db
+        .get_provider_credentials(provider_id)?
+        .map(|secret| secret.expose().to_owned());
+    Ok((base_url, api_key))
+}
+
 #[tauri::command]
 pub async fn cmd_mission_send_prompt(
     app: AppHandle,
@@ -706,22 +729,9 @@ pub async fn cmd_mission_send_prompt(
         )
     })?;
 
-    // Fetch provider config if cloud
-    let (base_url, api_key) = if model.provider_type.starts_with("cloud_") {
-        let provider_id = match model.provider_type.as_str() {
-            "cloud_anthropic" => "anthropic",
-            "cloud_gemini" => "gemini",
-            "cloud_openrouter" => "openrouter",
-            _ => "openai",
-        };
-        let cfg = state.get_provider_config(provider_id)?;
-        (
-            cfg.as_ref().map(|c| c.base_url.clone()),
-            cfg.and_then(|c| c.api_key_encrypted),
-        )
-    } else {
-        (None, None)
-    };
+    // Resolve cloud credentials at the point of use. The encrypted `enc_v1:`
+    // blob must never be passed to an HTTP client (Phase 17, task 17.11).
+    let (base_url, api_key) = resolve_cloud_credentials(state.inner(), &model.provider_type)?;
 
     let mission_id = payload.mission_id;
     let app_handle = app.clone();
@@ -1737,6 +1747,42 @@ fn chrono_now_iso() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_cloud_credentials_decrypted_at_point_of_use() {
+        let db = starship_db::Database::open_in_memory().expect("in-memory db");
+        let canary = "sk-canary-17-11-plaintext";
+        db.set_provider_config(
+            "openai",
+            "OpenAI",
+            "https://api.openai.com/v1",
+            Some(canary),
+            true,
+        )
+        .expect("set provider config");
+
+        let stored = db
+            .get_provider_config("openai")
+            .expect("get config")
+            .expect("config exists")
+            .api_key_encrypted
+            .expect("encrypted key");
+        assert!(stored.starts_with("enc_v1:"), "key must be armored at rest");
+        assert!(!stored.contains(canary), "canary leaked into DB plaintext");
+
+        let (base_url, api_key) =
+            resolve_cloud_credentials(&db, "cloud_openai").expect("resolve credentials");
+        assert_eq!(base_url.as_deref(), Some("https://api.openai.com/v1"));
+        assert_eq!(
+            api_key.as_deref(),
+            Some(canary),
+            "dispatcher must receive plaintext, not the enc_v1 blob"
+        );
+        assert!(!api_key.expect("key").starts_with("enc_v1:"));
+
+        let (base, key) = resolve_cloud_credentials(&db, "local_gguf").expect("local model");
+        assert!(base.is_none() && key.is_none());
+    }
 
     #[test]
     fn test_tray_state_all_variants_and_labels() {

@@ -76,7 +76,7 @@
   * **Path B (later):** in-process `llama-cpp-2` behind feature `local-llama` (load in `spawn_blocking`, stream tokens, GBNF grammar support).
   * Both: apply the model's chat template, honor stop tokens, support cancel, and return real errors (`infer.model_load_failed`, `infer.out_of_memory`).
   * *Verify:* IPC test with a tiny GGUF (≤ 50 MB, fetched in CI cache) streams ≥ 16 real tokens, with `tokens/s` recorded. No canned text anywhere. (CI may use a small model; the full model is covered by the Manual Test Checklist.)
-- [ ] **17.11 Decrypt API keys at point of use (R6).** Add `Database::get_provider_credentials(provider_id) -> Option<SecretString>` that decrypts via `decrypt_api_key`. Use it in `cmd_mission_send_prompt`, discovery (17.20) and connection tests. Never log it.
+- [x] **17.11 Decrypt API keys at point of use (R6).** Add `Database::get_provider_credentials(provider_id) -> Option<SecretString>` that decrypts via `decrypt_api_key`. Use it in `cmd_mission_send_prompt`, discovery (17.20) and connection tests. Never log it.
   * *Verify:* wiremock server asserts `Authorization: Bearer <plaintext>` (and `x-api-key` for Anthropic). Regression test fails if the `enc_v1:` blob is ever sent.
 - [ ] **17.12 Conversation memory (R9).** Build `messages` from `list_messages(mission_id)` (roles user, assistant, tool) with a token budget (trim oldest, keep system prompt and the last N turns). Persist assistant text and tool messages.
   * *Verify:* two-turn test: "My name is X" then "What is my name?" returns X from a mock engine that echoes its context.

@@ -19,6 +19,7 @@ pub use apps::AppRecord;
 pub use audit::{AuditRecord, NewAuditEntry};
 pub use events::{MissionEventRecord, MissionHistorySummary, NewMissionEvent};
 pub use health::{HealthAlertRecord, HealthRollupRecord};
+pub use models::SecretString;
 pub use plans::{PlanRecord, PlanStepRecord};
 pub use tool_stats::ToolStatsRecord;
 
