@@ -98,3 +98,76 @@ impl InferenceEngine for MockInferenceEngine {
         &self.provider_type
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::{ChatChunk, Message, Role};
+    use futures::StreamExt;
+
+    /// Deterministic engine that echoes the full context it receives, used to
+    /// prove that two-turn memory reaches the model (Phase 17, 17.12).
+    #[derive(Debug, Clone)]
+    struct ContextEchoEngine;
+
+    #[async_trait::async_trait]
+    impl InferenceEngine for ContextEchoEngine {
+        async fn stream_chat(&self, req: ChatRequest) -> Result<TokenStream, CoreError> {
+            let context = req
+                .messages
+                .iter()
+                .map(|message| message.content.as_str())
+                .collect::<Vec<_>>()
+                .join(" | ");
+            Ok(Box::pin(futures::stream::iter(vec![Ok(ChatChunk {
+                content: context,
+                thought: None,
+                is_final: true,
+                finish_reason: Some("stop".to_string()),
+            })])))
+        }
+
+        fn model_id(&self) -> &'static str {
+            "echo"
+        }
+
+        fn provider_type(&self) -> &'static str {
+            "mock"
+        }
+    }
+
+    #[tokio::test]
+    async fn test_echo_engine_sees_full_two_turn_context() {
+        let req = ChatRequest {
+            model: "mock".to_string(),
+            messages: vec![
+                Message {
+                    role: Role::User,
+                    content: "My name is Zvirox".to_string(),
+                    thought: None,
+                    tool_calls: None,
+                    tool_call_id: None,
+                },
+                Message::assistant("Hello Zvirox"),
+                Message::user("What is my name?"),
+            ],
+            system_prompt: None,
+            temperature: None,
+            max_tokens: None,
+            tools: vec![],
+            grammar: None,
+            stream: true,
+        };
+        let mut stream = ContextEchoEngine
+            .stream_chat(req)
+            .await
+            .expect("echo stream");
+        let chunk = stream
+            .next()
+            .await
+            .expect("one chunk")
+            .expect("valid chunk");
+        assert!(chunk.content.contains("My name is Zvirox"));
+        assert!(chunk.content.contains("What is my name?"));
+    }
+}

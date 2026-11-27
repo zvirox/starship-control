@@ -80,7 +80,9 @@ Creates a new mission session.
 * **Errors:** `db.write_failed`, `infer.model_not_found`.
 
 #### `cmd_mission_send_prompt` (`cmd://mission_send_prompt`)
-Dispatches a new user message or instruction to an active mission.
+Dispatches a new user message or instruction to an active mission. The model
+request includes the mission's stored user/assistant/tool messages (newest kept
+first, trimmed at 40 messages / ~24k characters); no fabricated history is added.
 * **Payload:**
   ```json
   {

@@ -700,6 +700,47 @@ pub struct InferMetricsHistoryPayload {
     pub range: String,
 }
 
+/// Conversation memory for a chat request (Phase 17, 17.12). The newest
+/// messages are kept; the oldest are dropped when the character budget is hit.
+/// Characters/4 is a conservative token estimate — no token count is invented.
+const CONVERSATION_CHAR_BUDGET: usize = 24_000;
+const CONVERSATION_MAX_MESSAGES: usize = 40;
+
+fn conversation_messages(
+    history: &[MissionMessageRecord],
+    max_messages: usize,
+    char_budget: usize,
+) -> Vec<Message> {
+    let mut selected: Vec<&MissionMessageRecord> = Vec::new();
+    let mut used = 0_usize;
+    for record in history.iter().rev() {
+        if record.role == "system" {
+            continue;
+        }
+        if selected.len() >= max_messages {
+            break;
+        }
+        let size = record.content.len();
+        if !selected.is_empty() && used.saturating_add(size) > char_budget {
+            continue;
+        }
+        used = used.saturating_add(size);
+        selected.push(record);
+    }
+    selected.reverse();
+    selected
+        .into_iter()
+        .map(|record| match record.role.as_str() {
+            "assistant" => Message::assistant(&record.content),
+            "tool" => Message::tool(
+                &record.content,
+                record.tool_call_id.clone().unwrap_or_default(),
+            ),
+            _ => Message::user(&record.content),
+        })
+        .collect()
+}
+
 /// Resolves a cloud provider's base URL and *decrypted* API key.
 /// This is the only path from the encrypted DB column to an HTTP client.
 fn resolve_cloud_credentials(
@@ -743,6 +784,14 @@ pub async fn cmd_mission_send_prompt(
 
     info!(target: "starship_ipc", mission_id = payload.mission_id, user_msg_id, "User prompt accepted");
 
+    // Build the conversation from stored history, not just the latest prompt.
+    let history = state.list_messages(payload.mission_id)?;
+    let messages = conversation_messages(
+        &history,
+        CONVERSATION_MAX_MESSAGES,
+        CONVERSATION_CHAR_BUDGET,
+    );
+
     // Fetch model details
     let model = state.get_model(&mission.active_model_id)?.ok_or_else(|| {
         CoreError::infer(
@@ -760,7 +809,6 @@ pub async fn cmd_mission_send_prompt(
     let mission_id = payload.mission_id;
     let app_handle = app.clone();
     let db = state.inner().clone();
-    let prompt_text = payload.prompt.clone();
 
     // Spawn async background streaming task
     tokio::spawn(async move {
@@ -770,7 +818,7 @@ pub async fn cmd_mission_send_prompt(
 
         let chat_req = ChatRequest {
             model: model.id.clone(),
-            messages: vec![Message::user(prompt_text)],
+            messages,
             system_prompt: Some(system_prompt),
             temperature: Some(0.2),
             max_tokens: Some(4096),
@@ -1959,6 +2007,83 @@ mod tests {
             serde_json::to_string(&err)
                 .expect("serialize error")
                 .contains("mcp.app_unavailable")
+        );
+    }
+
+    #[test]
+    fn test_conversation_memory_two_turns_preserves_context() {
+        let db = Database::open_in_memory().expect("in-memory db");
+        let model_id = db
+            .list_models()
+            .expect("models")
+            .first()
+            .expect("seeded model")
+            .id
+            .clone();
+        let mission_id = db
+            .create_mission(
+                "chat-17-12",
+                "Chat",
+                "Remember my name",
+                &model_id,
+                "local_gguf",
+            )
+            .expect("create mission");
+        db.add_message(mission_id, "user", "My name is Zvirox", None)
+            .expect("first user turn");
+        db.add_message(mission_id, "assistant", "Hello Zvirox", None)
+            .expect("assistant turn");
+        db.add_message(mission_id, "user", "What is my name?", None)
+            .expect("second user turn");
+
+        let history = db.list_messages(mission_id).expect("history");
+        let messages = conversation_messages(
+            &history,
+            CONVERSATION_MAX_MESSAGES,
+            CONVERSATION_CHAR_BUDGET,
+        );
+        assert_eq!(messages.len(), 3);
+        let context = messages
+            .iter()
+            .map(|message| message.content.as_str())
+            .collect::<Vec<_>>()
+            .join(" | ");
+        assert!(context.contains("My name is Zvirox"));
+        assert!(context.contains("Hello Zvirox"));
+        assert!(context.contains("What is my name?"));
+    }
+
+    #[test]
+    fn test_conversation_memory_budget_trims_oldest_and_keeps_latest() {
+        let db = Database::open_in_memory().expect("in-memory db");
+        let model_id = db
+            .list_models()
+            .expect("models")
+            .first()
+            .expect("seeded model")
+            .id
+            .clone();
+        let mission_id = db
+            .create_mission("budget-17-12", "Chat", "Long chat", &model_id, "local_gguf")
+            .expect("create mission");
+        for i in 0..60 {
+            db.add_message(
+                mission_id,
+                "user",
+                &format!("turn-{i}-{}", "x".repeat(80)),
+                None,
+            )
+            .expect("add message");
+        }
+        let history = db.list_messages(mission_id).expect("history");
+        let messages = conversation_messages(&history, 5, 600);
+        assert_eq!(messages.len(), 5, "message cap must be enforced");
+        assert!(messages.last().expect("latest").content.contains("turn-59"));
+        assert!(
+            messages
+                .iter()
+                .all(|message| !message.content.contains("turn-0-")),
+            "oldest messages must be trimmed"
         );
     }
 

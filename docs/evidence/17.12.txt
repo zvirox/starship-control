@@ -1,0 +1,33 @@
+=== TASK 17.12 — CONVERSATION MEMORY ===
+Date: 2026-11-27
+
+ROOT CAUSE (R9, confirmed in 17.0)
+`cmd_mission_send_prompt` built `messages: vec![Message::user(prompt_text)]`;
+stored `mission_messages` were never loaded, so a model could not remember an
+earlier turn.
+
+CHANGES
+- app/src-tauri/src/ipc/commands.rs: `conversation_messages(history, max, budget)`
+  maps stored `MissionMessageRecord`s to `Message`s (user/assistant/tool), keeps
+  newest messages first, drops system records, and trims the oldest entries at
+  40 messages / 24,000 characters. Characters/4 is a conservative estimate — no
+  token count is invented. `cmd_mission_send_prompt` loads `list_messages` after
+  recording the user turn and sends that context instead of a lone prompt.
+- API.md documents the request-context behavior for `cmd_mission_send_prompt`.
+- crates/starship-infer/src/engine.rs (tests only): `ContextEchoEngine` returns
+  the full context it receives, used to prove that history reaches the model.
+
+VERIFICATION
+  $ cargo test -p starship-control test_conversation_memory -- --nocapture
+  test_conversation_memory_two_turns_preserves_context ... ok
+  test_conversation_memory_budget_trims_oldest_and_keeps_latest ... ok
+
+  $ cargo test -p starship-infer test_echo_engine_sees_full_two_turn_context ... ok
+  (the echo engine sees "My name is Zvirox" and "What is my name?" together)
+
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       194 passed / 0 failed (25 suites)
+  $ cargo xtask check-no-fakes                                   PASS
+  $ npm run check:linear / typecheck                             PASS
+
+RESULT: PASS

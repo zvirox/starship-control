@@ -78,7 +78,7 @@
   * *Verify:* IPC test with a tiny GGUF (≤ 50 MB, fetched in CI cache) streams ≥ 16 real tokens, with `tokens/s` recorded. No canned text anywhere. (CI may use a small model; the full model is covered by the Manual Test Checklist.)
 - [x] **17.11 Decrypt API keys at point of use (R6).** Add `Database::get_provider_credentials(provider_id) -> Option<SecretString>` that decrypts via `decrypt_api_key`. Use it in `cmd_mission_send_prompt`, discovery (17.20) and connection tests. Never log it.
   * *Verify:* wiremock server asserts `Authorization: Bearer <plaintext>` (and `x-api-key` for Anthropic). Regression test fails if the `enc_v1:` blob is ever sent.
-- [ ] **17.12 Conversation memory (R9).** Build `messages` from `list_messages(mission_id)` (roles user, assistant, tool) with a token budget (trim oldest, keep system prompt and the last N turns). Persist assistant text and tool messages.
+- [x] **17.12 Conversation memory (R9).** Build `messages` from `list_messages(mission_id)` (roles user, assistant, tool) with a token budget (trim oldest, keep system prompt and the last N turns). Persist assistant text and tool messages.
   * *Verify:* two-turn test: "My name is X" then "What is my name?" returns X from a mock engine that echoes its context.
 - [ ] **17.13 Tool-call loop (R10).** Parse `tool_calls` from stream chunks (OpenAI/OpenRouter `delta.tool_calls`, Anthropic `tool_use`, Gemini `functionCall`). Convert them to a validated plan (12.1) → approval → execution (17.40) → feed results back as a `tool` message and continue until the model finishes. Cap loop depth (default 6).
   * *Verify:* mock provider requests `atp: tuneup.get_health`; a real ATP call result appears in the next model turn.
