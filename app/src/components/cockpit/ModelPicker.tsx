@@ -71,7 +71,10 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
     setQuery("");
   };
 
-  const row = (model: ModelRecord) => (
+  const row = (model: ModelRecord) => {
+    const notDownloaded =
+      model.provider_type === "local_gguf" && model.download_status !== "ready";
+    return (
     <div
       key={model.id}
       className={`flex items-center gap-2 rounded-[6px] px-2 py-1.5 text-[12px] transition-colors duration-150 ${
@@ -82,12 +85,15 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
     >
       <button
         type="button"
-        className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left focus-ring cursor-pointer"
+        disabled={notDownloaded}
+        title={notDownloaded ? "Not downloaded — use the Models tab to download it" : undefined}
+        className="flex min-w-0 flex-1 items-center justify-between gap-2 text-left focus-ring cursor-pointer disabled:opacity-50"
         onClick={() => choose(model)}
       >
         <span className="flex min-w-0 items-center gap-1.5">
           {activeModel?.id === model.id && <Check className="size-3 shrink-0" strokeWidth={2} />}
           <span className="truncate font-medium">{model.name}</span>
+          {notDownloaded && <span className="text-[10px] text-[var(--text-faint)]">Not downloaded</span>}
         </span>
         <span className="flex shrink-0 items-center gap-1.5 font-mono text-[10px] text-[var(--text-faint)]">
           {model.supports_tools && <span title="Supports tools">tools ✓</span>}
@@ -107,7 +113,8 @@ export const ModelPicker: React.FC<ModelPickerProps> = ({
         />
       </button>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="relative">

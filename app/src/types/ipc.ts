@@ -275,6 +275,10 @@ export interface ProviderModelsResponse {
   models: DiscoveredModel[];
 }
 
+export interface ModelDeletePayload {
+  modelId: string;
+}
+
 export interface ModelFavoritePayload {
   modelId: string;
   favorite: boolean;

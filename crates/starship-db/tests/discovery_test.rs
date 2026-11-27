@@ -53,3 +53,41 @@ fn test_discovered_models_upsert_and_missing_marking() {
         "remote_only"
     );
 }
+
+#[test]
+fn test_missing_local_model_is_marked_and_can_be_deleted() {
+    let db = Database::open_in_memory().expect("in-memory db");
+    db.register_model(
+        "local-test",
+        "local-test.gguf",
+        "local_gguf",
+        None,
+        Some("/nonexistent/local-test.gguf"),
+        Some(1024),
+        None,
+        Some("abc"),
+        2048,
+        0,
+    )
+    .expect("register local model");
+
+    let marked = db.mark_missing_local_models().expect("mark missing");
+    assert_eq!(marked, 1);
+    let models = db.list_models().expect("models");
+    assert_eq!(
+        models
+            .iter()
+            .find(|m| m.id == "local-test")
+            .expect("model")
+            .download_status,
+        "remote_only"
+    );
+
+    db.delete_model("local-test").expect("delete model");
+    assert!(
+        db.list_models()
+            .expect("models")
+            .iter()
+            .all(|m| m.id != "local-test")
+    );
+}

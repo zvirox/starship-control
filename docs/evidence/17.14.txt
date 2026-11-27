@@ -1,0 +1,36 @@
+=== TASK 17.14 — DOWNLOAD HYGIENE ===
+Date: 2026-11-27
+
+ROOT CAUSE
+`download_hf_file` relied only on an optional SHA-256; any bytes (including an
+HTML error page) could be renamed into the models directory and registered as a
+`ready` GGUF model. There was no delete command, and rows with missing files
+still appeared selectable.
+
+CHANGES
+- crates/starship-infer/src/hf/downloader.rs: `verify_gguf_file` checks the GGUF
+  magic bytes and expected size before the `.part` file is promoted; invalid
+  downloads fail with `infer.checksum_mismatch` and leave no final file.
+  Resume via `Range` is retained and now covered by a test.
+- crates/starship-db/src/models.rs: `mark_missing_local_models` marks local rows
+  whose file no longer exists as `remote_only`; `delete_model` removes a row.
+- app/src-tauri/src/ipc/commands.rs: `cmd_list_models` marks missing files; new
+  `cmd_model_delete{modelId}` removes the row and, for local GGUF, only a file
+  that canonicalizes inside the models directory (path confinement).
+- API.md / ipc.ts mirrored the new command; ModelPicker disables selection of
+  local models whose status is not `ready` and labels them "Not downloaded".
+
+VERIFICATION
+  $ cargo test -p starship-infer hf::downloader
+  test_download_registers_only_real_gguf_bytes ... ok
+  test_corrupt_download_is_rejected_without_promoting_file ... ok
+  test_partial_download_resumes_from_range ... ok
+    (local HTTP fixtures: valid GGUF, HTML page, and 206 partial response)
+  $ cargo test -p starship-db --test discovery_test
+  test_missing_local_model_is_marked_and_can_be_deleted ... ok
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ cargo test --workspace                                       204 passed / 0 failed (26 suites)
+  $ npm run check:linear / typecheck / lint / build              PASS
+  $ cargo xtask check-no-fakes                                   PASS
+
+RESULT: PASS

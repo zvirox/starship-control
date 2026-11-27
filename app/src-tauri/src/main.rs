@@ -197,6 +197,7 @@ fn main() {
             ipc::cmd_mission_set_model,
             ipc::cmd_model_hf_search,
             ipc::cmd_model_hf_download,
+            ipc::cmd_model_delete,
             ipc::cmd_topology_list_apps,
             ipc::cmd_topology_launch_app,
             ipc::cmd_topology_ping_app,

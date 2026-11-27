@@ -258,6 +258,7 @@ pub async fn cmd_resize_hud(app: AppHandle, expanded: bool) -> Result<(), CoreEr
 pub async fn cmd_list_models(
     state: tauri::State<'_, Database>,
 ) -> Result<Vec<ModelRecord>, CoreError> {
+    let _ = state.mark_missing_local_models();
     state.list_models()
 }
 
@@ -780,6 +781,44 @@ async fn refresh_provider_models(
     let seen: Vec<String> = models.iter().map(|m| m.id.clone()).collect();
     db.mark_missing_discovered_models(provider_id, &seen)?;
     Ok(models)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelDeletePayload {
+    pub model_id: String,
+}
+
+#[tauri::command]
+#[allow(clippy::needless_pass_by_value)]
+pub fn cmd_model_delete(
+    state: tauri::State<'_, Database>,
+    payload: ModelDeletePayload,
+) -> Result<bool, CoreError> {
+    let model = state.get_model(&payload.model_id)?.ok_or_else(|| {
+        CoreError::app(
+            "app.not_found",
+            false,
+            format!("Model '{}' is not registered", payload.model_id),
+            None,
+        )
+    })?;
+    if model.provider_type == "local_gguf"
+        && let Some(path) = model.file_path.as_ref()
+    {
+        let models_dir = dirs::data_dir()
+            .unwrap_or_else(|| std::path::PathBuf::from("."))
+            .join("starship-control")
+            .join("models");
+        let candidate = std::path::Path::new(path);
+        if let Ok(canonical) = candidate.canonicalize()
+            && canonical.starts_with(&models_dir)
+        {
+            let _ = std::fs::remove_file(&canonical);
+        }
+    }
+    state.delete_model(&payload.model_id)?;
+    Ok(true)
 }
 
 #[tauri::command]

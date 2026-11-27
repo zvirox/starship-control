@@ -25,6 +25,48 @@ pub struct DownloadProgress {
 }
 
 /// Downloads a GGUF model file with chunked resumable transfers, progress streaming, and SHA-256 integrity verification.
+/// Rejects files that are not real GGUF weights before registering them.
+/// A truncated transfer or an HTML error page must never become a "ready" model.
+fn verify_gguf_file(path: &Path, expected_size: u64) -> Result<(), CoreError> {
+    use std::io::Read;
+
+    let mut file = fs::File::open(path).map_err(|e| {
+        CoreError::infer(
+            "infer.checksum_mismatch",
+            false,
+            format!("Cannot verify downloaded model: {e}"),
+            None,
+        )
+    })?;
+    let mut magic = [0_u8; 4];
+    file.read_exact(&mut magic).map_err(|_| {
+        CoreError::infer(
+            "infer.checksum_mismatch",
+            false,
+            "Downloaded file is too small to be a GGUF model",
+            None,
+        )
+    })?;
+    if &magic != b"GGUF" {
+        return Err(CoreError::infer(
+            "infer.checksum_mismatch",
+            false,
+            "Downloaded file is not a GGUF model (bad magic bytes)",
+            Some(serde_json::json!({ "magic": hex::encode(magic) })),
+        ));
+    }
+    let size = fs::metadata(path).map_or(0, |m| m.len());
+    if expected_size > 0 && size != expected_size {
+        return Err(CoreError::infer(
+            "infer.checksum_mismatch",
+            false,
+            format!("Downloaded file size {size} does not match expected {expected_size}"),
+            None,
+        ));
+    }
+    Ok(())
+}
+
 #[allow(
     clippy::cast_possible_truncation,
     clippy::cast_sign_loss,
@@ -209,6 +251,9 @@ where
         ));
     }
 
+    // Verify the actual bytes before promoting the file to a usable model.
+    verify_gguf_file(&part_path, total_bytes)?;
+
     // Rename .part to final verified model file
     fs::rename(&part_path, target_path).map_err(|e| {
         CoreError::infer(
@@ -226,23 +271,89 @@ where
 mod tests {
     use super::*;
     use tempfile::tempdir;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    async fn serve(bytes: &[u8], partial: bool) -> (String, tokio::task::JoinHandle<()>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind stub");
+        let port = listener.local_addr().expect("port").port();
+        let payload = bytes.to_vec();
+        let handle = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.expect("accept");
+            let mut buffer = [0_u8; 4096];
+            let read = socket.read(&mut buffer).await.expect("read request");
+            let request = String::from_utf8_lossy(&buffer[..read]).to_string();
+            let body = if partial && request.contains("Range: bytes=") {
+                let start: usize = request
+                    .split("Range: bytes=")
+                    .nth(1)
+                    .and_then(|value| value.split_whitespace().next())
+                    .and_then(|value| value.split('-').next())
+                    .and_then(|value| value.parse().ok())
+                    .unwrap_or(0);
+                payload[start..].to_vec()
+            } else {
+                payload.clone()
+            };
+            let status = if partial && request.contains("Range: bytes=") {
+                "206 Partial Content"
+            } else {
+                "200 OK"
+            };
+            let response = format!(
+                "HTTP/1.1 {status}\r\nContent-Type: application/octet-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            );
+            socket
+                .write_all(response.as_bytes())
+                .await
+                .expect("headers");
+            socket.write_all(&body).await.expect("body");
+        });
+        (format!("http://127.0.0.1:{port}/model.gguf"), handle)
+    }
 
     #[tokio::test]
-    async fn test_checksum_verification_success() {
+    async fn test_download_registers_only_real_gguf_bytes() {
         let dir = tempdir().expect("tempdir");
-        let dest = dir.path().join("model.bin");
+        let target = dir.path().join("tiny.gguf");
+        let payload = b"GGUF\x00\x00\x00tiny-weights";
+        let (url, server) = serve(payload, false).await;
+        let sha = download_hf_file("job", &url, &target, None, |_| {})
+            .await
+            .expect("valid GGUF download");
+        server.await.expect("stub");
+        assert_eq!(sha, hex::encode(Sha256::digest(payload)));
+        assert_eq!(fs::read(&target).expect("file"), payload.to_vec());
+        assert!(verify_gguf_file(&target, payload.len() as u64).is_ok());
+    }
 
-        // Verify that SHA-256 matches an in-memory buffer
-        let data = b"Starship Control Local GGUF Weights Verification Byte Sequence";
-        let expected_sha = hex::encode(Sha256::digest(data));
+    #[tokio::test]
+    async fn test_corrupt_download_is_rejected_without_promoting_file() {
+        let dir = tempdir().expect("tempdir");
+        let target = dir.path().join("bad.gguf");
+        let (url, server) = serve(b"<html>not a model</html>", false).await;
+        let err = download_hf_file("job", &url, &target, None, |_| {})
+            .await
+            .expect_err("corrupt file must fail");
+        server.await.expect("stub");
+        assert_eq!(err.code, "infer.checksum_mismatch");
+        assert!(!target.exists(), "partial file must stay unpromoted");
+    }
 
-        // Create a local file to simulate download
-        fs::write(&dest, data).expect("write file");
-
-        let mut hasher = Sha256::new();
-        hasher.update(data);
-        let computed_sha = hex::encode(hasher.finalize());
-
-        assert_eq!(computed_sha, expected_sha);
+    #[tokio::test]
+    async fn test_partial_download_resumes_from_range() {
+        let dir = tempdir().expect("tempdir");
+        let target = dir.path().join("resume.gguf");
+        let payload = b"GGUF\x03\x00\x00\x00resumed-weights";
+        fs::write(format!("{}.part", target.display()), &payload[..8]).expect("seed part");
+        let (url, server) = serve(payload, true).await;
+        let sha = download_hf_file("job", &url, &target, None, |_| {})
+            .await
+            .expect("resumed download");
+        server.await.expect("stub");
+        assert_eq!(sha, hex::encode(Sha256::digest(payload)));
+        assert_eq!(fs::read(&target).expect("file"), payload.to_vec());
     }
 }

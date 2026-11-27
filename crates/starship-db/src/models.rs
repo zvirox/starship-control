@@ -492,6 +492,37 @@ impl Database {
         }
     }
 
+    /// Marks local GGUF rows whose file is missing as not downloaded.
+    pub fn mark_missing_local_models(&self) -> Result<usize, CoreError> {
+        let models = self.list_models()?;
+        let mut updated = 0;
+        for model in models {
+            if model.provider_type == "local_gguf"
+                && model.download_status == "ready"
+                && !model
+                    .file_path
+                    .as_ref()
+                    .is_some_and(|path| std::path::Path::new(path).exists())
+            {
+                updated += self.with_conn(|conn| {
+                    conn.execute(
+                        "UPDATE models SET download_status = 'remote_only' WHERE id = ?1",
+                        params![model.id],
+                    )
+                })?;
+            }
+        }
+        Ok(updated)
+    }
+
+    /// Deletes a model row. Referenced models are rejected by the FK constraint.
+    pub fn delete_model(&self, model_id: &str) -> Result<(), CoreError> {
+        self.with_conn(|conn| {
+            conn.execute("DELETE FROM models WHERE id = ?1", params![model_id])?;
+            Ok(())
+        })
+    }
+
     /// Stores a tool result as a `tool` message for the next model turn.
     pub fn add_tool_message(
         &self,
