@@ -18,6 +18,7 @@ use starship_mcp::{
     AggregatedTool, HybridExecutionRouter, ToolAggregator, UnixTransportClient,
     scan_and_sync_manifests,
 };
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, LogicalSize, Manager, Size};
 use tracing::{error, info};
 use uuid::Uuid;
@@ -883,6 +884,9 @@ pub struct LaunchAppPayload {
 pub struct LaunchAppResponse {
     pub spawned: bool,
     pub pid: Option<u32>,
+    /// `launched` when the bridge socket appeared, `launched_no_bridge` when
+    /// the process started but no bridge is available (Phase 17, 17.2).
+    pub bridge_status: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -951,63 +955,75 @@ pub async fn cmd_topology_launch_app(
     payload: LaunchAppPayload,
 ) -> Result<LaunchAppResponse, CoreError> {
     let db = state.inner();
-    let app_record = db.get_app(&payload.app_id)?.ok_or_else(|| {
+    let (pid, bridge_status) = spawn_app(db, &payload.app_id, Duration::from_secs(5)).await?;
+    let socket_path = starship_plugin::socket_path_for(&payload.app_id)
+        .to_string_lossy()
+        .to_string();
+    let live_bridge = bridge_status == "launched";
+    let _ = db.update_app_gui_status(&payload.app_id, live_bridge, Some(&socket_path));
+    let _ = app.emit(
+        "evt://topology/app_state",
+        TopologyAppStateEvent {
+            app_id: payload.app_id,
+            mode: if live_bridge {
+                "live_gui".to_string()
+            } else {
+                "headless_cli".to_string()
+            },
+            socket_path: Some(socket_path),
+        },
+    );
+    Ok(LaunchAppResponse {
+        spawned: true,
+        pid: Some(pid),
+        bridge_status,
+    })
+}
+
+/// Spawns the registered binary for real. Returns its true PID and whether the
+/// bridge socket appeared within `bridge_wait`. No simulated PID or GUI state.
+async fn spawn_app(
+    db: &Database,
+    app_id: &str,
+    bridge_wait: Duration,
+) -> Result<(u32, String), CoreError> {
+    let app_record = db.get_app(app_id)?.ok_or_else(|| {
         CoreError::app(
             "app.not_found",
             false,
-            format!("Application '{}' is not registered", payload.app_id),
+            format!("Application '{app_id}' is not registered"),
             None,
         )
     })?;
-
-    let bin_path = std::path::Path::new(&app_record.binary_path);
-    if bin_path.exists() {
-        match std::process::Command::new(bin_path).spawn() {
-            Ok(child) => {
-                let pid = child.id();
-                let _ = app.emit(
-                    "evt://topology/app_state",
-                    TopologyAppStateEvent {
-                        app_id: payload.app_id.clone(),
-                        mode: "live_gui".to_string(),
-                        socket_path: app_record.socket_path.clone(),
-                    },
-                );
-                Ok(LaunchAppResponse {
-                    spawned: true,
-                    pid: Some(pid),
-                })
-            }
-            Err(e) => Err(CoreError::app(
+    let binary_path = app_record.binary_path.clone();
+    if !std::path::Path::new(&binary_path).exists() {
+        return Err(CoreError::app(
+            "mcp.app_spawn_failed",
+            false,
+            format!("Application binary not found: {binary_path}"),
+            Some(serde_json::json!({"appId": app_id, "binaryPath": binary_path})),
+        ));
+    }
+    let child = std::process::Command::new(&binary_path)
+        .spawn()
+        .map_err(|e| {
+            CoreError::app(
                 "mcp.app_spawn_failed",
                 false,
-                format!("Failed to spawn {}: {e}", app_record.binary_path),
-                None,
-            )),
+                format!("Failed to spawn {binary_path}: {e}"),
+                Some(serde_json::json!({"appId": app_id, "binaryPath": binary_path})),
+            )
+        })?;
+    let pid = child.id();
+    let socket = starship_plugin::socket_path_for(app_id);
+    let deadline = Instant::now() + bridge_wait;
+    while Instant::now() < deadline {
+        if socket.exists() {
+            return Ok((pid, "launched".to_string()));
         }
-    } else {
-        // In local development or simulation without installed binaries, simulate GUI launch
-        let socket_path = app_record.socket_path.clone().unwrap_or_else(|| {
-            starship_plugin::socket_path_for(&payload.app_id)
-                .to_string_lossy()
-                .to_string()
-        });
-
-        let _ = db.update_app_gui_status(&payload.app_id, true, Some(&socket_path));
-        let _ = app.emit(
-            "evt://topology/app_state",
-            TopologyAppStateEvent {
-                app_id: payload.app_id,
-                mode: "live_gui".to_string(),
-                socket_path: Some(socket_path),
-            },
-        );
-
-        Ok(LaunchAppResponse {
-            spawned: true,
-            pid: Some(12345),
-        })
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
+    Ok((pid, "launched_no_bridge".to_string()))
 }
 
 #[tauri::command]
@@ -1755,6 +1771,68 @@ fn chrono_now_iso() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn test_launch_app_missing_binary_returns_typed_error() {
+        let db = Database::open_in_memory().expect("in-memory db");
+        db.upsert_app(&starship_db::AppRecord {
+            app_id: "missing".to_string(),
+            display_name: "Missing".to_string(),
+            version: "0".to_string(),
+            binary_path: "/nonexistent/starship-launch-test".to_string(),
+            manifest_path: String::new(),
+            socket_path: None,
+            capabilities_json: "{}".to_string(),
+            is_active_gui: false,
+            last_seen_at: String::new(),
+            created_at: String::new(),
+        })
+        .expect("upsert app");
+        let err = spawn_app(&db, "missing", Duration::from_millis(100))
+            .await
+            .expect_err("missing binary must fail");
+        assert_eq!(err.code, "mcp.app_spawn_failed");
+        assert!(!err.retryable);
+        assert_eq!(
+            err.details
+                .as_ref()
+                .and_then(|details| details["appId"].as_str()),
+            Some("missing")
+        );
+    }
+
+    #[tokio::test]
+    async fn test_launch_app_returns_real_pid_and_honest_bridge_status() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("starship-launch-17-2-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let script = dir.join("fake-gui.sh");
+        std::fs::write(&script, "#!/bin/sh\nexit 0\n").expect("write script");
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755))
+            .expect("chmod script");
+        let app_id = format!("stub-17-2-{}", std::process::id());
+        let db = Database::open_in_memory().expect("in-memory db");
+        db.upsert_app(&starship_db::AppRecord {
+            app_id: app_id.clone(),
+            display_name: "Stub".to_string(),
+            version: "0".to_string(),
+            binary_path: script.to_string_lossy().to_string(),
+            manifest_path: String::new(),
+            socket_path: None,
+            capabilities_json: "{}".to_string(),
+            is_active_gui: false,
+            last_seen_at: String::new(),
+            created_at: String::new(),
+        })
+        .expect("upsert app");
+        let (pid, bridge_status) = spawn_app(&db, &app_id, Duration::from_millis(200))
+            .await
+            .expect("spawn stub binary");
+        assert!(pid > 0);
+        assert_ne!(pid, 12345, "a fixed fake PID must never be returned");
+        assert_eq!(bridge_status, "launched_no_bridge");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[tokio::test]
     async fn test_mcp_call_tool_rejects_unavailable_app_without_simulating_success() {

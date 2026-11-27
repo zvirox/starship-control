@@ -249,6 +249,7 @@ export interface LaunchAppPayload {
 export interface LaunchAppResponse {
   spawned: boolean;
   pid: number | null;
+  bridgeStatus: string;
 }
 
 export interface TopologyAppStateEvent {

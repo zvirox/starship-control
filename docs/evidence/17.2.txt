@@ -1,0 +1,41 @@
+=== TASK 17.2 — REAL APP LAUNCH ONLY ===
+Date: 2026-11-27
+
+ROOT CAUSE (R2, confirmed in 17.0)
+`cmd_topology_launch_app` had a "simulate GUI launch" branch for apps whose
+binary was missing: it marked GUI status active, emitted `live_gui` and returned
+`spawned: true, pid: Some(12345)` — a fake PID and a fake online app.
+
+CHANGES
+- app/src-tauri/src/ipc/commands.rs: removed the simulation branch entirely.
+  `spawn_app(db, app_id, bridge_wait)` spawns the registered binary for real,
+  returns its true PID, and polls the bridge socket for up to 5 s. Missing or
+  unspawnable binaries return `mcp.app_spawn_failed` with
+  `details: {appId, binaryPath}` (no PID). The command reports
+  `bridgeStatus: "launched"` or `"launched_no_bridge"` and only sets GUI state
+  / emits `live_gui` when a bridge actually appeared; otherwise it emits
+  `headless_cli`.
+- `LaunchAppResponse` gained `bridgeStatus`; mirrored in `app/src/types/ipc.ts`
+  and documented in API.md §cmd://topology_launch_app (type parity + contract
+  synced in the same commit).
+- AppTopologyView.tsx / AppTopologyDrawer.tsx no longer optimistically force
+  `live_gui`; they use the real `bridgeStatus` (no layout changes).
+
+VERIFICATION
+  $ cargo test --workspace
+  suites=24 passed=187 failed=0
+
+  New tests:
+  - test_launch_app_missing_binary_returns_typed_error — asserts
+    `mcp.app_spawn_failed`, retryable=false and appId in details.
+  - test_launch_app_returns_real_pid_and_honest_bridge_status — spawns a real
+    stub script, asserts the returned PID is real and never 12345, and that the
+    status is `launched_no_bridge` with no bridge present.
+
+  $ cargo clippy --workspace --all-targets -- -D warnings        PASS
+  $ npx tsc --noEmit (app)                                        PASS
+  $ cd app && npm run check:linear                               PASS
+  $ grep -rn 'simulate GUI launch' app/src-tauri/src              no matches
+  (the only remaining `12345` is the negative assertion in the new test)
+
+RESULT: PASS

@@ -149,12 +149,13 @@ export const AppTopologyView: React.FC<AppTopologyViewProps> = ({ onLaunchSucces
     setLaunchingAppId(appId);
     setErrorMsg(null);
     try {
-      await invoke<LaunchAppResponse>("cmd_topology_launch_app", {
+      const response = await invoke<LaunchAppResponse>("cmd_topology_launch_app", {
         payload: { appId },
       });
-      // Optimistically update
+      const mode =
+        response.bridgeStatus === "launched_no_bridge" ? "headless_cli" : "live_gui";
       setApps((prev) =>
-        prev.map((a) => (a.appId === appId ? { ...a, mode: "live_gui" } : a))
+        prev.map((a) => (a.appId === appId ? { ...a, mode } : a))
       );
       if (onLaunchSuccess) onLaunchSuccess(appId);
     } catch (err: unknown) {

@@ -215,7 +215,11 @@ Lists all discovered applications from manifests and live sockets.
 #### `cmd://topology_launch_app`
 Wakes up an offline application into GUI mode.
 * **Payload:** `{"appId": "eep"}`
-* **Success Output:** `{"spawned": true, "pid": 48291}`
+* **Success Output:** `{"spawned": true, "pid": 48291, "bridgeStatus": "launched"}`
+* `bridgeStatus` is `launched` when the bridge socket appeared within 5 s, or
+  `launched_no_bridge` when the binary started but no bridge is available.
+* **Error:** `mcp.app_spawn_failed` with `details: {appId, binaryPath}` when the
+  registered binary is missing or cannot be spawned; no PID is invented.
 
 ---
 

@@ -110,11 +110,13 @@ export const AppTopologyDrawer: React.FC = () => {
   const handleLaunch = async (appId: string) => {
     setLaunchingAppId(appId);
     try {
-      await invoke<LaunchAppResponse>("cmd_topology_launch_app", {
+      const response = await invoke<LaunchAppResponse>("cmd_topology_launch_app", {
         payload: { appId },
       });
+      const mode =
+        response.bridgeStatus === "launched_no_bridge" ? "headless_cli" : "live_gui";
       setApps((prev) =>
-        prev.map((a) => (a.appId === appId ? { ...a, mode: "live_gui" } : a))
+        prev.map((a) => (a.appId === appId ? { ...a, mode } : a))
       );
     } catch (err: unknown) {
       console.warn("Launch failed:", err);
