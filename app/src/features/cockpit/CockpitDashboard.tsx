@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import * as echarts from "echarts";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { Cpu, Zap, HardDrive, ShieldAlert } from "lucide-react";
 import {
   LinearCard,
   StatCard,
-  RangeTabs,
   DonutLegend,
   ProgressRow,
   DataTable,
@@ -23,6 +23,8 @@ import type {
   PlanActiveResponse,
   ApprovalNeededEvent,
   HealthSnapshotResponse,
+  HealthSample,
+  InferMetricsEvent,
 } from "../../types/ipc";
 
 interface QueueRow {
@@ -55,37 +57,6 @@ export interface CockpitDashboardProps {
   ) => void;
 }
 
-const THROUGHPUT_SERIES_BY_RANGE: Record<
-  string,
-  { labels: string[]; main: number[]; secondary: number[] }
-> = {
-  "1W": {
-    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-    main: [44, 52, 49, 61, 58, 67, 74],
-    secondary: [28, 33, 31, 39, 36, 44, 48],
-  },
-  "1M": {
-    labels: ["W1", "W2", "W3", "W4"],
-    main: [38, 49, 57, 71],
-    secondary: [24, 31, 38, 46],
-  },
-  "3W": {
-    labels: ["D1", "D4", "D7", "D10", "D14", "D18", "D21"],
-    main: [41, 46, 53, 50, 62, 66, 72],
-    secondary: [25, 29, 34, 32, 41, 43, 49],
-  },
-  YTD: {
-    labels: ["Feb", "Apr", "Jun", "Aug", "Oct", "Nov"],
-    main: [22, 31, 42, 54, 65, 74],
-    secondary: [15, 21, 29, 35, 42, 48],
-  },
-  Total: {
-    labels: ["Q1", "Q2", "Q3", "Q4"],
-    main: [29, 45, 59, 74],
-    secondary: [18, 28, 39, 48],
-  },
-};
-
 export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
   models,
   missions,
@@ -96,7 +67,11 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
   const theme = useThemeStore((s) => s.theme);
   const isDark = theme === "dark";
 
-  const [range, setRange] = useState<string>("1W");
+  const [networkSamples, setNetworkSamples] = useState<
+    { label: string; rx: number; tx: number }[]
+  >([]);
+  const [latencySamples, setLatencySamples] = useState<number[]>([]);
+  const [chunkRateSamples, setChunkRateSamples] = useState<number[]>([]);
   const [health, setHealth] = useState<HealthSnapshotResponse | null>(null);
   const [activeBarIdx, setActiveBarIdx] = useState<number>(4);
 
@@ -146,16 +121,79 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
     return Math.max(planPending, approvalGate ? 1 : 0);
   }, [activePlan, approvalGate]);
 
-  const cpuPct = Math.round(health?.sample?.cpu?.globalUtilPct ?? 18);
+  const cpuPct = Math.round(health?.sample?.cpu?.globalUtilPct ?? 0);
   const ramUsedPct = Math.round(
-    health?.sample?.memory ? 100 - health.sample.memory.availablePct : 44
+    health?.sample?.memory ? 100 - health.sample.memory.availablePct : 0
   );
   const vramPct = Math.round(
-    health?.sample?.gpu?.vramUsedPct ?? 45
+    health?.sample?.gpu?.vramUsedPct ?? 0
   );
 
-  const rangeSeries =
-    THROUGHPUT_SERIES_BY_RANGE[range] ?? THROUGHPUT_SERIES_BY_RANGE["1W"];
+  // Live network throughput from the 1 Hz health sampler (no preset arrays).
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    listen<HealthSample>("evt://health/sample", (event) => {
+      const net = event.payload.network;
+      if (!net) return;
+      setNetworkSamples((prev) =>
+        [
+          ...prev,
+          {
+            label: new Date(event.payload.timestampMs).toLocaleTimeString(),
+            rx: net.rxBytesPerSec / 1_000_000,
+            tx: net.txBytesPerSec / 1_000_000,
+          },
+        ].slice(-60)
+      );
+    })
+      .then((stop) => {
+        unlisten = stop;
+      })
+      .catch((e: unknown) => console.warn("Health sample listener failed:", e));
+    return () => unlisten?.();
+  }, []);
+
+  // Real first-token latencies from measured inference requests.
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const rows = await invoke<
+          { firstTokenMs: number; tokensPerSec: number }[]
+        >("cmd_infer_metrics_history", { payload: { range: "15m" } });
+        if (!cancelled) {
+          setLatencySamples(rows.map((r) => r.firstTokenMs).reverse());
+          setChunkRateSamples(rows.map((r) => r.tokensPerSec).reverse());
+        }
+      } catch (e) {
+        console.warn("Failed to load inference history:", e);
+      }
+    };
+    void load();
+    listen<InferMetricsEvent>("evt://infer/metrics", (event) => {
+      setLatencySamples((prev) =>
+        [...prev, event.payload.metric.firstTokenMs].slice(-50)
+      );
+      setChunkRateSamples((prev) =>
+        [...prev, event.payload.metric.tokensPerSec].slice(-50)
+      );
+    })
+      .then((stop) => {
+        unlisten = stop;
+      })
+      .catch((e: unknown) => console.warn("Inference metrics listener failed:", e));
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, []);
+
+  const rangeSeries = {
+    labels: networkSamples.map((sample) => sample.label),
+    main: networkSamples.map((sample) => sample.rx),
+    secondary: networkSamples.map((sample) => sample.tx),
+  };
 
   // 1. Hub Throughput Line Chart (Blue main, Sky secondary, gradient fade under line)
   useEffect(() => {
@@ -219,9 +257,8 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
     const idleFill = isDark
       ? LINEAR_COLORS.idleDark
       : LINEAR_COLORS.idleLight;
-    const days = ["T-6", "T-5", "T-4", "T-3", "T-2", "T-1", "Now"];
-    const primaryLatency = [19, 24, 21, 27, 16, 22, 18];
-    const queueOverhead = [6, 8, 7, 9, 5, 7, 6];
+    if (latencySamples.length === 0) return;
+    const days = latencySamples.map((_, idx) => `T-${latencySamples.length - idx}`);
 
     chart.setOption({
       ...base,
@@ -258,24 +295,11 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
           type: "bar",
           stack: "latency",
           barWidth: 16,
-          data: primaryLatency.map((v, i) => ({
+          data: latencySamples.map((v, i) => ({
             value: v,
             itemStyle: {
               color: i === activeBarIdx ? LINEAR_COLORS.blue : idleFill,
               borderRadius: [0, 0, 4, 4],
-            },
-          })),
-        },
-        {
-          name: "Queue",
-          type: "bar",
-          stack: "latency",
-          barWidth: 16,
-          data: queueOverhead.map((v, i) => ({
-            value: v,
-            itemStyle: {
-              color: i === activeBarIdx ? LINEAR_COLORS.pink : idleFill,
-              borderRadius: [4, 4, 0, 0],
             },
           })),
         },
@@ -294,7 +318,7 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
       window.removeEventListener("resize", onResize);
       chart.dispose();
     };
-  }, [isDark, activeBarIdx]);
+  }, [isDark, activeBarIdx, latencySamples]);
 
   // 3. Model States Donut (rounded arc ends, thin tick ring, center total)
   const donutData = useMemo(
@@ -439,12 +463,7 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
         };
       });
     }
-    return [
-      { name: "Qwen 2.5 Coder 7B (Q4_K_M)", pct: 58, display: "58% VRAM" },
-      { name: "Whisper v3 Large (ALP)", pct: 76, display: "76% VRAM" },
-      { name: "Llama 3.2 Vision 11B", pct: 92, display: "92% VRAM" },
-      { name: "Cloud Fallback SSE", pct: 24, display: "24% quota" },
-    ];
+    return [];
   }, [models, vramPct]);
 
   // 5. Task & Approval Queue Table
@@ -559,29 +578,22 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard
             title="Models running"
-            value={Math.max(1, readyModelsCount)}
-            unit={`/ ${Math.max(1, models.length)} ready`}
+            value={readyModelsCount}
+            unit={`/ ${models.length} available`}
             tone="green"
             icon={<Cpu className="size-4" strokeWidth={1.75} />}
-            delta={{
-              value: "+1",
-              positive: true,
-              comparison: "Vulkan active",
-            }}
-            sparkline={[1, 1, 2, 2, 2, 3, Math.max(1, readyModelsCount)]}
           />
           <StatCard
-            title="Tokens per second"
-            value="48.4"
-            unit="tok/s"
+            title="Streaming rate"
+            value={
+              chunkRateSamples.length > 0
+                ? chunkRateSamples[chunkRateSamples.length - 1].toFixed(1)
+                : "—"
+            }
+            unit="chunks/s"
             tone="blue"
             icon={<Zap className="size-4" strokeWidth={1.75} />}
-            delta={{
-              value: "+12.4%",
-              positive: true,
-              comparison: "vs 1h avg",
-            }}
-            sparkline={[36, 39, 42, 41, 45, 47, 48.4]}
+            sparkline={chunkRateSamples}
           />
           <StatCard
             title="GPU & RAM use"
@@ -589,12 +601,7 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
             unit={`RAM ${ramUsedPct}%`}
             tone="sky"
             icon={<HardDrive className="size-4" strokeWidth={1.75} />}
-            delta={{
-              value: `CPU ${cpuPct}%`,
-              positive: vramPct < 85,
-              comparison: "Nominal",
-            }}
-            sparkline={[38, 41, 44, 43, 46, 45, vramPct]}
+            delta={{ value: `CPU ${cpuPct}%`, comparison: "Live health sample" }}
           />
           <StatCard
             title="Pending approvals"
@@ -604,10 +611,8 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
             icon={<ShieldAlert className="size-4" strokeWidth={1.75} />}
             delta={{
               value: pendingApprovals > 0 ? "Review" : "Clear",
-              positive: pendingApprovals === 0,
               comparison: "Safety Arbiter",
             }}
-            sparkline={[2, 1, 1, 0, 1, 0, pendingApprovals]}
           />
         </div>
 
@@ -623,7 +628,9 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
                   Token streaming velocity across local Vulkan and cloud relay
                 </p>
               </div>
-              <RangeTabs active={range} onChange={setRange} />
+              <span className="text-[12px] text-[var(--text-muted)]">
+                Last 60 live samples
+              </span>
             </div>
             <div ref={lineChartRef} className="h-56 w-full" />
           </LinearCard>
@@ -637,7 +644,13 @@ export const CockpitDashboard: React.FC<CockpitDashboardProps> = ({
                 Click any bar to inspect breakdown (ms)
               </p>
             </div>
-            <div ref={barChartRef} className="h-56 w-full" />
+            {latencySamples.length === 0 ? (
+              <div className="flex h-56 items-center justify-center text-[12px] text-[var(--text-muted)]">
+                No inference yet — send a message
+              </div>
+            ) : (
+              <div ref={barChartRef} className="h-56 w-full" />
+            )}
           </LinearCard>
         </div>
 

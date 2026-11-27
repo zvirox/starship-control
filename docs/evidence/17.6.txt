@@ -1,0 +1,30 @@
+=== TASK 17.6 — REPLACE REMAINING PLACEHOLDER TELEMETRY ===
+Date: 2026-11-27
+
+ROOT CAUSE
+`CockpitDashboard` still shipped preset `THROUGHPUT_SERIES_BY_RANGE` arrays,
+invented latency bars (`primaryLatency`, `queueOverhead`), fake KPI values
+("48.4 tok/s", "+12.4%"), fake sparklines and a hard-coded model fallback list.
+These survived the earlier component fixes and would have been caught by 17.7.
+
+CHANGES (app/src/features/cockpit/CockpitDashboard.tsx)
+- Hub throughput now plots real `evt://health/sample` network rx/tx (MB/s),
+  last 60 samples; the fake `RangeTabs` (1W/1M/3W/YTD/Total) are replaced by a
+  "Last 60 live samples" label.
+- Inference latency bars now come from `cmd_infer_metrics_history` and
+  `evt://infer/metrics` first-token measurements; with no samples the card
+  shows "No inference yet — send a message".
+- Stat cards use real counts/measurements; streaming rate shows live chunks/s
+  or "—"; invented deltas/sparklines removed.
+- Removed the hard-coded four-model fallback list (empty state returns `[]`).
+- Health-dependent KPI fallbacks changed from invented numbers (18/44/45) to 0.
+
+VERIFICATION
+  $ grep -rnE '\[\s*-?[0-9]+(\.[0-9]+)?\s*,\s*-?[0-9]+(\.[0-9]+)?\s*,\s*-?[0-9]+(\.[0-9]+)?\s*,\s*-?[0-9]+' app/src
+    → only `borderRadius: [0, 0, 4, 4]` (a style tuple, not telemetry)
+  $ npx tsc --noEmit                                             PASS
+  $ npm run lint / npm run build                                 PASS
+  $ npm run check:linear                                         PASS
+  $ cargo xtask check-no-fakes                                   PASS
+
+RESULT: PASS
